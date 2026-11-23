@@ -14,6 +14,8 @@ spec.loader.exec_module(hygiene)
 
 def git(cwd, *args, env=None, input_text=None):
     merged_env = os.environ.copy()
+    for key in ('ALLOW_PUSH', 'HYGIENE_PATTERNS_FILE'):
+        merged_env.pop(key, None)
     merged_env.update({
         'GIT_AUTHOR_NAME': 'Test User',
         'GIT_AUTHOR_EMAIL': 'test@example.com',
