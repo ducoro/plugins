@@ -14,6 +14,7 @@
 | [Docs Lookup](plugins/docs-lookup) | 根据最新文档回答库与框架相关问题 | Skill（Context7） |
 | [Repo Research](plugins/repo-research) | 通过文档理解公开 GitHub 仓库 | Skill（DeepWiki） |
 | [Git Workflows](plugins/git-workflows) | 编写清楚的提交信息和 Pull Request 描述 | Skill |
+| [Content Operations](plugins/content-operations) | 覆盖 14 个平台的端到端内容运营闭环（选题、创作、分发、互动、复盘与展板） | Skills + Scripts + Boards |
 
 ## 使用方式
 

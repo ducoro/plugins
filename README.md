@@ -14,6 +14,7 @@ Each plugin packages portable **Agent Skills** (`SKILL.md`) and optional **MCP s
 | [Docs Lookup](plugins/docs-lookup) | Answer library and framework questions using current documentation | Skill (Context7) |
 | [Repo Research](plugins/repo-research) | Understand public GitHub repositories through their documentation | Skill (DeepWiki) |
 | [Git Workflows](plugins/git-workflows) | Write clear commit messages and pull request descriptions | Skill |
+| [Content Operations](plugins/content-operations) | Run a continuous multi-platform content loop across 14 platforms with interactive boards | Skills + Scripts + Boards |
 
 ## Use this marketplace
 

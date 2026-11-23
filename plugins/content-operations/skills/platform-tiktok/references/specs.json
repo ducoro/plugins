@@ -1,0 +1,29 @@
+{
+  "platform": "tiktok",
+  "displayName": "TikTok",
+  "authType": "oauth2",
+  "contentLimits": {
+    "modes": ["image_text", "video"],
+    "maxBodyLength": 2200,
+    "maxTotalTextLength": 2200,
+    "maxImages": 35,
+    "maxVideos": 1,
+    "allowMixedMedia": false
+  },
+  "mediaRules": {
+    "imageFormats": ["jpg", "jpeg", "webp"],
+    "videoFormats": ["mp4", "mov", "webm"],
+    "maxImageSizeBytes": 20971520,
+    "maxVideoSizeBytes": 4294967296,
+    "maxVideoDurationSec": 600
+  },
+  "topic": {
+    "supported": true,
+    "nativeField": false
+  },
+  "publishPolicy": {
+    "completionStrategy": "polling",
+    "scheduleByPlatform": false,
+    "updateSupported": false
+  }
+}

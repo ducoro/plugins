@@ -1,0 +1,26 @@
+{
+  "platform": "wechat-official",
+  "displayName": "WeChat Official Account",
+  "authType": "oauth2",
+  "contentLimits": {
+    "modes": ["image_text"],
+    "maxTitleLength": 64,
+    "maxBodyLength": 20000,
+    "maxImages": 20,
+    "maxVideos": 0,
+    "allowMixedMedia": false
+  },
+  "mediaRules": {
+    "imageFormats": ["jpg", "jpeg", "png", "gif", "bmp"],
+    "maxImageSizeBytes": 10485760
+  },
+  "topic": {
+    "supported": false,
+    "nativeField": false
+  },
+  "publishPolicy": {
+    "completionStrategy": "polling",
+    "scheduleByPlatform": false,
+    "updateSupported": false
+  }
+}

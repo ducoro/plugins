@@ -1,0 +1,31 @@
+{
+  "platform": "kuaishou",
+  "displayName": "Kuaishou (Kwai)",
+  "authType": "oauth2",
+  "contentLimits": {
+    "modes": ["video"],
+    "maxTitleLength": 30,
+    "maxBodyLength": 1000,
+    "maxTotalTextLength": 1000,
+    "maxImages": 0,
+    "maxVideos": 1,
+    "allowMixedMedia": false
+  },
+  "mediaRules": {
+    "imageFormats": ["jpg", "jpeg", "png", "bmp", "webp"],
+    "videoFormats": ["mp4", "avi", "mkv", "mov", "webm"],
+    "maxImageSizeBytes": 20971520,
+    "maxVideoSizeBytes": 104857600,
+    "maxVideoDurationSec": 1800
+  },
+  "topic": {
+    "supported": true,
+    "nativeField": false,
+    "maxCount": 4
+  },
+  "publishPolicy": {
+    "completionStrategy": "polling",
+    "scheduleByPlatform": false,
+    "updateSupported": false
+  }
+}

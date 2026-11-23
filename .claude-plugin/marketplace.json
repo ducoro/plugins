@@ -28,6 +28,11 @@
       "name": "git-workflows",
       "source": "./plugins/git-workflows",
       "description": "Write AI-readable commit messages and actionable pull-request descriptions."
+    },
+    {
+      "name": "content-operations",
+      "source": "./plugins/content-operations",
+      "description": "End-to-end multi-platform content operations loop covering topic research, media production, per-platform playbooks and protocols, engagement triage, analytics retrospectives, and interactive boards."
     }
   ]
 }

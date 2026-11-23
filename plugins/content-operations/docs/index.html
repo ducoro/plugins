@@ -1,0 +1,1052 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Content Operations — Visual Overview</title>
+  <style>
+    :root {
+      --bg: #f8f9fb;
+      --surface: #ffffff;
+      --surface-alt: #f1f4f9;
+      --ink: #111827;
+      --muted: #526071;
+      --border: #e2e8f0;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --ok: #15803d;
+      --ok-soft: #f0fdf4;
+      --warn: #b45309;
+      --warn-soft: #fffbeb;
+      --danger: #b91c1c;
+      --danger-soft: #fef2f2;
+      --shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 24px rgba(15, 23, 42, 0.04);
+      --radius: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0b0f17;
+        --surface: #111827;
+        --surface-alt: #1a2234;
+        --ink: #f3f4f6;
+        --muted: #9ca3af;
+        --border: #243045;
+        --accent: #60a5fa;
+        --accent-soft: rgba(96, 165, 250, 0.14);
+        --ok: #4ade80;
+        --ok-soft: rgba(74, 222, 128, 0.12);
+        --warn: #fbbf24;
+        --warn-soft: rgba(251, 191, 36, 0.12);
+        --danger: #f87171;
+        --danger-soft: rgba(248, 113, 113, 0.12);
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 28px rgba(0, 0, 0, 0.25);
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0b0f17;
+      --surface: #111827;
+      --surface-alt: #1a2234;
+      --ink: #f3f4f6;
+      --muted: #9ca3af;
+      --border: #243045;
+      --accent: #60a5fa;
+      --accent-soft: rgba(96, 165, 250, 0.14);
+      --ok: #4ade80;
+      --ok-soft: rgba(74, 222, 128, 0.12);
+      --warn: #fbbf24;
+      --warn-soft: rgba(251, 191, 36, 0.12);
+      --danger: #f87171;
+      --danger-soft: rgba(248, 113, 113, 0.12);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 28px rgba(0, 0, 0, 0.25);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      font-family: var(--mono);
+      font-size: 0.87em;
+      background: var(--surface-alt);
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: color-mix(in srgb, var(--surface) 88%, transparent);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-soft);
+    }
+    .nav-links {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+    .nav-links a { color: var(--muted); font-weight: 500; }
+    .nav-links a:hover { color: var(--ink); text-decoration: none; }
+    .controls { display: flex; gap: 8px; }
+    .pill-btn {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .pill-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .pill-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .container { max-width: 1120px; margin: 0 auto; padding: 36px 20px 80px; }
+    section { margin-top: 56px; }
+    .hero { margin-top: 8px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 4px 12px;
+      border-radius: 999px;
+    }
+    h1 {
+      margin: 14px 0 12px;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.18;
+      letter-spacing: -0.02em;
+    }
+    .lead {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 16px;
+      margin: 0 0 24px;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+    .metric {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+    .metric-val { font-size: 28px; font-weight: 700; line-height: 1.1; }
+    .metric-lbl { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
+
+    h2 {
+      font-size: 22px;
+      margin: 0 0 8px;
+      letter-spacing: -0.01em;
+    }
+    .sec-sub { color: var(--muted); font-size: 14.5px; margin: 0 0 20px; max-width: 780px; }
+
+    /* Loop flow */
+    .loop-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+    }
+    .step-btn {
+      text-align: left;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      cursor: pointer;
+      color: var(--ink);
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .step-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .step-btn.active { border-color: var(--accent); background: var(--accent-soft); }
+    .step-num { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+    .step-title { font-weight: 700; font-size: 14px; margin-top: 4px; }
+    .step-gate {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--warn-soft);
+      color: var(--warn);
+    }
+    .loop-detail {
+      margin-top: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .detail-box h3 { margin: 0 0 6px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .detail-box p, .detail-box ul { margin: 0; font-size: 14px; }
+    .detail-box ul { padding-left: 18px; }
+
+    /* Dual track */
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .card h3 { margin: 8px 0 8px; font-size: 17px; }
+    .card p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+    .card ul { margin: 0; padding-left: 18px; font-size: 14px; }
+    .card li { margin-bottom: 6px; }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 999px;
+    }
+    .badge-ok { background: var(--ok-soft); color: var(--ok); }
+    .badge-accent { background: var(--accent-soft); color: var(--accent); }
+    .badge-warn { background: var(--warn-soft); color: var(--warn); }
+    .badge-danger { background: var(--danger-soft); color: var(--danger); }
+    .callout-danger {
+      margin-top: 14px;
+      background: var(--danger-soft);
+      border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+      color: var(--danger);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      font-size: 13.5px;
+      font-weight: 500;
+    }
+
+    /* Platform filter & matrix */
+    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .plat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 12px;
+    }
+    .plat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .plat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .plat-name { font-weight: 700; font-size: 15px; }
+    .plat-meta { font-size: 12.5px; color: var(--muted); }
+    .plat-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* Boards interactive preview */
+    .board-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .board-stage {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 820px) { .board-stage { grid-template-columns: 1fr; } }
+    .mock-frame {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 12.5px;
+    }
+    .mock-bar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--border); font-weight: 700; }
+    .mock-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+    .mock-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px; }
+    .mock-kpi small { display: block; color: var(--muted); font-size: 10.5px; }
+    .mock-kpi strong { font-size: 15px; }
+    .mock-rows { display: flex; flex-direction: column; gap: 6px; }
+    .mock-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Quick start code */
+    .code-block {
+      position: relative;
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.65;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      color: #f8fafc;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .copy-btn:hover { background: rgba(255, 255, 255, 0.16); }
+
+    footer {
+      margin-top: 64px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span>content-operations</span>
+      </div>
+      <nav class="nav-links" id="topNav"></nav>
+      <div class="controls">
+        <button class="pill-btn" id="langBtn" type="button">English</button>
+        <button class="pill-btn" id="themeBtn" type="button">主题</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <span class="eyebrow" id="heroEyebrow"></span>
+      <h1 id="heroTitle"></h1>
+      <p class="lead" id="heroLead"></p>
+      <div class="metrics" id="heroMetrics"></div>
+    </section>
+
+    <section id="loop">
+      <h2 id="loopHeading"></h2>
+      <p class="sec-sub" id="loopSub"></p>
+      <div class="loop-strip" id="loopStrip"></div>
+      <div class="loop-detail" id="loopDetail"></div>
+    </section>
+
+    <section id="channels">
+      <h2 id="channelsHeading"></h2>
+      <p class="sec-sub" id="channelsSub"></p>
+      <div class="two-col" id="dualTrackCards"></div>
+      <div class="callout-danger" id="legitGuardrail"></div>
+    </section>
+
+    <section id="platforms">
+      <h2 id="platformsHeading"></h2>
+      <p class="sec-sub" id="platformsSub"></p>
+      <div class="filter-bar" id="platFilters"></div>
+      <div class="plat-grid" id="platGrid"></div>
+    </section>
+
+    <section id="boards">
+      <h2 id="boardsHeading"></h2>
+      <p class="sec-sub" id="boardsSub"></p>
+      <div class="board-tabs" id="boardTabs"></div>
+      <div class="board-stage" id="boardStage"></div>
+    </section>
+
+    <section id="topology">
+      <h2 id="topoHeading"></h2>
+      <p class="sec-sub" id="topoSub"></p>
+      <div class="two-col" id="topoCards"></div>
+    </section>
+
+    <section id="quickstart">
+      <h2 id="quickHeading"></h2>
+      <p class="sec-sub" id="quickSub"></p>
+      <div class="code-block">
+        <button class="copy-btn" id="copyCmdBtn" type="button">Copy</button>
+        <pre id="quickCode" style="margin:0"></pre>
+      </div>
+    </section>
+
+    <footer>
+      <span id="footerLeft"></span>
+      <a href="../README.md" id="footerReadmeLink"></a>
+    </footer>
+  </main>
+
+  <script type="module">
+    const COPY = {
+      en: {
+        nav: [
+          ['#loop', 'Workflow'],
+          ['#channels', 'How It Publishes'],
+          ['#platforms', '14 Platforms'],
+          ['#boards', '5 Dashboards'],
+          ['#topology', 'Team Setup'],
+          ['#quickstart', 'Quick Start'],
+        ],
+        langToggle: '中文',
+        themeToggle: 'Theme',
+        eyebrow: 'Ducoro Official Plugin · Open Source (Apache-2.0) · Self-Contained',
+        title: 'Install Once. Keep Content Running Across 14 Platforms.',
+        lead: 'From daily topic research, fact-checked writing, and per-platform adaptation to spec checks, publishing, comment replies, weekly retrospectives, and 5 live dashboards—everything lives in a plain local folder. You approve the key decisions; routine work keeps moving.',
+        metrics: [
+          ['1', 'All-in-One Install'],
+          ['14', 'CN & Global Platform Playbooks'],
+          ['5', 'Built-in Live Dashboards'],
+          ['2', 'Human Approval Checkpoints'],
+          ['0', 'Third-Party Cloud Services Needed'],
+        ],
+        loopHeading: 'How a Piece of Content Moves from Idea to Retrospective',
+        loopSub: 'Every draft, schedule, publish link, and metric stays in your local content-ops/ folder. Two human checkpoints ensure nothing goes public without your say-so. Click any step to see what gets created.',
+        steps: [
+          {
+            num: '01', title: 'Collect Ideas', gate: '',
+            what: 'Gather product updates, trending discussions, seasonal hooks, and real reader questions into one inbox so you never stare at a blank page.',
+            files: ['content-ops/brand-profile.md', 'content-ops/inbox/*.md'],
+            scripts: ['init_workspace.py --timezone <tz>'],
+          },
+          {
+            num: '02', title: 'Score & Pick Topics', gate: 'Your Approval #1',
+            what: 'Rank candidates on audience pain, proof, timing, and brand fit. Automatically flags repeat topics from the last 14 days before asking you which ones to greenlight.',
+            files: ['content-ops/topics/topics.json', 'content-ops/topics/briefs/*.md'],
+            scripts: ['score_topics.py'],
+          },
+          {
+            num: '03', title: 'Write Once, Adapt Natively', gate: '',
+            what: 'Draft one fact-checked master piece first, then adapt it to each target platform\'s native tone, cover ratio, and pacing without twisting the facts.',
+            files: ['content-ops/drafts/<id>/master.md', 'content-ops/drafts/<id>/variants/<platform>.md', 'content-ops/drafts/<id>/assets/*'],
+            scripts: ['image_ops.py (crop, resize, compress, watermark, rounded)'],
+          },
+          {
+            num: '04', title: 'Pre-Flight Format Check', gate: '',
+            what: 'Automatically catch over-limit text (including X short links & CJK double weight), mismatched image ratios, wrong file formats, or missing required fields before publishing.',
+            files: ['content-ops/drafts/<id>/meta.json', 'platform-*/references/specs.json'],
+            scripts: ['check_media_specs.py --update-meta'],
+          },
+          {
+            num: '05', title: 'Publish & Save Proof', gate: 'Your Approval #2',
+            what: 'Double-check your approval and confirm the draft hasn\'t changed since sign-off, publish via the platform\'s official studio or API, and log the live link for audit.',
+            files: ['content-ops/calendar.json', 'content-ops/publish-log.jsonl'],
+            scripts: ['Official browser studio (default)', 'platform-*/scripts/client.py (optional API)'],
+          },
+          {
+            num: '06', title: 'Triage & Reply', gate: 'Confirm Sensitive',
+            what: 'Sort incoming comments into high-intent leads, product feedback, casual praise, and spam. Draft thoughtful replies within safe daily limits and escalate anything sensitive.',
+            files: ['content-ops/engagement/inbox.json', 'content-ops/engagement/action-log.jsonl'],
+            scripts: ['4-tier comment triage & daily rate caps'],
+          },
+          {
+            num: '07', title: 'Review & Feed Back', gate: '',
+            what: 'Track 24h / 72h / 7d / 30d performance across platforms, see what actually worked on the same topic, and turn next-week actions directly into fresh topic leads.',
+            files: ['content-ops/analytics/snapshots.jsonl', 'content-ops/analytics/retros/YYYY-Www.md'],
+            scripts: ['aggregate_metrics.py', 'build_boards.py'],
+          },
+        ],
+        detailHeaders: ['What This Step Does', 'Files Saved Locally', 'Built-in Helpers'],
+        channelsHeading: 'Two Official Ways to Publish — Zero Account Risk',
+        channelsSub: 'Start immediately with zero developer setup, or plug in your own official API keys whenever you want faster automation.',
+        dualTracks: [
+          {
+            badge: 'Default · Zero Setup · All 14 Platforms',
+            badgeCls: 'badge-ok',
+            title: 'Official Browser Creator Studio',
+            desc: 'Your assistant opens each platform\'s official web studio right in your browser—uploads local images or videos, fills copy and covers, saves drafts, and pauses before clicking Publish.',
+            bullets: [
+              'Works on day one across all 14 CN and Global platforms',
+              'No developer app applications, no OAuth setup, no external image host required',
+              'Stops immediately whenever login, QR scan, 2FA, or CAPTCHA appears',
+            ],
+          },
+          {
+            badge: 'Optional · For Power Users · 12 Platforms',
+            badgeCls: 'badge-accent',
+            title: 'Official Platform OpenAPIs',
+            desc: 'Already have developer credentials? Run the built-in Python scripts using keys stored only on your own machine—no background daemon and no third-party account hosting.',
+            bullets: [
+              'Direct local uploads built in for WeChat Official, X, YouTube, TikTok, and LinkedIn',
+              'On-demand token refresh commands for short-lived tokens (X, WeChat, YouTube, TikTok)',
+              'Supports 5-hour temporary media URLs via `ducoro-cli media upload` for Meta & Pinterest APIs',
+            ],
+          },
+        ],
+        legitGuardrail: 'Account Safety Promise: We never scrape browser cookies, call unofficial reverse-engineered endpoints, store your social passwords, or try to bypass CAPTCHAs.',
+        platformsHeading: '14 Platforms, Each With Its Own Native Playbook',
+        platformsSub: 'A Xiaohongshu 3:4 carousel, a 3-second Douyin hook, an X thread, and a WeChat long-form essay follow completely different rules. Every platform is maintained separately so advice never gets muddled.',
+        filters: [
+          ['all', 'All Platforms (14)'],
+          ['cn', 'China (6)'],
+          ['global', 'Global (8)'],
+          ['api', 'Browser + Official API (12)'],
+          ['browser-only', 'Browser Studio Only (2)'],
+        ],
+        boardsHeading: '5 Live Dashboards Included Out of the Box',
+        boardsSub: 'Open any dashboard directly in a browser as a clean local page—or view it inside Ducoro to click any card and send approval, reply, or follow-up instructions straight into chat.',
+        boardMetaLabels: ['What You Can Ask Your Assistant to Show', 'One-Click Chat Collaboration'],
+        topoHeading: 'Start Solo, or Split Across Dedicated Workspaces',
+        topoSub: 'Install this single plugin once—whether you run everything in one place or divide monitoring, writing, and publishing across separate workspaces.',
+        topos: [
+          {
+            badge: 'Solo Creator / Fast Start',
+            badgeCls: 'badge-ok',
+            title: 'Everything in One Workspace',
+            desc: 'One workspace handles the full journey from ideas to retrospectives inside a single content-ops/ folder.',
+            bullets: [
+              'Fastest setup: one command creates the workspace and all 5 live dashboards',
+              'Every draft, schedule, publish record, and metric stays together',
+              'Best for solo founders and lean teams with one primary assistant',
+            ],
+          },
+          {
+            badge: 'Multi-Account / Higher Volume',
+            badgeCls: 'badge-accent',
+            title: 'Split by Role Across Workspaces',
+            desc: 'Point dedicated spaces (e.g., Trend & Comment Watch, Writing, Publishing) to the same shared folder—each space owns its own files so nothing overwrites anything else.',
+            bullets: [
+              'Watch & Analytics Space handles incoming trends, comment inbox, and metric snapshots',
+              'Writing Space handles topic selection, master drafts, and platform variants',
+              'Publishing Space handles the calendar, live links, and pre-publish tamper checks',
+            ],
+          },
+        ],
+        quickHeading: '3-Minute Quick Start',
+        quickSub: 'Runs on standard Python 3 with zero third-party packages required (optional Pillow only if you want automated image cropping or watermarks).',
+        copy: 'Copy',
+        copied: 'Copied',
+        footerLeft: 'Ducoro Plugins · content-operations · Apache-2.0 Open Source',
+        footerReadme: 'Read full Markdown README.md →',
+      },
+      zh: {
+        nav: [
+          ['#loop', '运转流程'],
+          ['#channels', '发布方式'],
+          ['#platforms', '14 个平台'],
+          ['#boards', '5 张展板'],
+          ['#topology', '分工方式'],
+          ['#quickstart', '快速上手'],
+        ],
+        langToggle: 'English',
+        themeToggle: '切换明暗',
+        eyebrow: 'Ducoro 官方插件 · Apache-2.0 开源 · 本地自包含',
+        title: '装一次，把 14 个平台的内容运营交给它持续运转',
+        lead: '从每天找选题、写母稿、按平台改写、查格式、发草稿，到盯评论、收数据、写复盘，再到 5 张实时可视展板——全部落在你本地清晰的文件夹里。关键节点等你拍板，日常琐事自己转。',
+        metrics: [
+          ['1', '一站安装，内容全流程全包'],
+          ['14', '国内外主流平台独立打法'],
+          ['5', '开箱即用的实时监控展板'],
+          ['2', '道人工拍板闸，绝不乱发'],
+          ['0', '外部账号托管与第三方后端'],
+        ],
+        loopHeading: '一条内容如何从灵感到复盘持续流转',
+        loopSub: '每份草稿、排期、线上链接和数据都落在本地 content-ops/ 文件夹里，随时可查可审计。系统在「定选题」和「发出去」两处等你点头，其余环节自动衔接。点击任意一步查看详情。',
+        steps: [
+          {
+            num: '01', title: '日常收料', gate: '',
+            what: '把产品新功能、行业热点、营销节点和评论区里的真实提问统一收进收件箱，每天都有料可写。',
+            files: ['content-ops/brand-profile.md', 'content-ops/inbox/*.md'],
+            scripts: ['init_workspace.py --timezone Asia/Shanghai'],
+          },
+          {
+            num: '02', title: '挑选题防撞车', gate: '你拍板 #1',
+            what: '按读者痛点、事实依据、时效和品牌契合度自动打分，并自动排查近 14 天发过的重复主题，把高分选题挑出来请你拍板。',
+            files: ['content-ops/topics/topics.json', 'content-ops/topics/briefs/*.md'],
+            scripts: ['score_topics.py'],
+          },
+          {
+            num: '03', title: '一稿多改不跑偏', gate: '',
+            what: '先写一份核实过事实的母稿，再按不同平台的语气、节奏和封面比例分别改写，既地道又不编造数字。',
+            files: ['content-ops/drafts/<id>/master.md', 'content-ops/drafts/<id>/variants/<platform>.md', 'content-ops/drafts/<id>/assets/*'],
+            scripts: ['image_ops.py（裁剪、缩放、压缩、圆角、水印）'],
+          },
+          {
+            num: '04', title: '发前自动查格式', gate: '',
+            what: '自动检查字数上限（含 X 短链与中文字双倍计重）、真实图片格式、画面比例、视频时长和必填项，避免临发被平台打回。',
+            files: ['content-ops/drafts/<id>/meta.json', 'platform-*/references/specs.json'],
+            scripts: ['check_media_specs.py --update-meta'],
+          },
+          {
+            num: '05', title: '发布与留痕回读', gate: '你拍板 #2',
+            what: '确认你已授权且文稿未被改动后，通过官方网页后台或官方接口发布，并把真实的线上链接回写进台账。',
+            files: ['content-ops/calendar.json', 'content-ops/publish-log.jsonl'],
+            scripts: ['官方浏览器后台（默认）', 'platform-*/scripts/client.py（可选官方 API）'],
+          },
+          {
+            num: '06', title: '评论分诊与回复', gate: '敏感项确认',
+            what: '把评论自动分成高意向咨询、产品反馈、普通赞美和垃圾广告 4 类，严守每天互动上限，起草回复供确认，纠纷或承诺类交你处理。',
+            files: ['content-ops/engagement/inbox.json', 'content-ops/engagement/action-log.jsonl'],
+            scripts: ['4 级分诊规则与各平台日频控上限'],
+          },
+          {
+            num: '07', title: '收数据与周复盘', gate: '',
+            what: '按 24 小时 / 72 小时 / 7 天 / 30 天回收数据，横向对比同一个选题在不同平台的表现，并把下周改进动作直接送回选题池。',
+            files: ['content-ops/analytics/snapshots.jsonl', 'content-ops/analytics/retros/YYYY-Www.md'],
+            scripts: ['aggregate_metrics.py', 'build_boards.py'],
+          },
+        ],
+        detailHeaders: ['这一步帮你做什么', '本地留存文件', '内置配套工具'],
+        channelsHeading: '两种正规发布方式，守住账号安全',
+        channelsSub: '不需要先折腾开发者账号就能上手；如果你本来就有官方 API 凭证，也可以直接切到高速接口模式。',
+        dualTracks: [
+          {
+            badge: '默认推荐 · 零配置 · 14 平台全支持',
+            badgeCls: 'badge-ok',
+            title: '直接操作官方浏览器后台',
+            desc: '助手在你的浏览器里打开各平台官方创作者后台，像真人一样传本地图片视频、填标题封面、存成草稿，并在点“发布”前停下来等你确认。',
+            bullets: [
+              '覆盖全部 14 个国内外平台，装上当天就能开跑',
+              '不用申请开发者权限、不用配 OAuth、不用额外准备图床',
+              '遇到扫码登录、二次验证或验证码立刻暂停交给你操作',
+            ],
+          },
+          {
+            badge: '进阶可选 · 12 平台支持官方 API',
+            badgeCls: 'badge-accent',
+            title: '对接各平台官方开放接口',
+            desc: '如果你已经持有官方开发者凭证，可直接调用内置 Python 脚本发帖、传素材、回读数据。凭证只留在你本机，没有后台常驻进程，也不由任何第三方托管。',
+            bullets: [
+              '公众号、X、YouTube、TikTok、LinkedIn 均已内置本地传图/传视频命令',
+              '短期凭证支持发前按需现刷（X / 公众号 / YouTube / TikTok）',
+              'IG / FB / Threads / Pinterest 走接口时，可配合 `ducoro-cli media upload` 获取 5 小时临时链接',
+            ],
+          },
+        ],
+        legitGuardrail: '账号安全底线：绝不偷取浏览器 Cookie 冒充请求、绝不调用非官方逆向接口、绝不托管你的账号密码、绝不绕过验证码——只走官方网页后台或官方开放接口。',
+        platformsHeading: '14 个平台，各有各的原生打法',
+        platformsSub: '小红书的 3:4 封面、抖音的前 3 秒钩子、X 的字数与串文、公众号的长文排版，各平台规矩完全不同。我们把 14 个平台分开维护，发哪个才调哪个的打法和规格检查。',
+        filters: [
+          ['all', '全部平台 (14)'],
+          ['cn', '国内平台 (6)'],
+          ['global', '海外平台 (8)'],
+          ['api', '浏览器 + 官方 API (12)'],
+          ['browser-only', '仅官方浏览器后台 (2)'],
+        ],
+        boardsHeading: '自带 5 张实时工作展板，进度一眼看清',
+        boardsSub: '在电脑里直接双击即可当作清爽网页查看；在 Ducoro 里打开时，点任意卡片就能把审批、回复或复盘想法一键带进对话输入框，数据一更新展板就自动刷新。',
+        boardMetaLabels: ['可以让助手直接帮你切这些视图', '一键发进对话协同'],
+        topoHeading: '一个人全包，或拆成多个专职空间接力',
+        topoSub: '只需安装这一次——小起步用一个空间管到底，做大后可以拆成多个专职空间分工配合，共享同一份本地文件夹。',
+        topos: [
+          {
+            badge: '个人主理人 / 轻量起步',
+            badgeCls: 'badge-ok',
+            title: '单空间全流程运转',
+            desc: '在一个空间里从找选题一直管到周复盘，所有草稿、排期和展板都在同一个 content-ops/ 目录里。',
+            bullets: [
+              '最快上手：一条初始化命令建好目录和全部 5 张展板',
+              '所有进展同屏可见，省心不来回切窗口',
+              '适合由一位主理人搭配一个主助手日常推进',
+            ],
+          },
+          {
+            badge: '多账号矩阵 / 高频运营',
+            badgeCls: 'badge-accent',
+            title: '多空间按角色分工接力',
+            desc: '分别开「热点与评论监控」「内容撰写」「排期与发布」等专职空间，共同指向同一个本地目录，各自只改自己负责的文件，互不打架。',
+            bullets: [
+              '监控与复盘空间：负责收料、评论收件箱和数据快照',
+              '撰写空间：负责选题、母稿和各平台改写版本',
+              '发布空间：负责日历排期、发前防改核验与上线台账',
+            ],
+          },
+        ],
+        quickHeading: '3 分钟快速上手',
+        quickSub: '只需电脑自带的 Python 3 就能跑完核心流程（仅在需要自动裁剪图片或加水印时可选安装 Pillow）。',
+        copy: '复制命令',
+        copied: '已复制',
+        footerLeft: 'Ducoro 官方插件 · content-operations · Apache-2.0 开源许可',
+        footerReadme: '查看完整文字版 README.md →',
+      },
+    };
+
+    const PLATFORMS = [
+      { id: 'xiaohongshu', region: 'cn', api: false, nameEn: 'Xiaohongshu (RED)', nameZh: '小红书', studio: 'creator.xiaohongshu.com', modesEn: 'Photo carousel (18), Video', modesZh: '图文（最多 18 张）、视频', limitsEn: 'Title <=20 · Body <=1000 · 3:4 cover', limitsZh: '标题 ≤20 字 · 正文 ≤1000 字 · 3:4 封面', apiNoteEn: 'Official browser studio (draft -> your approval)', apiNoteZh: '官方创作者后台（存草稿 → 你拍板发布）', metricEn: 'Save rate · Cover CTR', metricZh: '收藏率 · 封面点击率' },
+      { id: 'douyin', region: 'cn', api: true, nameEn: 'Douyin', nameZh: '抖音', studio: 'creator.douyin.com', modesEn: 'Short video, Photo carousel (12)', modesZh: '竖屏短视频、图文（最多 12 张）', limitsEn: 'Title <=30 · Text <=1000 · 9:16', limitsZh: '标题 ≤30 字 · 正文 ≤1000 字 · 9:16 竖屏', apiNoteEn: 'Browser publish + Official API stats readback', apiNoteZh: '浏览器发稿 + 官方 API 查视频与粉丝数据', metricEn: '3s hold · Completion rate', metricZh: '3 秒完播 · 全片完播率' },
+      { id: 'bilibili', region: 'cn', api: true, nameEn: 'Bilibili', nameZh: '哔哩哔哩 (B站)', studio: 'member.bilibili.com', modesEn: 'Long & mid-form video (up to 4 GB)', modesZh: '中长视频（支持最高 4 GB）', limitsEn: 'Title <=79 · Partition & copyright required', limitsZh: '标题 ≤79 字 · 需选分区与原创声明', apiNoteEn: 'Browser default + Official OpenAPI v2', apiNoteZh: '默认浏览器投稿 + 可选官方 OpenAPI 2.0', metricEn: 'Triple-action · Coin ratio', metricZh: '一键三连率 · 投币比' },
+      { id: 'wechat-official', region: 'cn', api: true, nameEn: 'WeChat Official Account', nameZh: '微信公众号', studio: 'mp.weixin.qq.com', modesEn: 'Long-form HTML articles', modesZh: '深度图文长文', limitsEn: 'Title <=64 · Body <=20k · 2.35:1 cover', limitsZh: '标题 ≤64 字 · 正文 ≤2 万字 · 2.35:1 封面', apiNoteEn: 'Browser default + Official draft/upload/stats API', apiNoteZh: '默认网页草稿箱 + 可选官方传图/草稿/发布/统计接口', metricEn: 'Open rate · Finish reading', metricZh: '打开率 · 完读率与转发' },
+      { id: 'wechat-channels', region: 'cn', api: false, nameEn: 'WeChat Channels', nameZh: '微信视频号', studio: 'channels.weixin.qq.com', modesEn: 'Video, Photo set (9)', modesZh: '短视频、图文（最多 9 张）', limitsEn: 'Short title <=16 · Body <=1000', limitsZh: '短标题 ≤16 字 · 描述 ≤1000 字', apiNoteEn: 'Official browser studio (draft -> your approval)', apiNoteZh: '官方视频号助手（存草稿 → 你拍板发布）', metricEn: 'Private-chat shares · Watch time', metricZh: '私域转发率 · 完播率' },
+      { id: 'kuaishou', region: 'cn', api: true, nameEn: 'Kuaishou (Kwai)', nameZh: '快手', studio: 'cp.kuaishou.com', modesEn: 'Short vertical video (9:16)', modesZh: '竖屏短视频（9:16）', limitsEn: 'Title <=30 · Text <=1000 · <=4 tags', limitsZh: '标题 ≤30 字 · 正文 ≤1000 字 · ≤4 个话题', apiNoteEn: 'Browser default + Official OpenAPI readback', apiNoteZh: '默认浏览器发布 + 可选官方 OpenAPI 回读', metricEn: 'Repeat viewers · Completion', metricZh: '粉丝播放占比 · 完播率' },
+      { id: 'x-twitter', region: 'global', api: true, nameEn: 'X (Twitter)', nameZh: 'X (Twitter)', studio: 'x.com/compose/post', modesEn: 'Posts, Threads, Images (4), Video', modesZh: '单推、长串文、多图（4 张）、视频', limitsEn: '280 weighted chars (t.co=23, CJK=2)', limitsZh: '280 加权字符（链接=23，中文=2）· 支持串文', apiNoteEn: 'Browser default + Official API v2 upload/post/engage', apiNoteZh: '默认网页发推 + 可选官方 v2 传图/发推/互动接口', metricEn: 'Bookmark rate · Replies', metricZh: '书签收藏率 · 讨论回复率' },
+      { id: 'youtube', region: 'global', api: true, nameEn: 'YouTube', nameZh: 'YouTube', studio: 'studio.youtube.com', modesEn: 'Long-form video & Shorts', modesZh: '长视频与 Shorts 竖屏短视频', limitsEn: 'Title <=100 · Desc <=5000 · 16:9 thumb', limitsZh: '标题 ≤100 字 · 简介 ≤5000 字 · 16:9 封面', apiNoteEn: 'Browser default + Official Data API v3 upload/comments', apiNoteZh: '默认 Studio 上传 + 可选官方 v3 视频上传/封面/评论', metricEn: 'Thumbnail CTR · Watch duration', metricZh: '封面点击率 · 平均观看时长' },
+      { id: 'tiktok', region: 'global', api: true, nameEn: 'TikTok', nameZh: 'TikTok', studio: 'tiktok.com/tiktokstudio', modesEn: 'Short video, Photo mode (35)', modesZh: '竖屏短视频、图文轮播（最多 35 张）', limitsEn: 'Caption <=2200 · 9:16 · AI label', limitsZh: '文案 ≤2200 字 · 9:16 竖屏 · AIGC 标注', apiNoteEn: 'Browser default + Official v2 local file upload', apiNoteZh: '默认 Studio 上传 + 可选官方 v2 本地视频直传', metricEn: '2s hold · Full watch rate', metricZh: '2 秒留存 · 全片完播率' },
+      { id: 'instagram', region: 'global', api: true, nameEn: 'Instagram', nameZh: 'Instagram', studio: 'business.facebook.com', modesEn: 'Carousel (10), Reels, Stories', modesZh: '多图轮播（10 张）、Reels、Stories', limitsEn: 'JPEG · 4:5–1.91:1 Feed (Stories 9:16)', limitsZh: 'JPEG 格式 · Feed 4:5–1.91:1（Stories 9:16）', apiNoteEn: 'Browser default + Official Graph API (5h temp URL)', apiNoteZh: '默认网页后台 + 可选官方 Graph API（临发 5h 链接）', metricEn: 'Sends per reach · Saves', metricZh: '私信转发比 · 收藏率' },
+      { id: 'facebook', region: 'global', api: true, nameEn: 'Facebook Page', nameZh: 'Facebook 公共主页', studio: 'business.facebook.com', modesEn: 'Text/links, Photos (10), Video/Reels', modesZh: '图文链接、多图（10 张）、视频/Reels', limitsEn: 'Copy <=63k · Targets Facebook Pages', limitsZh: '长文案支持 · 面向品牌公共主页', apiNoteEn: 'Browser default + Official Pages Graph API', apiNoteZh: '默认 Business Suite + 可选官方公共主页接口', metricEn: 'Reach · Shares & discussion', metricZh: '触达人数 · 分享与讨论深度' },
+      { id: 'threads', region: 'global', api: true, nameEn: 'Threads', nameZh: 'Threads', studio: 'threads.net', modesEn: 'Short posts, Carousel (10), Video', modesZh: '短帖、多图轮播（10 张）、短视频', limitsEn: 'Text <=500 · 1 native topic tag', limitsZh: '正文 ≤500 字 · 支持 1 个原生话题标签', apiNoteEn: 'Browser default + Official Threads API & replies', apiNoteZh: '默认网页发帖 + 可选官方单条/轮播/回复管理', metricEn: 'Reply-to-view · Quotes', metricZh: '回复占比 · 引用转发量' },
+      { id: 'linkedin', region: 'global', api: true, nameEn: 'LinkedIn', nameZh: 'LinkedIn', studio: 'linkedin.com/feed', modesEn: 'Text, Images (9), Video, Docs', modesZh: '行业长帖、多图（9 张）、视频、文档', limitsEn: 'Copy <=3000 · Strong 2-line opening', limitsZh: '正文 ≤3000 字 · 重视前两行展开钩子', apiNoteEn: 'Browser default + Official REST image/post/comments', apiNoteZh: '默认网页发帖 + 可选官方传图/发帖/评论接口', metricEn: 'See-more rate · Peer comments', metricZh: '展开阅读率 · 同行评论数' },
+      { id: 'pinterest', region: 'global', api: true, nameEn: 'Pinterest', nameZh: 'Pinterest', studio: 'pinterest.com/pin-creation-tool', modesEn: '2:3 Vertical Pins, Video Pins', modesZh: '2:3 竖图 Pin、视频 Pin', limitsEn: 'Title <=100 · Desc <=800 · Board required', limitsZh: '标题 ≤100 字 · 描述 ≤800 字 · 需指定画板', apiNoteEn: 'Browser default + Official API v5 (5h temp URL)', apiNoteZh: '默认网页创建 + 可选官方 API v5（临发 5h 链接）', metricEn: 'Outbound clicks · Saves', metricZh: '外链点击率 · 长期收藏量' },
+    ];
+
+    const BOARDS = [
+      {
+        id: 'calendar-board',
+        nameEn: 'Calendar Board', nameZh: '发布日历',
+        descEn: 'See every upcoming post in a monthly or 7-day view with seasonal holiday reminders, platform/status filters, and one-click approval staging.',
+        descZh: '按月或未来 7 天查看所有排期，自带全年营销节点提醒和平台/状态筛选，点一下就能把待审坑位发进对话拍板。',
+        cmdsEn: ['Switch month / week view', 'Jump to a date', 'Filter by platform', 'Highlight a specific slot'],
+        cmdsZh: ['切换月视图 / 未来 7 天', '定位到指定日期', '按平台筛选', '高亮某个排期坑位'],
+        draftEn: 'Click any awaiting slot to prefill a publish approval message in chat',
+        draftZh: '点击待审坑位，一键把发布确认消息填进对话输入框',
+        kpisEn: [['Scheduled Slots', '12'], ['Waiting for You', '3'], ['Published', '9']],
+        kpisZh: [['总排期数', '12'], ['待你拍板', '3'], ['已发布', '9']],
+        rowsEn: [
+          ['Nov 25 10:00 · X Thread', 'approved', 'badge-ok'],
+          ['Nov 25 18:00 · Xiaohongshu 3:4', 'awaiting approval', 'badge-warn'],
+          ['Nov 26 09:30 · WeChat Official', 'planned', 'badge-accent'],
+        ],
+        rowsZh: [
+          ['11/25 10:00 · X 长串文', '已批准', 'badge-ok'],
+          ['11/25 18:00 · 小红书 3:4 图文', '等你拍板', 'badge-warn'],
+          ['11/26 09:30 · 微信公众号长文', '计划中', 'badge-accent'],
+        ],
+      },
+      {
+        id: 'pipeline-board',
+        nameEn: 'Pipeline Board', nameZh: '内容生产看板',
+        descEn: 'Follow every piece from raw inspiration and scored topics through drafting, format-check alerts, and ready-to-schedule status.',
+        descZh: '4 栏进度板一眼看清库存：刚收进来的点子、打完分的候选选题、正在写的稿件（含格式告警）以及已就绪待排期的成稿。',
+        cmdsEn: ['Filter by campaign plan', 'Filter by platform', 'Highlight a topic or draft'],
+        cmdsZh: ['按专题计划筛选', '按目标平台筛选', '高亮指定选题或草稿'],
+        draftEn: 'Greenlight a shortlisted topic or ask your assistant to fix a format alert',
+        draftZh: '一键拍板通过高分选题，或点一下让助手修复格式告警',
+        kpisEn: [['Inbox Ideas', '8'], ['Ready Drafts', '4'], ['Format Alerts', '1']],
+        kpisZh: [['待整理点子', '8'], ['就绪成稿', '4'], ['格式告警', '1']],
+        rowsEn: [
+          ['[Topic 4.6] Multi-Platform Teardown', 'shortlisted', 'badge-accent'],
+          ['[Draft] Launch Visual Comparison', 'IG ratio alert', 'badge-danger'],
+          ['[Draft] Weekly Operator Notes #12', 'ready', 'badge-ok'],
+        ],
+        rowsZh: [
+          ['[选题 4.6分] 多平台实操拆解', '待拍板', 'badge-accent'],
+          ['[草稿] 产品对比视觉图', 'IG 比例告警', 'badge-danger'],
+          ['[草稿] 主理人周记 #12', '已就绪', 'badge-ok'],
+        ],
+      },
+      {
+        id: 'publish-ledger-board',
+        nameEn: 'Publish Ledger Board', nameZh: '账号与发布台账',
+        descEn: 'Check the health of every connected account alongside a permanent publish log with clickable live URLs and clear failure notes.',
+        descZh: '上半区看各平台账号状态（正常 / 即将过期 / 浏览器模式），下半区留存每一篇发出去的真实公开链接与失败原因，全程可追溯。',
+        cmdsEn: ['Filter by platform', 'Show failed records only', 'Highlight a publish record'],
+        cmdsZh: ['按平台筛选', '只看失败记录', '高亮某条发布记录'],
+        draftEn: 'Trigger a re-auth check for expiring tokens or diagnose a failed publish',
+        draftZh: '一键发起过期账号检查，或把失败记录发进对话排查原因',
+        kpisEn: [['Healthy Accounts', '12'], ['Needs Attention', '1'], ['Verified Live', '28']],
+        kpisZh: [['正常账号', '12'], ['需关注', '1'], ['已核验上线', '28']],
+        rowsEn: [
+          ['X · @brand · 10:02 UTC', 'published ✓', 'badge-ok'],
+          ['Xiaohongshu · browser · 11:15', 'draft saved', 'badge-accent'],
+          ['Instagram · @brand · 12:00', 'failed (retry)', 'badge-danger'],
+        ],
+        rowsZh: [
+          ['X · @brand · 18:02', '已核验上线 ✓', 'badge-ok'],
+          ['小红书 · 浏览器模式 · 19:15', '已存草稿', 'badge-accent'],
+          ['Instagram · @brand · 20:00', '失败待重试', 'badge-danger'],
+        ],
+      },
+      {
+        id: 'engagement-inbox-board',
+        nameEn: 'Engagement Inbox Board', nameZh: '互动收件箱',
+        descEn: 'Review comments grouped by intent—with drafted replies ready to approve, spam safely muted, and daily interaction meters per platform.',
+        descZh: '按高意向咨询、产品反馈、普通互动、垃圾广告分类查看评论，自动隐藏垃圾评论的回复按钮，并实时盯着每个平台今天的互动限额。',
+        cmdsEn: ['Switch intent tab', 'Filter by platform', 'Highlight a specific comment'],
+        cmdsZh: ['切换评论分类标签', '按平台筛选', '高亮某条评论'],
+        draftEn: 'Approve a drafted reply or turn a great reader question into next week\'s topic',
+        draftZh: '一键确认回复草稿，或把读者精彩提问直接转成下期选题',
+        kpisEn: [['Open Comments', '14'], ['High Intent', '4'], ['Waiting Confirm', '3']],
+        kpisZh: [['待处理评论', '14'], ['高意向咨询', '4'], ['待你确认', '3']],
+        rowsEn: [
+          ['[High Intent] "Can I start without API keys?"', 'draft ready', 'badge-ok'],
+          ['[Feedback] "Would love a 4:5 checklist template"', 'turn into topic', 'badge-warn'],
+          ['[Spam] "Buy 10k followers..."', 'reply hidden', 'badge-danger'],
+        ],
+        rowsZh: [
+          ['[高意向] "没有开发者账号能直接用吗？"', '回复已起草', 'badge-ok'],
+          ['[产品反馈] "想要一份 4:5 封面清单模板"', '可转成选题', 'badge-warn'],
+          ['[垃圾广告] "专业刷粉..."', '已屏蔽回复', 'badge-danger'],
+        ],
+      },
+      {
+        id: 'analytics-retro-board',
+        nameEn: 'Analytics & Retro Board', nameZh: '数据与复盘展板',
+        descEn: 'Switch cleanly across 7 / 14 / 30 days with synced KPIs, daily views trend, follower snapshots, same-topic cross-platform results, and weekly takeaways.',
+        descZh: '7 / 14 / 30 天窗口一键切换，KPI、趋势图和作品排行同步联动；同屏看账号涨粉、同一选题在不同平台的表现差异，以及下周改进动作。',
+        cmdsEn: ['Switch 7d / 14d / 30d window', 'Inspect one platform\'s native metrics', 'Highlight a work'],
+        cmdsZh: ['切换 7 / 14 / 30 天窗口', '查看单平台专属指标', '高亮某篇作品'],
+        draftEn: 'Recycle any weekly retrospective takeaway straight into next cycle\'s topic inbox',
+        draftZh: '点一下把复盘结论直接送进下一轮选题池，形成正循环',
+        kpisEn: [['Tracked Works', '18'], ['Total Views (14d)', '84,200'], ['Avg Engagement', '6.42%']],
+        kpisZh: [['追踪作品', '18'], ['14 天总阅读', '84,200'], ['平均互动率', '6.42%']],
+        rowsEn: [
+          ['Same Topic #08: X (28.4k) vs IG (19.2k)', '2 platforms', 'badge-accent'],
+          ['Account Snapshot: IG 9,800 followers', '+420 / 7d', 'badge-ok'],
+          ['Next Action: Double down on 4:5 checklists', 'send to inbox', 'badge-warn'],
+        ],
+        rowsZh: [
+          ['同题横评 #08：X (2.84万) vs IG (1.92万)', '2 平台对比', 'badge-accent'],
+          ['账号快照：IG 9,800 粉丝', '7 天 +420', 'badge-ok'],
+          ['下周动作：加码 4:5 清单类图文', '送回选题池', 'badge-warn'],
+        ],
+      },
+    ];
+
+    const QUICK_SNIPPET = {
+      en: `# 1. Create your local content-ops/ folder and all 5 live dashboards
+python3 skills/content-ops-loop/scripts/init_workspace.py . --timezone Asia/Shanghai
+
+# 2. Score new topic ideas and flag anything repeated within 14 days
+python3 skills/topic-research/scripts/score_topics.py ./content-ops
+
+# 3. Check every platform variant's text, images, ratios, and required fields
+python3 skills/media-production/scripts/check_media_specs.py ./content-ops/drafts/<draft-id> --update-meta
+
+# 4. Publish via Official Browser Studio (default, zero setup)
+#    Or if using Instagram/Facebook/Threads/Pinterest official APIs,
+#    stage a 5-hour public URL right before publishing:
+ducoro-cli media upload ./content-ops/drafts/<draft-id>/assets/cover.jpg --json
+
+# 5. Roll up analytics, verify workspace files, and refresh all 5 dashboards
+python3 skills/engagement-and-analytics/scripts/aggregate_metrics.py ./content-ops --days 14
+python3 skills/content-ops-loop/scripts/validate_workspace.py ./content-ops
+python3 skills/content-ops-loop/scripts/build_boards.py ./content-ops`,
+      zh: `# 1. 一键建好本地 content-ops/ 工作区和全部 5 张实时展板
+python3 skills/content-ops-loop/scripts/init_workspace.py . --timezone Asia/Shanghai
+
+# 2. 给候选选题自动打分，并排查近 14 天内是否撞题
+python3 skills/topic-research/scripts/score_topics.py ./content-ops
+
+# 3. 发布前自动核对各平台字数、图片格式、画面比例与必填项
+python3 skills/media-production/scripts/check_media_specs.py ./content-ops/drafts/<draft-id> --update-meta
+
+# 4. 默认直接通过浏览器进官方创作者后台发稿（零配置）；
+#    若使用 IG / FB / Threads / Pinterest 官方 API，临发前先换 5 小时临时链接：
+ducoro-cli media upload ./content-ops/drafts/<draft-id>/assets/cover.jpg --json
+
+# 5. 汇总数据复盘、校验工作区完整性并刷新 5 张展板
+python3 skills/engagement-and-analytics/scripts/aggregate_metrics.py ./content-ops --days 14
+python3 skills/content-ops-loop/scripts/validate_workspace.py ./content-ops
+python3 skills/content-ops-loop/scripts/build_boards.py ./content-ops`,
+    };
+
+    let lang = (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+    let activeStep = 0;
+    let platFilter = 'all';
+    let activeBoard = 0;
+
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    function render() {
+      const t = COPY[lang];
+      document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      document.getElementById('langBtn').textContent = t.langToggle;
+      document.getElementById('themeBtn').textContent = t.themeToggle;
+      document.getElementById('topNav').innerHTML = t.nav.map(([href, label]) => `<a href="${href}">${esc(label)}</a>`).join('');
+
+      document.getElementById('heroEyebrow').textContent = t.eyebrow;
+      document.getElementById('heroTitle').textContent = t.title;
+      document.getElementById('heroLead').textContent = t.lead;
+      document.getElementById('heroMetrics').innerHTML = t.metrics.map(([v, l]) =>
+        `<div class="metric"><div class="metric-val">${esc(v)}</div><div class="metric-lbl">${esc(l)}</div></div>`
+      ).join('');
+
+      document.getElementById('loopHeading').textContent = t.loopHeading;
+      document.getElementById('loopSub').textContent = t.loopSub;
+      document.getElementById('loopStrip').innerHTML = t.steps.map((s, idx) => `
+        <button class="step-btn${idx === activeStep ? ' active' : ''}" data-step="${idx}" type="button">
+          <div class="step-num">${esc(s.num)}</div>
+          <div class="step-title">${esc(s.title)}</div>
+          ${s.gate ? `<span class="step-gate">${esc(s.gate)}</span>` : ''}
+        </button>`).join('');
+      const st = t.steps[activeStep];
+      document.getElementById('loopDetail').innerHTML = `
+        <div class="detail-box"><h3>${esc(t.detailHeaders[0])}</h3><p>${esc(st.what)}</p></div>
+        <div class="detail-box"><h3>${esc(t.detailHeaders[1])}</h3><ul>${st.files.map((f) => `<li><code>${esc(f)}</code></li>`).join('')}</ul></div>
+        <div class="detail-box"><h3>${esc(t.detailHeaders[2])}</h3><ul>${st.scripts.map((sc) => `<li>${esc(sc)}</li>`).join('')}</ul></div>`;
+
+      document.getElementById('channelsHeading').textContent = t.channelsHeading;
+      document.getElementById('channelsSub').textContent = t.channelsSub;
+      document.getElementById('dualTrackCards').innerHTML = t.dualTracks.map((c) => `
+        <article class="card">
+          <span class="badge ${c.badgeCls}">${esc(c.badge)}</span>
+          <h3>${esc(c.title)}</h3>
+          <p>${esc(c.desc)}</p>
+          <ul>${c.bullets.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>
+        </article>`).join('');
+      document.getElementById('legitGuardrail').textContent = t.legitGuardrail;
+
+      document.getElementById('platformsHeading').textContent = t.platformsHeading;
+      document.getElementById('platformsSub').textContent = t.platformsSub;
+      document.getElementById('platFilters').innerHTML = t.filters.map(([k, lbl]) =>
+        `<button class="pill-btn${platFilter === k ? ' active' : ''}" data-pfilter="${k}" type="button">${esc(lbl)}</button>`
+      ).join('');
+      const filtered = PLATFORMS.filter((p) => {
+        if (platFilter === 'cn') return p.region === 'cn';
+        if (platFilter === 'global') return p.region === 'global';
+        if (platFilter === 'api') return p.api;
+        if (platFilter === 'browser-only') return !p.api;
+        return true;
+      });
+      document.getElementById('platGrid').innerHTML = filtered.map((p) => `
+        <article class="plat-card">
+          <div class="plat-head">
+            <span class="plat-name">${esc(lang === 'zh' ? p.nameZh : p.nameEn)}</span>
+            <span class="badge ${p.api ? 'badge-accent' : 'badge-ok'}">${p.api ? (lang === 'zh' ? '浏览器 + 官方 API' : 'Browser + API') : (lang === 'zh' ? '官方浏览器' : 'Browser Only')}</span>
+          </div>
+          <div class="plat-meta"><code>platform-${esc(p.id)}</code> · ${esc(p.studio)}</div>
+          <div class="plat-meta">${esc(lang === 'zh' ? p.modesZh : p.modesEn)} · ${esc(lang === 'zh' ? p.limitsZh : p.limitsEn)}</div>
+          <div class="plat-meta">${esc(lang === 'zh' ? p.apiNoteZh : p.apiNoteEn)}</div>
+          <div class="plat-tags"><span class="badge badge-warn">${esc(lang === 'zh' ? p.metricZh : p.metricEn)}</span></div>
+        </article>`).join('');
+
+      document.getElementById('boardsHeading').textContent = t.boardsHeading;
+      document.getElementById('boardsSub').textContent = t.boardsSub;
+      document.getElementById('boardTabs').innerHTML = BOARDS.map((b, idx) =>
+        `<button class="pill-btn${activeBoard === idx ? ' active' : ''}" data-board="${idx}" type="button">${esc(lang === 'zh' ? b.nameZh : b.nameEn)}</button>`
+      ).join('');
+      const bd = BOARDS[activeBoard];
+      const bKpis = lang === 'zh' ? bd.kpisZh : bd.kpisEn;
+      const bRows = lang === 'zh' ? bd.rowsZh : bd.rowsEn;
+      const bCmds = lang === 'zh' ? bd.cmdsZh : bd.cmdsEn;
+      const bDraft = lang === 'zh' ? bd.draftZh : bd.draftEn;
+      document.getElementById('boardStage').innerHTML = `
+        <div class="mock-frame">
+          <div class="mock-bar"><span>${esc(lang === 'zh' ? bd.nameZh : bd.nameEn)}</span><code>${esc(bd.id)}/</code></div>
+          <div class="mock-kpis">${bKpis.map(([l, v]) => `<div class="mock-kpi"><small>${esc(l)}</small><strong>${esc(v)}</strong></div>`).join('')}</div>
+          <div class="mock-rows">${bRows.map(([text, tag, cls]) => `<div class="mock-row"><span>${esc(text)}</span><span class="badge ${cls}">${esc(tag)}</span></div>`).join('')}</div>
+        </div>
+        <div>
+          <h3 style="margin:0 0 8px">${esc(lang === 'zh' ? bd.nameZh : bd.nameEn)}</h3>
+          <p style="margin:0 0 14px;color:var(--muted);font-size:14px">${esc(lang === 'zh' ? bd.descZh : bd.descEn)}</p>
+          <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px">${esc(t.boardMetaLabels[0])}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${bCmds.map((c) => `<span class="badge badge-accent">${esc(c)}</span>`).join('')}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px">${esc(t.boardMetaLabels[1])}</div>
+          <div style="font-size:13.5px">${esc(bDraft)}</div>
+        </div>`;
+
+      document.getElementById('topoHeading').textContent = t.topoHeading;
+      document.getElementById('topoSub').textContent = t.topoSub;
+      document.getElementById('topoCards').innerHTML = t.topos.map((c) => `
+        <article class="card">
+          <span class="badge ${c.badgeCls}">${esc(c.badge)}</span>
+          <h3>${esc(c.title)}</h3>
+          <p>${esc(c.desc)}</p>
+          <ul>${c.bullets.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>
+        </article>`).join('');
+
+      document.getElementById('quickHeading').textContent = t.quickHeading;
+      document.getElementById('quickSub').textContent = t.quickSub;
+      document.getElementById('quickCode').textContent = QUICK_SNIPPET[lang];
+      document.getElementById('copyCmdBtn').textContent = t.copy;
+
+      document.getElementById('footerLeft').textContent = t.footerLeft;
+      document.getElementById('footerReadmeLink').textContent = t.footerReadme;
+    }
+
+    document.getElementById('langBtn').addEventListener('click', () => {
+      lang = lang === 'en' ? 'zh' : 'en';
+      render();
+    });
+
+    document.getElementById('themeBtn').addEventListener('click', () => {
+      const cur = document.documentElement.dataset.theme;
+      const darkPref = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDark = cur ? cur === 'dark' : darkPref;
+      document.documentElement.dataset.theme = isDark ? 'light' : 'dark';
+    });
+
+    document.getElementById('loopStrip').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-step]');
+      if (!btn) return;
+      activeStep = Number(btn.dataset.step);
+      render();
+    });
+
+    document.getElementById('platFilters').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-pfilter]');
+      if (!btn) return;
+      platFilter = btn.dataset.pfilter;
+      render();
+    });
+
+    document.getElementById('boardTabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-board]');
+      if (!btn) return;
+      activeBoard = Number(btn.dataset.board);
+      render();
+    });
+
+    document.getElementById('copyCmdBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('copyCmdBtn');
+      try {
+        await navigator.clipboard.writeText(QUICK_SNIPPET[lang]);
+        btn.textContent = COPY[lang].copied;
+        setTimeout(() => { btn.textContent = COPY[lang].copy; }, 1600);
+      } catch {
+        btn.textContent = COPY[lang].copy;
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>

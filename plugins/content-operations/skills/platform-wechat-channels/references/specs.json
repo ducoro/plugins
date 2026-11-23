@@ -1,0 +1,29 @@
+{
+  "platform": "wechat-channels",
+  "displayName": "WeChat Channels",
+  "authType": "browser_session",
+  "contentLimits": {
+    "modes": ["video", "image_text"],
+    "maxTitleLength": 16,
+    "maxBodyLength": 1000,
+    "maxImages": 9,
+    "maxVideos": 1,
+    "allowMixedMedia": false
+  },
+  "mediaRules": {
+    "imageFormats": ["jpg", "jpeg", "png", "bmp"],
+    "videoFormats": ["mp4", "avi", "mkv", "mov", "flv", "rmvb", "wmv", "webm"],
+    "maxImageSizeBytes": 20971520,
+    "maxVideoSizeBytes": 1073741824,
+    "maxVideoDurationSec": 3600
+  },
+  "topic": {
+    "supported": true,
+    "nativeField": true
+  },
+  "publishPolicy": {
+    "completionStrategy": "browser_draft_human_confirm",
+    "scheduleByPlatform": true,
+    "updateSupported": false
+  }
+}

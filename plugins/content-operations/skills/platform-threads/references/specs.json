@@ -1,0 +1,30 @@
+{
+  "platform": "threads",
+  "displayName": "Threads",
+  "authType": "oauth2",
+  "contentLimits": {
+    "modes": ["text", "image_text", "video"],
+    "maxBodyLength": 500,
+    "maxTotalTextLength": 500,
+    "maxImages": 10,
+    "maxVideos": 1,
+    "allowMixedMedia": false
+  },
+  "mediaRules": {
+    "imageFormats": ["jpg", "jpeg", "png"],
+    "videoFormats": ["mp4", "mov"],
+    "maxImageSizeBytes": 8388608,
+    "maxVideoSizeBytes": 1073741824,
+    "maxVideoDurationSec": 300
+  },
+  "topic": {
+    "supported": true,
+    "nativeField": true,
+    "maxCount": 1
+  },
+  "publishPolicy": {
+    "completionStrategy": "polling",
+    "scheduleByPlatform": false,
+    "updateSupported": false
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "platform": "douyin",
+  "displayName": "Douyin",
+  "authType": "oauth2_or_browser",
+  "contentLimits": {
+    "modes": ["image_text", "video"],
+    "maxTitleLength": 30,
+    "maxBodyLength": 1000,
+    "maxTotalTextLength": 1000,
+    "maxImages": 12,
+    "maxVideos": 1,
+    "allowMixedMedia": false
+  },
+  "mediaRules": {
+    "imageFormats": ["jpg", "jpeg", "png", "bmp"],
+    "videoFormats": ["mp4", "avi", "mkv", "mov"],
+    "maxImageSizeBytes": 20971520,
+    "maxVideoSizeBytes": 104857600,
+    "maxVideoDurationSec": 900
+  },
+  "topic": {
+    "supported": true,
+    "nativeField": true,
+    "maxCount": 5
+  },
+  "publishPolicy": {
+    "completionStrategy": "user_handoff_or_browser",
+    "scheduleByPlatform": true,
+    "updateSupported": false
+  }
+}

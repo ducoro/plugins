@@ -1,0 +1,30 @@
+{
+  "platform": "xiaohongshu",
+  "displayName": "Xiaohongshu (RedNote)",
+  "authType": "browser_session",
+  "contentLimits": {
+    "modes": ["image_text", "video"],
+    "maxTitleLength": 20,
+    "maxBodyLength": 1000,
+    "maxImages": 9,
+    "maxVideos": 1,
+    "allowMixedMedia": false
+  },
+  "mediaRules": {
+    "imageFormats": ["jpg", "jpeg", "png", "bmp", "webp"],
+    "videoFormats": ["mp4", "avi", "mkv", "mov", "webm"],
+    "maxImageSizeBytes": 20971520,
+    "maxVideoSizeBytes": 1073741824,
+    "maxVideoDurationSec": 3600
+  },
+  "topic": {
+    "supported": true,
+    "nativeField": true,
+    "maxCount": 5
+  },
+  "publishPolicy": {
+    "completionStrategy": "browser_draft_human_confirm",
+    "scheduleByPlatform": true,
+    "updateSupported": false
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "platform": "pinterest",
+  "displayName": "Pinterest",
+  "authType": "oauth2",
+  "contentLimits": {
+    "modes": ["image_text", "video"],
+    "maxTitleLength": 100,
+    "maxBodyLength": 800,
+    "maxImages": 1,
+    "maxVideos": 1,
+    "allowMixedMedia": false
+  },
+  "mediaRules": {
+    "imageFormats": ["bmp", "jpg", "jpeg", "png", "tiff", "webp"],
+    "videoFormats": ["mp4", "m4v", "mov"],
+    "maxImageSizeBytes": 20971520,
+    "maxVideoDurationSec": 300
+  },
+  "requiredOptions": ["board_id"],
+  "topic": {
+    "supported": false,
+    "nativeField": false
+  },
+  "publishPolicy": {
+    "completionStrategy": "sync",
+    "scheduleByPlatform": false,
+    "updateSupported": true
+  }
+}

@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Analytics &amp; Retrospective Board</title>
+  <style>
+    :root {
+      --bg: #f7f8fa; --surface: #ffffff; --surface-alt: #f1f3f7; --text: #111827;
+      --muted: #5b6472; --border: #e2e6ee; --accent: #2563eb;
+      --ok: #15803d; --ok-bg: #dcfce7; --warn: #b45309; --warn-bg: #fef3c7;
+      --err: #b91c1c; --err-bg: #fee2e2; --info: #1d4ed8; --info-bg: #dbeafe;
+      --radius: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f131a; --surface: #171c26; --surface-alt: #1f2633; --text: #f3f4f6;
+        --muted: #9ca3af; --border: #2a3342; --accent: #60a5fa;
+        --ok: #86efac; --ok-bg: #14532d; --warn: #fcd34d; --warn-bg: #78350f;
+        --err: #fca5a5; --err-bg: #7f1d1d; --info: #93c5fd; --info-bg: #1e3a8a;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+    .shell { max-width: 1240px; margin: 0 auto; padding: 20px; }
+    h1 { margin: 0; font-size: 22px; }
+    h2 { margin: 20px 0 10px; font-size: 16px; }
+    .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0; }
+    select, button { font: inherit; font-size: 13px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 6px 10px; cursor: pointer; }
+    button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .status-bar { padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; background: var(--info-bg); color: var(--info); }
+    .status-bar[data-tone="ok"] { background: var(--ok-bg); color: var(--ok); }
+    .status-bar[data-tone="warn"] { background: var(--warn-bg); color: var(--warn); }
+    .status-bar[data-tone="error"] { background: var(--err-bg); color: var(--err); }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+    .kpi-label { font-size: 12px; color: var(--muted); }
+    .kpi-value { font-size: 22px; font-weight: 700; margin-top: 2px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+    th { font-size: 12px; color: var(--muted); background: var(--surface-alt); }
+    tr.focused { outline: 2px solid var(--accent); }
+    .native-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; }
+    .retro-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .retro-item:last-child { border-bottom: none; }
+    svg { width: 100%; height: 180px; display: block; }
+    html[data-ducoro-render='shot'] .toolbar,
+    html[data-ducoro-render='shot'] .retro-action,
+    html[data-ducoro-render='shot'] .status-bar { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="shell" data-ducoro-export-frame="analytics-summary">
+    <header data-card="analytics-header" data-card-title="Analytics & Retro">
+      <h1 data-mark-item="board-title" data-mark-label="Analytics Title">Analytics &amp; Retrospective Board</h1>
+      <div class="sub" id="subtitle">Loading analytics snapshot...</div>
+    </header>
+
+    <div class="toolbar" data-mark-ignore>
+      <button class="range-btn" data-days="7">7d</button>
+      <button class="range-btn" data-days="14">14d</button>
+      <button class="range-btn" data-days="30">30d</button>
+      <select id="platformFilter" aria-label="Filter by platform"><option value="all">All Platforms (Cross-Compare)</option></select>
+    </div>
+
+    <div class="status-bar" data-bridge-status data-mark-ignore hidden></div>
+    <section class="kpis" id="kpis" data-card="kpi-summary" data-card-title="KPI Summary"></section>
+
+    <section id="nativeSection" hidden>
+      <h2 id="nativeHeading">Platform-Native Metrics</h2>
+      <div class="native-grid" id="nativeMetrics" data-card="platform-native-metrics" data-card-title="Platform Native Metrics"></div>
+    </section>
+
+    <section id="accountSection" hidden>
+      <h2>Account Snapshots</h2>
+      <div class="native-grid" id="accountGrid" data-card="account-growth" data-card-title="Account Snapshots"></div>
+    </section>
+
+    <h2>Views &amp; Engagement Trend</h2>
+    <section class="panel" id="trendPanel" data-card="trend-chart" data-card-title="Performance Trend"></section>
+
+    <h2>Same-Topic Cross-Platform Comparison</h2>
+    <section class="panel" id="crossPanel" data-card="cross-platform" data-card-title="Cross-Platform Comparison"></section>
+
+    <h2>Top Works</h2>
+    <section class="panel" data-card="works-leaderboard" data-card-title="Works Leaderboard">
+      <table>
+        <thead><tr><th>Work</th><th>Platform</th><th>Window</th><th>Views</th><th>Likes</th><th>Comments</th><th>Saves</th><th>Eng %</th></tr></thead>
+        <tbody id="worksBody"></tbody>
+      </table>
+    </section>
+
+    <h2>Latest Retrospective &amp; Next-Cycle Actions</h2>
+    <section class="panel" id="retroPanel" data-card="retro-actions" data-card-title="Retrospective Actions"></section>
+  </div>
+
+  <script id="board-initial-data" type="application/json">
+  {"schemaVersion":1,"board":"analytics-retro-board","generatedAt":"","timezone":"UTC","platforms":[],"summary":{"totalWorks":0,"totalViews":0,"totalLikes":0,"totalComments":0,"totalShares":0,"totalSaves":0,"avgEngagementRate":0},"trend":[],"trendByPlatform":{},"crossPlatform":[],"works":[],"accountSnapshots":[],"retro":{"file":null,"title":"No retrospective recorded yet","actions":[]}}
+  </script>
+
+  <script type="module">
+    import { createBoardBridge } from './runtime/board-sdk-bridge.js';
+
+    const VALID_DAYS = [7, 14, 30];
+    let payload = null;
+    const view = { days: 14, platform: 'all', focusWorkId: '' };
+    const platEl = document.getElementById('platformFilter');
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const bridge = createBoardBridge({
+      boardId: 'analytics-retro-board',
+      defaultView: { days: 14, platform: 'all' },
+      getView: () => ({ days: view.days, platform: view.platform }),
+      onApplyView: (saved) => {
+        if (VALID_DAYS.includes(Number(saved.days))) view.days = Number(saved.days);
+        if (typeof saved.platform === 'string') view.platform = saved.platform;
+        syncInputs();
+        render();
+      },
+      onData: (next) => {
+        payload = next;
+        const plats = payload.platforms || [];
+        if (view.platform !== 'all' && !plats.includes(view.platform)) view.platform = 'all';
+        platEl.innerHTML = '<option value="all">All Platforms (Cross-Compare)</option>' +
+          plats.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+        syncInputs();
+        render();
+      },
+      commands: {
+        setRange: {
+          describe: 'Set analytics trend range window in days.',
+          params: { days: 'One of: 7, 14, 30.' },
+          run: ({ days }) => {
+            const n = Number(days);
+            if (!VALID_DAYS.includes(n)) throw new Error('days must be 7, 14, or 30');
+            view.days = n;
+            syncInputs();
+            render();
+          },
+        },
+        filterPlatform: {
+          describe: 'Filter analytics to one platform slug (revealing native metrics) or "all".',
+          params: { platform: 'Platform slug or "all".' },
+          run: ({ platform }) => {
+            const valid = ['all', ...(payload?.platforms || [])];
+            if (!valid.includes(platform)) throw new Error(`Unknown platform "${platform}". Valid values: ${valid.join(', ')}`);
+            view.platform = platform;
+            syncInputs();
+            render();
+          },
+        },
+        focusWork: {
+          describe: 'Highlight and scroll to a specific workId in the leaderboard.',
+          params: { workId: 'Exact workId from analytics/snapshots.jsonl.' },
+          run: ({ workId }) => {
+            const list = payload?.works || [];
+            const match = list.find((w) => w.workId === workId);
+            if (!match) {
+              throw new Error(`Unknown workId "${workId}". Valid IDs: ${list.map((w) => w.workId).join(', ') || '(none)'}`);
+            }
+            if (view.platform !== 'all' && match.platform !== view.platform) view.platform = 'all';
+            const workDate = String(match.capturedAt || '').slice(0, 10);
+            if (workDate) {
+              const curCutoff = new Date(Date.now() - view.days * 86400 * 1000).toISOString().slice(0, 10);
+              if (workDate < curCutoff) {
+                for (const d of VALID_DAYS) {
+                  const nextCutoff = new Date(Date.now() - d * 86400 * 1000).toISOString().slice(0, 10);
+                  if (workDate >= nextCutoff) {
+                    view.days = d;
+                    break;
+                  }
+                  view.days = 30;
+                }
+              }
+            }
+            view.focusWorkId = workId;
+            syncInputs();
+            render();
+            document.querySelector(`[data-mark-item="work-${CSS.escape(workId)}"]`)?.scrollIntoView({ behavior: 'auto', block: 'center' });
+          },
+        },
+      },
+    });
+
+    function syncInputs() {
+      platEl.value = view.platform;
+      for (const btn of document.querySelectorAll('button.range-btn[data-days]')) {
+        btn.classList.toggle('active', Number(btn.dataset.days) === view.days);
+      }
+    }
+
+    function renderTrendSvg(points) {
+      if (!points.length) return '<div class="sub">No snapshot trend data in this window yet.</div>';
+      const maxViews = Math.max(...points.map((p) => p.views), 1);
+      const w = 720;
+      const h = 160;
+      const pad = 24;
+      const step = points.length > 1 ? (w - pad * 2) / (points.length - 1) : 0;
+      const coords = points.map((p, i) => {
+        const x = points.length > 1 ? pad + i * step : w / 2;
+        const y = h - pad - ((p.views / maxViews) * (h - pad * 2));
+        return { x: Number(x.toFixed(1)), y: Number(y.toFixed(1)), ...p };
+      });
+      const poly = coords.map((c) => `${c.x},${c.y}`).join(' ');
+      return `
+        <svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Views trend">
+          <polyline fill="none" stroke="var(--accent)" stroke-width="2.5" points="${poly}" />
+          ${coords.map((c) => `<circle cx="${c.x}" cy="${c.y}" r="4" fill="var(--accent)"><title>${esc(c.date)}: ${c.views} views (${c.engagementRate}% eng)</title></circle>`).join('')}
+          ${coords.filter((_, i) => i === 0 || i === coords.length - 1 || i === Math.floor(coords.length / 2)).map((c) =>
+            `<text x="${c.x}" y="${h - 4}" font-size="11" text-anchor="middle" fill="var(--muted)">${esc(c.date)}</text>`
+          ).join('')}
+        </svg>`;
+    }
+
+    function render() {
+      if (!payload) return;
+      document.getElementById('subtitle').textContent = `Window: ${view.days}d · Synced: ${payload.generatedAt || 'not built yet'}`;
+
+      const cutoffDate = new Date(Date.now() - view.days * 86400 * 1000).toISOString().slice(0, 10);
+      let works = (payload.works || []).filter((w) => {
+        const d = String(w.capturedAt || '').slice(0, 10);
+        return !d || d >= cutoffDate;
+      });
+      if (view.platform !== 'all') works = works.filter((w) => w.platform === view.platform);
+
+      const totals = works.reduce((acc, w) => {
+        acc.views += w.views || 0;
+        acc.likes += w.likes || 0;
+        acc.comments += w.comments || 0;
+        acc.shares += w.shares || 0;
+        acc.saves += w.saves || 0;
+        return acc;
+      }, { views: 0, likes: 0, comments: 0, shares: 0, saves: 0 });
+      const inter = totals.likes + totals.comments + totals.shares + totals.saves;
+      const avgEng = totals.views > 0 ? ((inter / totals.views) * 100).toFixed(2) : '0.00';
+
+      document.getElementById('kpis').innerHTML = [
+        ['Tracked Works', works.length, 'kpi-works'],
+        ['Total Views', totals.views.toLocaleString(), 'kpi-views'],
+        ['Likes / Saves', `${totals.likes.toLocaleString()} / ${totals.saves.toLocaleString()}`, 'kpi-likes'],
+        ['Comments / Shares', `${totals.comments.toLocaleString()} / ${totals.shares.toLocaleString()}`, 'kpi-comments'],
+        ['Avg Engagement', `${avgEng}%`, 'kpi-eng'],
+      ].map(([label, val, id]) => `
+        <div class="kpi" data-mark-item="${id}" data-mark-label="${label}">
+          <div class="kpi-label">${label}</div>
+          <div class="kpi-value">${val}</div>
+        </div>`).join('');
+
+      // Platform-native metric slot when a single platform is selected
+      const nativeSection = document.getElementById('nativeSection');
+      if (view.platform !== 'all') {
+        const agg = {};
+        const counts = {};
+        for (const w of works) {
+          for (const [k, v] of Object.entries(w.platformMetrics || {})) {
+            if (typeof v === 'number') {
+              agg[k] = (agg[k] || 0) + v;
+              counts[k] = (counts[k] || 0) + 1;
+            }
+          }
+        }
+        const entries = Object.keys(agg);
+        nativeSection.hidden = entries.length === 0;
+        document.getElementById('nativeHeading').textContent = `${view.platform} Native Metrics (Average)`;
+        document.getElementById('nativeMetrics').innerHTML = entries.map((k) => `
+          <div class="kpi" data-mark-item="native-${esc(k)}" data-mark-label="${esc(k)}">
+            <div class="kpi-label">${esc(k)}</div>
+            <div class="kpi-value">${(agg[k] / counts[k]).toFixed(2)}</div>
+          </div>`).join('');
+      } else {
+        nativeSection.hidden = true;
+      }
+
+      // Account-level snapshots (followers, reach, profile views, etc.)
+      const accountSection = document.getElementById('accountSection');
+      let acctSnaps = (payload.accountSnapshots || []).slice();
+      if (view.platform !== 'all') acctSnaps = acctSnaps.filter((a) => a.platform === view.platform);
+      accountSection.hidden = acctSnaps.length === 0;
+      document.getElementById('accountGrid').innerHTML = acctSnaps.map((a) => {
+        const aid = a.accountId || a.platform || 'account';
+        const metricText = Object.entries(a.metrics || {})
+          .filter(([, v]) => typeof v === 'number' || typeof v === 'string')
+          .map(([k, v]) => `${esc(k)}: ${typeof v === 'number' ? v.toLocaleString() : esc(v)}`)
+          .join(' · ') || 'No metrics';
+        return `
+          <div class="kpi" data-mark-item="acct-${esc(aid)}" data-mark-label="Account ${esc(aid)}">
+            <div class="kpi-label">${esc(a.platform || 'account')} · ${esc(aid)}</div>
+            <div class="kpi-value" style="font-size:15px">${metricText}</div>
+          </div>`;
+      }).join('');
+
+      const rawTrend = (payload.trendByPlatform && payload.trendByPlatform[view.platform]) || (view.platform === 'all' ? (payload.trend || []) : []);
+      const trendPoints = rawTrend.filter((p) => p.date >= cutoffDate);
+      document.getElementById('trendPanel').innerHTML = renderTrendSvg(trendPoints);
+
+      const visibleIds = new Set(works.map((w) => `${w.platform}:${w.workId}`));
+      const cross = (payload.crossPlatform || [])
+        .map((row) => ({
+          ...row,
+          entries: (row.entries || []).filter((e) => visibleIds.has(`${e.platform}:${e.workId}`)),
+        }))
+        .filter((row) => row.entries.length >= 2);
+      document.getElementById('crossPanel').innerHTML = cross.length === 0
+        ? '<div class="sub">Publish the same topicId to 2+ platforms to unlock side-by-side comparison.</div>'
+        : `<table><thead><tr><th>Topic ID</th><th>Platform Breakdown (Views / Eng %)</th></tr></thead><tbody>${
+            cross.map((row) => `
+              <tr data-mark-item="cross-${esc(row.topicId)}" data-mark-label="Cross-compare ${esc(row.topicId)}">
+                <td><strong>${esc(row.topicId)}</strong></td>
+                <td>${row.entries.map((e) => `${esc(e.platform)}: ${e.views.toLocaleString()} (${e.engagementRate}%)`).join(' · ')}</td>
+              </tr>`).join('')
+          }</tbody></table>`;
+
+      document.getElementById('worksBody').innerHTML = works.length === 0
+        ? '<tr><td colspan="8" class="sub">No work snapshots recorded yet.</td></tr>'
+        : works.map((w) => {
+            const focused = view.focusWorkId === w.workId ? ' class="focused"' : '';
+            return `
+              <tr${focused} data-mark-item="work-${esc(w.workId)}" data-mark-label="${esc(w.title)}">
+                <td>${esc(w.title)}</td>
+                <td>${esc(w.platform)}</td>
+                <td>${esc(w.window)}</td>
+                <td>${w.views.toLocaleString()}</td>
+                <td>${w.likes.toLocaleString()}</td>
+                <td>${w.comments.toLocaleString()}</td>
+                <td>${w.saves.toLocaleString()}</td>
+                <td>${w.engagementRate}%</td>
+              </tr>`;
+          }).join('');
+
+      const retro = payload.retro || { title: 'No retrospective yet', actions: [] };
+      document.getElementById('retroPanel').innerHTML = `
+        <div><strong>${esc(retro.title)}</strong> <span class="sub">${esc(retro.file || '')}</span></div>
+        ${retro.actions.length === 0
+          ? '<div class="sub" style="margin-top:8px">Add a weekly markdown file under analytics/retros/YYYY-Www.md.</div>'
+          : retro.actions.map((a) => `
+            <div class="retro-item" data-mark-item="action-${esc(a.id)}" data-mark-label="${esc(a.text)}">
+              <span>${a.done ? '✓' : '○'} ${esc(a.text)}</span>
+              <span class="retro-action" data-mark-ignore>
+                <button data-requires-sdk data-action="recycle-retro" data-text="${esc(a.text)}">Stage as Next-Cycle Topic</button>
+              </span>
+            </div>`).join('')}`;
+      bridge.updateWriteControls();
+    }
+
+    document.querySelector('.toolbar').addEventListener('click', (event) => {
+      const btn = event.target.closest('button.range-btn[data-days]');
+      if (!btn) return;
+      view.days = Number(btn.dataset.days);
+      syncInputs();
+      render();
+      void bridge.persistView();
+    });
+
+    platEl.addEventListener('change', () => {
+      view.platform = platEl.value;
+      render();
+      void bridge.persistView();
+    });
+
+    document.getElementById('retroPanel').addEventListener('click', (event) => {
+      const btn = event.target.closest('button[data-action="recycle-retro"]');
+      if (!btn) return;
+      void bridge.stageDraft(
+        `Recycle this retrospective finding into next cycle's inbox/ and topics/topics.json: "${btn.dataset.text}"`,
+        btn,
+      );
+    });
+
+    void bridge.start();
+  </script>
+</body>
+</html>

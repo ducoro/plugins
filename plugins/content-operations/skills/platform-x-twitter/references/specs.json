@@ -1,0 +1,32 @@
+{
+  "platform": "x-twitter",
+  "displayName": "X (Twitter)",
+  "authType": "oauth2",
+  "contentLimits": {
+    "modes": ["text", "image_text", "video"],
+    "maxTitleLength": 0,
+    "maxBodyLength": 280,
+    "maxTotalTextLength": 280,
+    "tcoUrlLength": 23,
+    "maxImages": 4,
+    "maxVideos": 1,
+    "allowMixedMedia": false
+  },
+  "mediaRules": {
+    "imageFormats": ["jpg", "jpeg", "png", "gif", "webp"],
+    "videoFormats": ["mp4", "mov"],
+    "maxImageSizeBytes": 5242880,
+    "maxGifSizeBytes": 15728640,
+    "maxVideoSizeBytes": 536870912,
+    "maxVideoDurationSec": 140
+  },
+  "topic": {
+    "supported": true,
+    "nativeField": false
+  },
+  "publishPolicy": {
+    "completionStrategy": "sync",
+    "scheduleByPlatform": false,
+    "updateSupported": false
+  }
+}

@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Engagement Inbox &amp; Lead Triage Board</title>
+  <style>
+    :root {
+      --bg: #f7f8fa; --surface: #ffffff; --surface-alt: #f1f3f7; --text: #111827;
+      --muted: #5b6472; --border: #e2e6ee; --accent: #2563eb;
+      --ok: #15803d; --ok-bg: #dcfce7; --warn: #b45309; --warn-bg: #fef3c7;
+      --err: #b91c1c; --err-bg: #fee2e2; --info: #1d4ed8; --info-bg: #dbeafe;
+      --radius: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f131a; --surface: #171c26; --surface-alt: #1f2633; --text: #f3f4f6;
+        --muted: #9ca3af; --border: #2a3342; --accent: #60a5fa;
+        --ok: #86efac; --ok-bg: #14532d; --warn: #fcd34d; --warn-bg: #78350f;
+        --err: #fca5a5; --err-bg: #7f1d1d; --info: #93c5fd; --info-bg: #1e3a8a;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+    .shell { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    h1 { margin: 0; font-size: 22px; }
+    .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0; }
+    select, button { font: inherit; font-size: 13px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 6px 10px; cursor: pointer; }
+    button.tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .status-bar { padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; background: var(--info-bg); color: var(--info); }
+    .status-bar[data-tone="ok"] { background: var(--ok-bg); color: var(--ok); }
+    .status-bar[data-tone="warn"] { background: var(--warn-bg); color: var(--warn); }
+    .status-bar[data-tone="error"] { background: var(--err-bg); color: var(--err); }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
+    .kpi-label { font-size: 12px; color: var(--muted); }
+    .kpi-value { font-size: 22px; font-weight: 700; }
+    .caps { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin-bottom: 16px; }
+    .cap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font-size: 12px; }
+    .bar { height: 6px; background: var(--surface-alt); border-radius: 999px; overflow: hidden; margin-top: 6px; }
+    .bar > span { display: block; height: 100%; background: var(--accent); }
+    .bar.warn > span { background: var(--err); }
+    .list { display: flex; flex-direction: column; gap: 10px; }
+    .cmt { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .cmt.focused { outline: 2px solid var(--accent); }
+    .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+    .badge { padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .t-high_intent { background: var(--ok-bg); color: var(--ok); }
+    .t-feedback { background: var(--warn-bg); color: var(--warn); }
+    .t-general { background: var(--info-bg); color: var(--info); }
+    .t-spam { background: var(--err-bg); color: var(--err); }
+    .reply-box { background: var(--surface-alt); border-left: 3px solid var(--accent); border-radius: 6px; padding: 8px 10px; font-size: 13px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .actions button { font-size: 12px; padding: 4px 10px; }
+    html[data-ducoro-render='shot'] .toolbar,
+    html[data-ducoro-render='shot'] .actions,
+    html[data-ducoro-render='shot'] .status-bar { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="shell" data-ducoro-export-frame="engagement-summary">
+    <header data-card="engagement-header" data-card-title="Engagement Inbox">
+      <h1 data-mark-item="board-title" data-mark-label="Engagement Title">Engagement Inbox &amp; Lead Triage</h1>
+      <div class="sub" id="subtitle">Loading engagement snapshot...</div>
+    </header>
+
+    <div class="toolbar" data-mark-ignore>
+      <button class="tab" data-tier="all">All Tiers</button>
+      <button class="tab" data-tier="high_intent">High Intent</button>
+      <button class="tab" data-tier="feedback">Feedback / Disputes</button>
+      <button class="tab" data-tier="general">General</button>
+      <button class="tab" data-tier="spam">Spam</button>
+      <select id="platformFilter" aria-label="Filter by platform"><option value="all">All Platforms</option></select>
+    </div>
+
+    <div class="status-bar" data-bridge-status data-mark-ignore hidden></div>
+    <section class="kpis" id="kpis" data-card="engagement-kpis" data-card-title="Inbox Summary"></section>
+    <section class="caps" id="rateLimits" data-card="rate-limits" data-card-title="Daily Rate Limits"></section>
+    <main id="commentsList"></main>
+  </div>
+
+  <script id="board-initial-data" type="application/json">
+  {"schemaVersion":1,"board":"engagement-inbox-board","generatedAt":"","timezone":"UTC","platforms":[],"summary":{"openTotal":0,"highIntent":0,"feedback":0,"general":0,"spam":0,"awaitingApproval":0},"rateLimits":[],"comments":[]}
+  </script>
+
+  <script type="module">
+    import { createBoardBridge } from './runtime/board-sdk-bridge.js';
+
+    const VALID_TIERS = ['all', 'high_intent', 'feedback', 'general', 'spam'];
+    let payload = null;
+    const view = { tier: 'all', platform: 'all', focusCommentId: '' };
+    const platEl = document.getElementById('platformFilter');
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const bridge = createBoardBridge({
+      boardId: 'engagement-inbox-board',
+      defaultView: { tier: 'all', platform: 'all' },
+      getView: () => ({ tier: view.tier, platform: view.platform }),
+      onApplyView: (saved) => {
+        if (VALID_TIERS.includes(saved.tier)) view.tier = saved.tier;
+        if (typeof saved.platform === 'string') view.platform = saved.platform;
+        syncInputs();
+        render();
+      },
+      onData: (next) => {
+        payload = next;
+        const plats = payload.platforms || [];
+        if (view.platform !== 'all' && !plats.includes(view.platform)) view.platform = 'all';
+        platEl.innerHTML = '<option value="all">All Platforms</option>' +
+          plats.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+        syncInputs();
+        render();
+      },
+      commands: {
+        selectTier: {
+          describe: 'Switch active comment triage tier tab.',
+          params: { tier: 'One of: all, high_intent, feedback, general, spam.' },
+          run: ({ tier }) => {
+            if (!VALID_TIERS.includes(tier)) throw new Error(`tier must be one of: ${VALID_TIERS.join(', ')}`);
+            view.tier = tier;
+            syncInputs();
+            render();
+          },
+        },
+        filterPlatform: {
+          describe: 'Filter comments by platform slug or "all".',
+          params: { platform: 'Platform slug or "all".' },
+          run: ({ platform }) => {
+            const valid = ['all', ...(payload?.platforms || [])];
+            if (!valid.includes(platform)) throw new Error(`Unknown platform "${platform}". Valid values: ${valid.join(', ')}`);
+            view.platform = platform;
+            syncInputs();
+            render();
+          },
+        },
+        focusComment: {
+          describe: 'Highlight and scroll to a specific commentId.',
+          params: { commentId: 'Exact commentId from engagement/inbox.json.' },
+          run: ({ commentId }) => {
+            const cmts = payload?.comments || [];
+            const match = cmts.find((c) => c.commentId === commentId);
+            if (!match) {
+              throw new Error(`Unknown commentId "${commentId}". Valid IDs: ${cmts.map((c) => c.commentId).join(', ') || '(none)'}`);
+            }
+            if (view.tier !== 'all' && match.tier !== view.tier) view.tier = 'all';
+            if (view.platform !== 'all' && match.platform !== view.platform) view.platform = 'all';
+            view.focusCommentId = commentId;
+            syncInputs();
+            render();
+            document.querySelector(`[data-mark-item="comment-${CSS.escape(commentId)}"]`)?.scrollIntoView({ behavior: 'auto', block: 'center' });
+          },
+        },
+      },
+    });
+
+    function syncInputs() {
+      platEl.value = view.platform;
+      for (const btn of document.querySelectorAll('button.tab[data-tier]')) {
+        btn.classList.toggle('active', btn.dataset.tier === view.tier);
+      }
+    }
+
+    function render() {
+      if (!payload) return;
+      document.getElementById('subtitle').textContent = `Synced: ${payload.generatedAt || 'not built yet'}`;
+      const s = payload.summary || {};
+      document.getElementById('kpis').innerHTML = [
+        ['Open Items', s.openTotal ?? 0, 'kpi-open'],
+        ['High Intent', s.highIntent ?? 0, 'kpi-high'],
+        ['Feedback / Disputes', s.feedback ?? 0, 'kpi-fb'],
+        ['Awaiting Reply Approval', s.awaitingApproval ?? 0, 'kpi-approval'],
+      ].map(([label, val, id]) => `
+        <div class="kpi" data-mark-item="${id}" data-mark-label="${label}">
+          <div class="kpi-label">${label}</div>
+          <div class="kpi-value">${val}</div>
+        </div>`).join('');
+
+      document.getElementById('rateLimits').innerHTML = (payload.rateLimits || []).map((r) => {
+        const pct = r.dailyCap > 0 ? Math.min(100, Math.round((r.usedToday / r.dailyCap) * 100)) : 0;
+        return `
+          <div class="cap" data-mark-item="cap-${esc(r.platform)}" data-mark-label="${esc(r.platform)} rate cap">
+            <div><strong>${esc(r.platform)}</strong>: ${r.usedToday} / ${r.dailyCap} today</div>
+            <div class="bar${pct >= 80 ? ' warn' : ''}"><span style="width:${pct}%"></span></div>
+          </div>`;
+      }).join('');
+
+      let comments = (payload.comments || []).slice();
+      if (view.tier !== 'all') comments = comments.filter((c) => c.tier === view.tier);
+      if (view.platform !== 'all') comments = comments.filter((c) => c.platform === view.platform);
+
+      const container = document.getElementById('commentsList');
+      container.innerHTML = `
+        <section class="list" data-card="triage-queue" data-card-title="Triage Queue">
+          ${comments.length === 0 ? '<div class="sub">No comments match the current filter.</div>' : comments.map((c) => {
+            const focused = view.focusCommentId === c.commentId ? ' focused' : '';
+            return `
+              <article class="cmt${focused}" data-mark-item="comment-${esc(c.commentId)}" data-mark-label="${esc(c.author || c.commentId)}">
+                <div class="meta">
+                  <span class="badge t-${esc(c.tier)}">${esc(c.tier)}</span>
+                  <strong>${esc(c.author || 'Anonymous')}</strong>
+                  <span>${esc(c.platform)} · ${esc(c.workTitle || c.workId || '')}</span>
+                  <span>Status: ${esc(c.status)}</span>
+                </div>
+                <div>${esc(c.text)}</div>
+                ${c.draftReply ? `<div class="reply-box"><strong>Drafted Reply:</strong> ${esc(c.draftReply)}</div>` : ''}
+                <div class="actions" data-mark-ignore>
+                  ${c.tier !== 'spam' && c.status !== 'replied' && c.status !== 'ignored'
+                    ? `<button class="primary" data-requires-sdk data-action="approve-reply" data-id="${esc(c.commentId)}">Stage Reply for Confirmation</button>`
+                    : ''}
+                  ${c.tier !== 'spam'
+                    ? `<button data-requires-sdk data-action="to-topic" data-id="${esc(c.commentId)}">Stage as Next Topic Signal</button>`
+                    : ''}
+                </div>
+              </article>`;
+          }).join('')}
+        </section>`;
+      bridge.updateWriteControls();
+    }
+
+    document.querySelector('.toolbar').addEventListener('click', (event) => {
+      const btn = event.target.closest('button.tab[data-tier]');
+      if (!btn) return;
+      view.tier = btn.dataset.tier;
+      syncInputs();
+      render();
+      void bridge.persistView();
+    });
+
+    platEl.addEventListener('change', () => {
+      view.platform = platEl.value;
+      render();
+      void bridge.persistView();
+    });
+
+    document.getElementById('commentsList').addEventListener('click', (event) => {
+      const btn = event.target.closest('button[data-action]');
+      if (!btn) return;
+      const c = (payload?.comments || []).find((x) => x.commentId === btn.dataset.id);
+      if (!c) return;
+      if (btn.dataset.action === 'approve-reply') {
+        void bridge.stageDraft(
+          `Approved reply for comment ${c.commentId} (${c.platform}, author ${c.author}): "${c.draftReply || '[edit reply here]'}". Please send within rate limits and log in engagement/action-log.jsonl.`,
+          btn,
+        );
+      } else if (btn.dataset.action === 'to-topic') {
+        void bridge.stageDraft(
+          `Convert comment ${c.commentId} on ${c.platform} ("${c.text}") into a new inbox signal and score it as a candidate topic in topics/topics.json.`,
+          btn,
+        );
+      }
+    });
+
+    void bridge.start();
+  </script>
+</body>
+</html>

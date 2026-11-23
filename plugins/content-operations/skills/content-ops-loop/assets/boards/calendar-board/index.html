@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Content Calendar &amp; Schedule Board</title>
+  <style>
+    :root {
+      --bg: #f7f8fa; --surface: #ffffff; --surface-alt: #f1f3f7; --text: #111827;
+      --muted: #5b6472; --border: #e2e6ee; --accent: #2563eb;
+      --ok: #15803d; --ok-bg: #dcfce7; --warn: #b45309; --warn-bg: #fef3c7;
+      --err: #b91c1c; --err-bg: #fee2e2; --info: #1d4ed8; --info-bg: #dbeafe;
+      --radius: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f131a; --surface: #171c26; --surface-alt: #1f2633; --text: #f3f4f6;
+        --muted: #9ca3af; --border: #2a3342; --accent: #60a5fa;
+        --ok: #86efac; --ok-bg: #14532d; --warn: #fcd34d; --warn-bg: #78350f;
+        --err: #fca5a5; --err-bg: #7f1d1d; --info: #93c5fd; --info-bg: #1e3a8a;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+    .shell { max-width: 1240px; margin: 0 auto; padding: 20px; }
+    header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px; margin-bottom: 16px; }
+    h1 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+    .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+    select, button { font: inherit; font-size: 13px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 6px 10px; cursor: pointer; }
+    button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .status-bar { padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; background: var(--info-bg); color: var(--info); }
+    .status-bar[data-tone="ok"] { background: var(--ok-bg); color: var(--ok); }
+    .status-bar[data-tone="warn"] { background: var(--warn-bg); color: var(--warn); }
+    .status-bar[data-tone="error"] { background: var(--err-bg); color: var(--err); }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+    .kpi-label { font-size: 12px; color: var(--muted); }
+    .kpi-value { font-size: 24px; font-weight: 700; margin-top: 2px; }
+    .festivals { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .fest-chip { font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+    .day-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .day-card.focused { outline: 2px solid var(--accent); }
+    .day-head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+    .slot { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+    .slot.focused { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+    .slot-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 11px; }
+    .badge { padding: 2px 7px; border-radius: 999px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; }
+    .badge-plat { background: var(--info-bg); color: var(--info); }
+    .badge-published { background: var(--ok-bg); color: var(--ok); }
+    .badge-approved { background: var(--info-bg); color: var(--info); }
+    .badge-awaiting_approval, .badge-planned { background: var(--warn-bg); color: var(--warn); }
+    .badge-failed, .badge-cancelled { background: var(--err-bg); color: var(--err); }
+    .slot-title { font-size: 13px; font-weight: 600; }
+    .slot-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+    .slot-actions button { font-size: 11px; padding: 4px 8px; }
+    .empty { background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius); padding: 28px; text-align: center; color: var(--muted); }
+    a { color: var(--accent); text-decoration: none; font-size: 12px; }
+    html[data-ducoro-render='shot'] .toolbar,
+    html[data-ducoro-render='shot'] .slot-actions,
+    html[data-ducoro-render='shot'] .status-bar { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="shell" data-ducoro-export-frame="calendar-overview">
+    <header data-card="calendar-header" data-card-title="Calendar Overview">
+      <div>
+        <h1 data-mark-item="board-title" data-mark-label="Calendar Title">Content Calendar &amp; Schedule</h1>
+        <div class="sub" id="subtitle">Loading schedule snapshot...</div>
+      </div>
+    </header>
+
+    <div class="toolbar" data-mark-ignore>
+      <select id="viewMode" aria-label="View mode">
+        <option value="month">Month View</option>
+        <option value="week">Upcoming 7 Days</option>
+      </select>
+      <select id="platformFilter" aria-label="Filter by platform"><option value="all">All Platforms</option></select>
+      <select id="statusFilter" aria-label="Filter by status">
+        <option value="all">All Statuses</option>
+        <option value="planned">Planned</option>
+        <option value="awaiting_approval">Awaiting Approval</option>
+        <option value="approved">Approved</option>
+        <option value="published">Published</option>
+        <option value="failed">Failed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </div>
+
+    <div class="status-bar" data-bridge-status data-mark-ignore hidden></div>
+
+    <section class="kpis" id="kpis" data-card="calendar-kpis" data-card-title="Schedule Summary"></section>
+    <section class="festivals" id="festivals" data-card="seasonal-anchors" data-card-title="Seasonal Anchors"></section>
+    <main id="calendarGrid"></main>
+  </div>
+
+  <script id="board-initial-data" type="application/json">
+  {"schemaVersion":1,"board":"calendar-board","generatedAt":"","timezone":"UTC","platforms":[],"summary":{"totalSlots":0,"awaitingApproval":0,"approved":0,"published":0,"failed":0},"slots":[],"festivals":[]}
+  </script>
+
+  <script type="module">
+    import { createBoardBridge } from './runtime/board-sdk-bridge.js';
+
+    let payload = null;
+    const view = { mode: 'month', platform: 'all', status: 'all', focusDate: '', focusSlotId: '' };
+
+    const viewEl = document.getElementById('viewMode');
+    const platEl = document.getElementById('platformFilter');
+    const statusEl = document.getElementById('statusFilter');
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const bridge = createBoardBridge({
+      boardId: 'calendar-board',
+      defaultView: { mode: 'month', platform: 'all', status: 'all' },
+      getView: () => ({ mode: view.mode, platform: view.platform, status: view.status }),
+      onApplyView: (saved) => {
+        if (saved.mode === 'month' || saved.mode === 'week') view.mode = saved.mode;
+        if (typeof saved.platform === 'string') view.platform = saved.platform;
+        if (typeof saved.status === 'string') view.status = saved.status;
+        syncInputs();
+        render();
+      },
+      onData: (next) => {
+        payload = next;
+        populatePlatforms();
+        syncInputs();
+        render();
+      },
+      commands: {
+        setView: {
+          describe: 'Switch calendar display between month and week view.',
+          params: { mode: 'Either "month" or "week".' },
+          run: ({ mode }) => {
+            if (mode !== 'month' && mode !== 'week') throw new Error('mode must be "month" or "week"');
+            view.mode = mode;
+            syncInputs();
+            render();
+          },
+        },
+        goToDate: {
+          describe: 'Focus a specific calendar date card (YYYY-MM-DD).',
+          params: { date: 'Target date in YYYY-MM-DD format present in the schedule.' },
+          run: ({ date }) => {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('date must match YYYY-MM-DD');
+            const dt = new Date(`${date}T00:00:00Z`);
+            if (Number.isNaN(dt.getTime()) || dt.toISOString().slice(0, 10) !== date) {
+              throw new Error(`Invalid calendar date: ${date}`);
+            }
+            const dates = [...new Set((payload?.slots || []).map((s) => s.date).filter(Boolean))].sort();
+            if (!dates.includes(date)) {
+              throw new Error(`No schedule card for ${date}. Available dates: ${dates.join(', ') || '(none)'}`);
+            }
+            view.mode = 'month';
+            view.platform = 'all';
+            view.status = 'all';
+            view.focusDate = date;
+            view.focusSlotId = '';
+            syncInputs();
+            render();
+            document.querySelector(`[data-card="day-${CSS.escape(date)}"]`)?.scrollIntoView({ behavior: 'auto', block: 'center' });
+          },
+        },
+        filterPlatform: {
+          describe: 'Filter calendar slots by platform slug or "all".',
+          params: { platform: 'Platform slug or "all".' },
+          run: ({ platform }) => {
+            const valid = ['all', ...(payload?.platforms || [])];
+            if (!valid.includes(platform)) {
+              throw new Error(`Unknown platform "${platform}". Valid values: ${valid.join(', ')}`);
+            }
+            view.platform = platform;
+            syncInputs();
+            render();
+          },
+        },
+        focusSlot: {
+          describe: 'Highlight and scroll to a specific schedule slot.',
+          params: { slotId: 'Exact slotId from calendar.json.' },
+          run: ({ slotId }) => {
+            const slots = payload?.slots || [];
+            const match = slots.find((s) => s.slotId === slotId);
+            if (!match) {
+              throw new Error(`Unknown slotId "${slotId}". Valid IDs: ${slots.map((s) => s.slotId).join(', ') || '(none)'}`);
+            }
+            view.mode = 'month';
+            if (view.platform !== 'all' && match.platform !== view.platform) view.platform = 'all';
+            if (view.status !== 'all' && match.status !== view.status) view.status = 'all';
+            view.focusDate = '';
+            view.focusSlotId = slotId;
+            syncInputs();
+            render();
+            document.querySelector(`[data-mark-item="slot-${CSS.escape(slotId)}"]`)?.scrollIntoView({ behavior: 'auto', block: 'center' });
+          },
+        },
+      },
+    });
+
+    function populatePlatforms() {
+      const list = payload?.platforms || [];
+      if (view.platform !== 'all' && !list.includes(view.platform)) view.platform = 'all';
+      platEl.innerHTML = '<option value="all">All Platforms</option>' +
+        list.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+    }
+
+    function localDateStr(dateObj, tz) {
+      try {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: tz || 'UTC', year: 'numeric', month: '2-digit', day: '2-digit' }).format(dateObj);
+      } catch {
+        return dateObj.toISOString().slice(0, 10);
+      }
+    }
+
+    function syncInputs() {
+      viewEl.value = view.mode;
+      platEl.value = view.platform;
+      statusEl.value = view.status;
+    }
+
+    function render() {
+      if (!payload) return;
+      document.getElementById('subtitle').textContent =
+        `Timezone: ${payload.timezone || 'UTC'} · Synced: ${payload.generatedAt || 'not built yet'}`;
+
+      const s = payload.summary || {};
+      document.getElementById('kpis').innerHTML = [
+        ['Total Slots', s.totalSlots ?? 0, 'kpi-total'],
+        ['Awaiting Gate 2', s.awaitingApproval ?? 0, 'kpi-awaiting'],
+        ['Approved', s.approved ?? 0, 'kpi-approved'],
+        ['Published', s.published ?? 0, 'kpi-published'],
+        ['Failed', s.failed ?? 0, 'kpi-failed'],
+      ].map(([label, val, id]) => `
+        <div class="kpi" data-mark-item="${id}" data-mark-label="${label}">
+          <div class="kpi-label">${label}</div>
+          <div class="kpi-value">${val}</div>
+        </div>`).join('');
+
+      document.getElementById('festivals').innerHTML = (payload.festivals || []).slice(0, 8).map((f) => {
+        const fid = f.id || String(f.date || 'anchor').replace(/[^a-z0-9-]/gi, '-');
+        return `<span class="fest-chip" data-mark-item="fest-${esc(fid)}" data-mark-label="${esc(f.name)}">${esc(f.date)} · ${esc(f.name)}</span>`;
+      }).join('');
+
+      let slots = (payload.slots || []).slice();
+      if (view.platform !== 'all') slots = slots.filter((x) => x.platform === view.platform);
+      if (view.status !== 'all') slots = slots.filter((x) => x.status === view.status);
+      if (view.mode === 'week') {
+        const now = new Date();
+        const today = localDateStr(now, payload.timezone);
+        const cutoff = localDateStr(new Date(now.getTime() + 7 * 86400 * 1000), payload.timezone);
+        slots = slots.filter((x) => !x.date || (x.date >= today && x.date <= cutoff));
+      }
+
+      const byDate = new Map();
+      for (const slot of slots) {
+        const key = slot.date || 'Unscheduled';
+        if (!byDate.has(key)) byDate.set(key, []);
+        byDate.get(key).push(slot);
+      }
+
+      const grid = document.getElementById('calendarGrid');
+      if (byDate.size === 0) {
+        grid.innerHTML = '<div class="empty" data-card="calendar-empty" data-card-title="Empty Schedule">No scheduled slots match the current filters. Add entries to calendar.json and run build_boards.py.</div>';
+        bridge.updateWriteControls();
+        return;
+      }
+
+      const days = [...byDate.keys()].sort();
+      grid.innerHTML = `<div class="grid">${days.map((day) => {
+        const daySlots = byDate.get(day).sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')));
+        const dayFocused = view.focusDate === day ? ' focused' : '';
+        return `
+          <section class="day-card${dayFocused}" data-card="day-${esc(day)}" data-card-title="${esc(day)}">
+            <div class="day-head"><span>${esc(day)}</span><span>${daySlots.length} slot(s)</span></div>
+            ${daySlots.map((slot) => {
+              const sid = slot.slotId || 'unknown';
+              const slotFocused = view.focusSlotId === sid ? ' focused' : '';
+              return `
+                <article class="slot${slotFocused}" data-mark-item="slot-${esc(sid)}" data-mark-label="${esc(slot.title || sid)}">
+                  <div class="slot-meta">
+                    <span class="badge badge-plat">${esc(slot.platform || 'unknown')}</span>
+                    <span class="badge badge-${esc(slot.status || 'planned')}">${esc(slot.status || 'planned')}</span>
+                    <span>${esc(slot.time || '--:--')}</span>
+                  </div>
+                  <div class="slot-title">${esc(slot.title || sid)}</div>
+                  ${slot.publicUrl ? `<a href="${esc(slot.publicUrl)}" target="_blank" rel="noopener">Verified live post ↗</a>` : ''}
+                  ${slot.lastError ? `<div class="sub" style="color:var(--err)">Error: ${esc(slot.lastError)}</div>` : ''}
+                  <div class="slot-actions" data-mark-ignore>
+                    ${slot.status === 'awaiting_approval' ? `<button class="primary" data-requires-sdk data-action="approve-slot" data-slot="${esc(sid)}">Draft Gate 2 Approval</button>` : ''}
+                    <button data-requires-sdk data-action="reschedule-slot" data-slot="${esc(sid)}">Draft Reschedule Note</button>
+                  </div>
+                </article>`;
+            }).join('')}
+          </section>`;
+      }).join('')}</div>`;
+      bridge.updateWriteControls();
+    }
+
+    document.getElementById('calendarGrid').addEventListener('click', (event) => {
+      const btn = event.target.closest('button[data-action]');
+      if (!btn) return;
+      const sid = btn.dataset.slot;
+      const slot = (payload?.slots || []).find((s) => s.slotId === sid);
+      if (!slot) return;
+      if (btn.dataset.action === 'approve-slot') {
+        void bridge.stageDraft(
+          `Gate 2 approval for slot ${slot.slotId} (${slot.platform}, ${slot.date} ${slot.time}, draft ${slot.draftId}): verified facts and specs—please proceed with publishing and record the live URL.`,
+          btn,
+        );
+      } else if (btn.dataset.action === 'reschedule-slot') {
+        void bridge.stageDraft(
+          `Please reschedule slot ${slot.slotId} (${slot.title} on ${slot.platform}, currently ${slot.date} ${slot.time}) to [new date/time] and rebuild calendar-board.`,
+          btn,
+        );
+      }
+    });
+
+    for (const el of [viewEl, platEl, statusEl]) {
+      el.addEventListener('change', () => {
+        view.mode = viewEl.value;
+        view.platform = platEl.value;
+        view.status = statusEl.value;
+        render();
+        void bridge.persistView();
+      });
+    }
+
+    void bridge.start();
+  </script>
+</body>
+</html>

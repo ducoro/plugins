@@ -1,0 +1,30 @@
+{
+  "platform": "youtube",
+  "displayName": "YouTube",
+  "authType": "oauth2",
+  "contentLimits": {
+    "modes": ["video"],
+    "maxTitleLength": 100,
+    "maxBodyLength": 5000,
+    "maxImages": 0,
+    "maxVideos": 1,
+    "allowMixedMedia": false
+  },
+  "mediaRules": {
+    "imageFormats": ["jpg", "jpeg", "png"],
+    "videoFormats": ["mp4", "mov", "avi", "wmv", "flv", "mkv"],
+    "maxImageSizeBytes": 2097152,
+    "maxVideoSizeBytes": 274877906944,
+    "maxVideoDurationSec": 43200
+  },
+  "topic": {
+    "supported": true,
+    "nativeField": true,
+    "maxTotalLength": 500
+  },
+  "publishPolicy": {
+    "completionStrategy": "sync",
+    "scheduleByPlatform": true,
+    "updateSupported": true
+  }
+}

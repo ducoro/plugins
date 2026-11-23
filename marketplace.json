@@ -39,6 +39,15 @@
       },
       "description": "Write AI-readable commit messages and actionable pull-request descriptions.",
       "category": "Developer Tools"
+    },
+    {
+      "name": "content-operations",
+      "source": {
+        "source": "local",
+        "path": "./plugins/content-operations"
+      },
+      "description": "End-to-end multi-platform content operations loop covering topic research, media production, per-platform playbooks and protocols, engagement triage, analytics retrospectives, and interactive boards.",
+      "category": "Content & Marketing"
     }
   ]
 }
