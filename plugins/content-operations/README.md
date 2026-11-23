@@ -48,6 +48,10 @@ All boards run standalone as static HTML with local data and progressively enhan
 3. Load `topic-research` plus only the `platform-<name>` skill(s) you are targeting in the current turn.
 4. Refresh board data at any stage with `scripts/build_boards.py <workspace>` and verify integrity with `scripts/validate_workspace.py <workspace>`.
 
+## Problem Reporting
+
+When a built-in script fails unexpectedly or an upstream platform API / Creator Studio layout changes, the agent follows `skills/content-ops-loop/references/issue-reporting.md`: drafts a redacted report tagged `[plugin:content-operations@<version>] [skill:<name>] [location:<file-or-step>]`, asks for user confirmation, and submits it through Ducoro's built-in `ducoro-cli feedback send` channel (no GitHub account required).
+
 ## References & Upstream Inspiration
 
 This plugin is an independent, self-contained re-implementation with zero external backend or MCP dependencies. Its multi-platform specification matrix, publishing workflow taxonomy, and operational dashboard structure drew conceptual inspiration from the following open-source project snapshot:

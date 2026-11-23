@@ -21,7 +21,7 @@ YouTube distributes long-form videos through two sequential gates—**Impression
 ## 3. Publishing & Verification (`references/protocol.md`)
 1. Validate against `references/specs.json` with `check_media_specs.py`.
 2. **Default zero-config path (Official YouTube Studio)**: open `https://studio.youtube.com/` in the user's browser session (pause for Google sign-in/2FA if prompted), click **Create → Upload videos**, upload local video + `1280x720` thumbnail directly from `drafts/<id>/assets/`, fill title/description/tags/audience, save as **Private / Unlisted** draft (`draft_saved`) until Gate 2 approval, then switch visibility or schedule and copy the verified `watch?v=<id>` URL.
-3. **Optional official Data API v3 path** (requires `YOUTUBE_ACCESS_TOKEN`; rotate 1h token via `scripts/client.py refresh-token` using `YOUTUBE_CLIENT_ID`/`SECRET`/`REFRESH_TOKEN`):
+3. **Optional official Data API v3 path** (requires `YOUTUBE_ACCESS_TOKEN`; rotate 1h token via `scripts/client.py refresh-token` using `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`, and `YOUTUBE_REFRESH_TOKEN`):
    - `list-categories --region US`, `init-upload --title ... --privacy private [--publish-at ...]`, `upload-video --upload-url <uploadLocation> --file <video.mp4>`, `set-thumbnail --video-id <id> --file <thumb.jpg>`.
    - Read back stats and comments via `video-stats`, `list-comments`, `reply-comment`.
 4. Record verified `https://www.youtube.com/watch?v=<videoId>` in `publish-log.jsonl`.

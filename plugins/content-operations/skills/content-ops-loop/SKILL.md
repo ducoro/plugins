@@ -38,6 +38,7 @@ Read on demand—do not recite from memory:
 - `references/board-schemas.md`: unified data contract for all 5 interactive boards plus per-platform metric slots.
 - `references/board-sdk-integration.md`: File-Backed Executable Document (FBED) conventions and progressive `window.ducoro` integration for all boards.
 - `references/channel-access-matrix.md`: legitimate dual-track access guide (default official browser Creator Studio vs. optional official OpenAPI, token lifecycles, and media upload routes) across all 14 platforms.
+- `references/issue-reporting.md`: when and how to offer a redacted plugin problem report via `ducoro-cli feedback send` with `[plugin:content-operations@<version>]` tags (always ask human first).
 
 ## Legitimate Execution Channels (Two Official Tracks Only)
 
@@ -75,6 +76,7 @@ Every platform supports **only two legitimate execution paths**—never extract 
 - **Silence is not approval.** Never publish externally, spend paid budget, or send commitment/dispute replies without explicit human confirmation unless a written standing rule in `brand-profile.md` authorizes that exact recurring slot.
 - **Legitimate channels only.** Use either the platform's official web Creator Studio in a real browser (default, zero API setup) or official OpenAPI endpoints with user-owned credentials. Never harvest cookies, call undocumented private endpoints, or bypass CAPTCHAs.
 - **No fabricated execution.** If a credential env var is missing or a platform requires browser login, fall back cleanly to the official browser Creator Studio path or pause at the verified draft/checklist state and report the exact prerequisite.
+- **Report real plugin defects (with consent).** When a built-in script crashes, a platform API/Studio layout changes, or spec rules drift from reality, follow `references/issue-reporting.md`: draft a redacted report tagged `[plugin:content-operations@<version>] [skill:<name>] [location:<where>]`, ask the user for approval, and send via `ducoro-cli feedback send`.
 - **Single source of truth.** Files in `content-ops/` are canonical state; boards are live projections of those files, never a second editable database.
 
 ## Done When

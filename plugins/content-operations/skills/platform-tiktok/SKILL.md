@@ -20,7 +20,7 @@ TikTok distributes content strictly on viewer behavior—first-2-second hold, fu
 ## 3. Publishing & Verification (`references/protocol.md`)
 1. Validate with `check_media_specs.py` against `references/specs.json`.
 2. **Default zero-config path (Official TikTok Studio)**: open `https://www.tiktok.com/tiktokstudio/upload` in the user's browser session (pause for login/CAPTCHA if prompted), upload the local video or photo carousel directly from `drafts/<id>/assets/`, fill caption/hashtags/cover and AIGC disclosure, save draft (`draft_saved`) or pause before **Post** until Gate 2 confirmation, then read back the live URL.
-3. **Optional official Content Posting API v2 path** (requires `TIKTOK_ACCESS_TOKEN`; rotate 24h token via `scripts/client.py refresh-token`):
+3. **Optional official Content Posting API v2 path** (requires `TIKTOK_ACCESS_TOKEN`; rotate 24h token via `scripts/client.py refresh-token` using `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`, and `TIKTOK_REFRESH_TOKEN`):
    - Always query `scripts/client.py creator-info` first (`privacy_level` must be in `privacy_level_options`).
    - Direct local video upload: `init-video-file --title ... --file <video.mp4> --privacy ... [--aigc]` → `upload-video-file --upload-url <upload_url> --file <video.mp4>`.
    - Verified-domain URL upload: `init-video-url --title ... --video-url ... --privacy ... [--aigc]` (for inbox drafts or Photo Mode `/content/init/`, see `references/protocol.md`).

@@ -20,7 +20,7 @@ WeChat Official Accounts serve high-trust, private-domain subscribers and WeChat
 ## 3. Publishing & Verification (`references/protocol.md`)
 1. Validate copy and images against `references/specs.json` via `check_media_specs.py`.
 2. **Default zero-config path (Official MP Web Backend)**: open `https://mp.weixin.qq.com/` (pause for QR scan if needed), open **内容管理 → 草稿箱 → 新的创作**, paste formatted HTML/images and `2.35:1` cover directly from local `drafts/<id>/assets/`, save draft (`draft_saved`) for mobile preview at Gate 2, then publish/broadcast only after explicit human confirmation and record the verified `article_url`.
-3. **Optional official API path** (requires `WECHAT_OFFICIAL_APP_ID` / `APP_SECRET` / `ACCESS_TOKEN`):
+3. **Optional official API path** (requires `WECHAT_OFFICIAL_APP_ID`, `WECHAT_OFFICIAL_APP_SECRET`, and `WECHAT_OFFICIAL_ACCESS_TOKEN`):
    - Rotate expired 2h tokens via `scripts/client.py get-token`.
    - Upload inline images via `scripts/client.py upload-image --file <path>` and cover via `scripts/client.py upload-thumb --file <path>`.
    - Stage draft via `scripts/client.py add-draft ...`, pause at Gate 2 for mobile preview, then publish via `submit-publish` + `poll-publish` and pull analytics via `user-read`, `user-cumulate`, `article-total`.

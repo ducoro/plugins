@@ -17,7 +17,7 @@ Stop and hand back to the human immediately when:
 2. A platform triggers CAPTCHA, login challenge, or anti-bot friction—never attempt to bypass anti-bot gates.
 3. A fact in an approved draft is discovered to be outdated or contradicted by current evidence—downgrade draft to `needs_update` and halt its scheduled slot.
 4. Daily engagement rate-limit cap is reached—pause further actions until cooldown resets.
-5. Three consecutive runs fail on the same platform endpoint—halt that platform's queue and log diagnostic evidence.
+5. Three consecutive runs fail on the same platform endpoint—halt that platform's queue, log diagnostic evidence, and if the failure indicates a plugin bug or upstream platform API/UI change, offer to submit a redacted report per `references/issue-reporting.md` (after user confirmation).
 
 ## Multi-Workspace Relay Handoff
 

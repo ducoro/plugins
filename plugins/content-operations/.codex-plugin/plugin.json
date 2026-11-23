@@ -1,6 +1,6 @@
 {
   "name": "content-operations",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "End-to-end multi-platform content operations loop covering topic research, media production, per-platform playbooks and protocols, engagement triage, analytics retrospectives, and interactive boards.",
   "license": "Apache-2.0",
   "skills": "./skills/"

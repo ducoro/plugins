@@ -1,10 +1,9 @@
 # Douyin OpenAPI & Browser Publishing Protocol
 
 ## Environment Variables (API Mode)
-- `DOUYIN_CLIENT_KEY`
-- `DOUYIN_CLIENT_SECRET`
-- `DOUYIN_ACCESS_TOKEN`
-- `DOUYIN_OPEN_ID`
+- `DOUYIN_ACCESS_TOKEN` (used by `scripts/client.py`)
+- `DOUYIN_OPEN_ID` (used by `scripts/client.py`)
+- `DOUYIN_CLIENT_KEY` / `DOUYIN_CLIENT_SECRET` (only required for manual OAuth token exchange endpoints below)
 
 ## Official OpenAPI Endpoints (`https://open.douyin.com`)
 - **OAuth authorize**: `https://open.douyin.com/platform/oauth/connect/`

@@ -11,6 +11,7 @@ Follow every rule below when adding, editing, or removing a plugin.
 - **No secrets, ever**: Never commit real API keys, bearer tokens, passwords, private URLs, or machine-specific paths. In `.mcp.json`, always use environment variable placeholders such as `${SERVICE_API_TOKEN}`.
 - **No symlinks**: Every file in the repository must be a regular file.
 - **Public repository hygiene**: Never include internal product architecture, private repository paths, or internal operational details in plugin instructions, docs, or commit messages.
+- **Exact Ducoro CLI binary name**: When plugin instructions invoke the Ducoro CLI, always use `ducoro-cli` (for example, `ducoro-cli board ...`, `ducoro-cli feedback send ...`, `ducoro-cli media upload ...`)—never bare `ducoro <subcommand>`.
 
 ## Required Files for Every Plugin
 

@@ -18,11 +18,10 @@ Douyin is an interest-graph recommendation engine. Traffic tiers unlock sequenti
 - **Copy limits**: title `<= 30` chars (`short_title <= 12` chars when set), total text `<= 1000` chars, max **5** native topics; image carousel supports up to **12** images.
 
 ## 3. Publishing & Verification (`references/protocol.md`)
-- Validate first with `../media-production/scripts/check_media_specs.py` against `references/specs.json`.
-- **Two supported paths**:
-  - **Douyin OpenAPI path**: use `scripts/client.py --dry-run <subcommand>` (`query-videos --item-ids ...`, `get-fans`, using `DOUYIN_ACCESS_TOKEN` and `DOUYIN_OPEN_ID`) for live readback and fan counts; OAuth token exchange and QR handoff endpoints are documented in `references/protocol.md` (require approved Douyin Open Platform scopes).
-  - **Creator Studio browser path** (`creator.douyin.com`): fill media, title, cover frame (`cover_tsp`), tags, and privacy/download settings, save draft (`draft_saved`) at Gate 2, then publish after explicit human confirmation.
-- Read back the live URL (`https://www.douyin.com/video/<id>` or `/note/<id>`) into `publish-log.jsonl`.
+1. Validate first with `../media-production/scripts/check_media_specs.py` against `references/specs.json`.
+2. **Default zero-config path (Official Douyin Creator Studio)**: open `https://creator.douyin.com/creator-micro/content/upload` in the user's browser session (pause for login/QR or verification if prompted), upload local video or image carousel directly from `drafts/<id>/assets/`, fill title, cover frame (`cover_tsp`), tags, and privacy/download settings, save draft (`draft_saved`) at Gate 2, then publish after explicit human confirmation.
+3. **Optional official Douyin OpenAPI path** (requires `DOUYIN_ACCESS_TOKEN` and `DOUYIN_OPEN_ID`): use `scripts/client.py [--dry-run] query-videos --item-ids ...` and `get-fans` (`--app-type web|miniapp`) for live readback and fan counts; OAuth token exchange and QR handoff endpoints are documented in `references/protocol.md` (require approved Douyin Open Platform scopes).
+4. Read back the live URL (`https://www.douyin.com/video/<id>` or `/note/<id>`) into `publish-log.jsonl`.
 
 ## 4. Engagement & Risk Guardrails
 - **Golden first hour**: respond thoughtfully to the first 5–10 real comments to spark comment threads; pin one helpful summary comment when appropriate.
