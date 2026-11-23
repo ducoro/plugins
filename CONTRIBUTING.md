@@ -35,7 +35,14 @@ Python 3.11 or newer is sufficient; the checks use only the standard library.
 
 ```sh
 python3 scripts/validate.py
+python3 scripts/check_hygiene.py --tracked
 python3 -m unittest discover -s tests -v
+```
+
+To enable the repository Git hooks locally (`pre-commit`, `commit-msg`, and `pre-push`):
+
+```sh
+git config core.hooksPath .githooks
 ```
 
 Validation checks all three marketplace catalogs, plugin manifest consistency, `.mcp.json` schema and secret hygiene, forbidden host-specific extensions, skill frontmatter, and README coverage.
