@@ -21,7 +21,7 @@ Operate Xiaohongshu as a visual search-and-save engine rather than a broadcast f
 
 ## 3. Publishing & Verification (`references/protocol.md`)
 - Xiaohongshu has **no general public posting OpenAPI** for standard accounts. Follow the tool-agnostic browser workflow in `references/protocol.md`:
-  1. Validate copy and media with `../media-production/scripts/check_media_specs.py` against `references/specs.json`.
+  1. Validate copy and media with `../content-ops-loop/scripts/check_media_specs.py` against `references/specs.json`.
   2. Use whatever browser tool the host provides to fill title, body, tags, and media in Xiaohongshu Creator Studio (`creator.xiaohongshu.com`) and **save as private draft** (or hold before the final Publish click).
   3. Present a preview and Gate 2 checklist; publish only after explicit human confirmation (or let the human click final Publish).
   4. Read back the live note URL (`xiaohongshu.com/explore/<id>`) and append to `publish-log.jsonl`.

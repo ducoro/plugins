@@ -1,0 +1,40 @@
+{
+  "name": "focus-red",
+  "description": "High-impact crimson editorial framing for opinion columns, news commentary, and hot-take reviews.",
+  "sectionNumbering": false,
+  "typography": {
+    "fontFamily": "sans",
+    "fontSize": 16,
+    "lineHeight": 1.8,
+    "letterSpacing": "0.02em",
+    "borderRadius": "6px"
+  },
+  "layout": {
+    "h1Align": "left",
+    "h2Style": "left-bar",
+    "quoteStyle": "left-bar"
+  },
+  "colors": {
+    "primary": "#dc2626",
+    "secondary": "#b91c1c",
+    "text": "#1a1a1a",
+    "textLight": "#555555",
+    "bg": "#ffffff",
+    "surface": "#fef2f2",
+    "codeBg": "#1f1212",
+    "codeText": "#f8e8e8",
+    "inlineCodeBg": "#fee2e2",
+    "inlineCodeText": "#991b1b",
+    "quoteBorder": "#dc2626",
+    "quoteBg": "#fef2f2",
+    "border": "#fecaca"
+  },
+  "darkmode": {
+    "bg": "#1a0f0f",
+    "text": "#e8d8d8",
+    "textLight": "#a08888",
+    "primary": "#f87171",
+    "codeBg": "#2a1515",
+    "quoteBg": "#221010"
+  }
+}

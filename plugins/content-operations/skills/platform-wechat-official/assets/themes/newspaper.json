@@ -1,0 +1,40 @@
+{
+  "name": "newspaper",
+  "description": "Classic long-form journalism with ink-black rules, restrained grayscale, and high density.",
+  "sectionNumbering": false,
+  "typography": {
+    "fontFamily": "serif",
+    "fontSize": 16,
+    "lineHeight": 1.9,
+    "letterSpacing": "0.02em",
+    "borderRadius": "2px"
+  },
+  "layout": {
+    "h1Align": "center",
+    "h2Style": "thin-bottom",
+    "quoteStyle": "minimal-rule"
+  },
+  "colors": {
+    "primary": "#111827",
+    "secondary": "#374151",
+    "text": "#1f2937",
+    "textLight": "#6b7280",
+    "bg": "#fcfcfb",
+    "surface": "#f3f4f6",
+    "codeBg": "#1f2937",
+    "codeText": "#f9fafb",
+    "inlineCodeBg": "#f3f4f6",
+    "inlineCodeText": "#111827",
+    "quoteBorder": "#111827",
+    "quoteBg": "#f9fafb",
+    "border": "#d1d5db"
+  },
+  "darkmode": {
+    "bg": "#141414",
+    "text": "#e5e5e5",
+    "textLight": "#a3a3a3",
+    "primary": "#f5f5f5",
+    "codeBg": "#262626",
+    "quoteBg": "#1f1f1f"
+  }
+}

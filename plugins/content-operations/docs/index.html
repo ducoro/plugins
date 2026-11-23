@@ -855,10 +855,10 @@
 python3 skills/content-ops-loop/scripts/init_workspace.py . --timezone Asia/Shanghai
 
 # 2. Score new topic ideas and flag anything repeated within 14 days
-python3 skills/topic-research/scripts/score_topics.py ./content-ops
+python3 skills/content-ops-loop/scripts/score_topics.py ./content-ops
 
 # 3. Check every platform variant's text, images, ratios, and required fields
-python3 skills/media-production/scripts/check_media_specs.py ./content-ops/drafts/<draft-id> --update-meta
+python3 skills/content-ops-loop/scripts/check_media_specs.py ./content-ops/drafts/<draft-id> --update-meta
 
 # 4. Publish via Official Browser Studio (default, zero setup)
 #    Or if using Instagram/Facebook/Threads/Pinterest official APIs,
@@ -873,10 +873,10 @@ python3 skills/content-ops-loop/scripts/build_boards.py ./content-ops`,
 python3 skills/content-ops-loop/scripts/init_workspace.py . --timezone Asia/Shanghai
 
 # 2. 给候选选题自动打分，并排查近 14 天内是否撞题
-python3 skills/topic-research/scripts/score_topics.py ./content-ops
+python3 skills/content-ops-loop/scripts/score_topics.py ./content-ops
 
 # 3. 发布前自动核对各平台字数、图片格式、画面比例与必填项
-python3 skills/media-production/scripts/check_media_specs.py ./content-ops/drafts/<draft-id> --update-meta
+python3 skills/content-ops-loop/scripts/check_media_specs.py ./content-ops/drafts/<draft-id> --update-meta
 
 # 4. 默认直接通过浏览器进官方创作者后台发稿（零配置）；
 #    若使用 IG / FB / Threads / Pinterest 官方 API，临发前先换 5 小时临时链接：

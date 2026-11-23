@@ -3,12 +3,18 @@
   "displayName": "WeChat Official Account",
   "authType": "oauth2",
   "contentLimits": {
-    "modes": ["image_text"],
+    "modes": ["image_text", "newspic"],
     "maxTitleLength": 64,
     "maxBodyLength": 20000,
     "maxImages": 20,
     "maxVideos": 0,
-    "allowMixedMedia": false
+    "allowMixedMedia": false,
+    "newspicLimits": {
+      "maxTitleLength": 32,
+      "maxBodyLength": 1000,
+      "minImages": 1,
+      "maxImages": 20
+    }
   },
   "mediaRules": {
     "imageFormats": ["jpg", "jpeg", "png", "gif", "bmp"],

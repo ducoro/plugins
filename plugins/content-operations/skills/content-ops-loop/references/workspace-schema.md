@@ -6,7 +6,14 @@ The file-backed `content-ops/` directory is the single source of truth across se
 
 ```text
 content-ops/
-├── brand-profile.md          # Positioning, audience, tone, non-negotiable facts, standing approvals
+├── brand-profile.md          # Positioning, audience, tone, persona, non-negotiable facts, standing approvals
+├── style/                    # Optional voice, corpus, exemplar & custom theme state
+│   ├── style-profile.json    # Publication voice, persona, default theme, taboo words (init via build_playbook.py)
+│   ├── corpus/               # Historical user-authored articles (.md/.txt) for cold-start playbook extraction
+│   ├── lessons.json          # Recorded AI-draft vs human-final edit patterns with occurrence counts
+│   ├── style-playbook.md     # Promoted standing rules (occurrences >= 2 or human-confirmed) + advisory candidates
+│   ├── exemplars.json        # Structural & pacing fingerprints extracted from admired reference articles
+│   └── themes/*.json         # Custom WeChat themes learned via learn_theme.py (loaded automatically via --workspace)
 ├── accounts.json             # Account registry (no secrets—env var names only)
 ├── inbox/                    # Raw source signals (YYYY-MM-DD-<slug>.md)
 ├── topics/

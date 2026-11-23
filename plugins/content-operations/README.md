@@ -18,10 +18,13 @@ One cohesive plugin covers the entire content operations domain so a single agen
 
 | Skill | Responsibility |
 | --- | --- |
-| `content-ops-loop` | Orchestrator: local workspace schema, two human approval gates, recurring operating cadence, board templates, and routing index |
-| `topic-research` | 5-channel topic sourcing (directly using built-in `web_search` / `web_fetch` in Ducoro), 4-dimension scoring card, deduplication cooldown, seasonal calendar, and brief authoring |
-| `media-production` | Fact-checked master draft, multi-platform adaptation without fact drift, built-in `image_generate` artwork & `ducoro-cli board shot` exact-pixel card deck rendering, deterministic image edits, and automated spec checks |
-| `engagement-and-analytics` | 4-tier comment intent triage, rate-limit safety guardrails, 24h/72h/7d metric snapshots, cross-platform attribution, and retro feedback into the topic pool |
+| `content-ops-loop` | Orchestrator: shared workspace schema, readiness diagnostics (`diagnose.py`), shared deterministic utilities (`score_topics.py`, `check_media_specs.py`, `image_ops.py`), two human approval gates, 5 interactive boards, and routing index |
+| `topic-research-cn` | Chinese-market trend radar (Weibo/Toutiao/Baidu live hot boards, Baidu/360 autocomplete demand, CN seasonal calendar, graduated cooldown, Gate 1 brief authoring) |
+| `topic-research-global` | Global/English trend radar (Hacker News & Lobsters live boards, primary English web verification, global seasonal calendar, Gate 1 brief authoring) |
+| `longform-writing` | Deep long-form editorial workshop (WeChat essays, blogs, newsletters, LinkedIn/X long-form): verifiable source ledger (`source_ledger.py`), 7 frameworks & 7 personas, 5-dimension editorial gate (`content_eval.py`), corpus style bootstrap (`build_playbook.py`), ownership-safe exemplar library (`extract_exemplar.py`), mechanical style-risk checks (`check_writing_quality.py`), and scoped time-decayed edit-learning flywheel (`learn_edits.py`) |
+| `shortform-social` | Short-form posts, microblog threads & exact-pixel visual cards (X/Twitter, Xiaohongshu, Threads, Instagram, Pinterest, Facebook, WeChat `newspic`): native hooks, anti-clone rewrites, `image_generate`, and `ducoro-cli board shot` card deck template |
+| `video-production` | Short & long video scripting, subtitles & code-driven video (Douyin, TikTok, YouTube, Bilibili, WeChat Channels, Kuaishou): 0–3s hooks, spoken/shot scripts, safe zones, Remotion/HyperFrames code-driven video & real footage packaging (no text-to-video APIs) |
+| `engagement-and-analytics` | Cross-platform comment triage, anti-spam rate limits, 24h/72h/7d/30d metric snapshots (`aggregate_metrics.py`), and weekly retro feedback paired with each platform's own north-star metrics |
 
 ### Per-Platform Vertical Skills (14 Platforms)
 
@@ -45,7 +48,7 @@ All boards run standalone as static HTML with local data and progressively enhan
 
 1. Load `content-ops-loop`. In **Ducoro**, check `ducoro-cli local-folder list --json` first; if no workspace is registered yet, confirm with the user to initialize the default internal path `~/.ducoro/workspaces/content-ops` (or an external folder if the user explicitly prefers one) via `scripts/init_workspace.py`, then register it globally with `ducoro-cli local-folder register content-ops <path>` so every Space shares the same source of truth. Outside Ducoro, run `scripts/init_workspace.py <target-dir> [--timezone <IANA-tz>]`.
 2. Fill in `brand-profile.md` and `accounts.json` (credentials stay in environment variables—never commit secrets).
-3. Load `topic-research` plus only the `platform-<name>` skill(s) you are targeting in the current turn.
+3. Load only the regional radar (`topic-research-cn` or `topic-research-global`), the matching format workshop (`longform-writing`, `shortform-social`, or `video-production`), and the target `platform-<name>` skill(s) for the current turn.
 4. Refresh Space board snapshots from the Local Folder with `scripts/build_boards.py <workspace>` (or `--board <name> --board-dir <space-work-root>/boards/<board-id>`) and verify integrity with `scripts/validate_workspace.py <workspace>`.
 
 ## Problem Reporting
@@ -54,11 +57,10 @@ When a built-in script fails unexpectedly or an upstream platform API / Creator 
 
 ## References & Upstream Inspiration
 
-This plugin is an independent, self-contained re-implementation with zero external backend or MCP dependencies. Its multi-platform specification matrix, publishing workflow taxonomy, and operational dashboard structure drew conceptual inspiration from the following open-source project snapshot:
+This plugin is an independent, self-contained, zero-dependency implementation with zero external backend or MCP dependencies. Its WeChat Official Account 18 standalone themes & gallery, inline-HTML formatting fixes, 16-rule HTML validation, `newspic` image-carousel draft support, verifiable source ledger, 5-dimension editorial gate, writing personas, mechanical style-risk checks, rewrite similarity gate, and scoped time-decayed edit-learning flywheel drew conceptual inspiration from:
 
-- **Repository**: https://github.com/yikart/AiToEarn
-- **Branch**: `main`
-- **Commit**: [`11dd1957d0c69ae2b27a0b8a47acdf6675715558`](https://github.com/yikart/AiToEarn/commit/11dd1957d0c69ae2b27a0b8a47acdf6675715558) (`2026-11-16`)
-- **Diff against latest upstream `main`**: https://github.com/yikart/AiToEarn/compare/11dd1957d0c69ae2b27a0b8a47acdf6675715558...main
+- **WeWrite** (MIT License):
+  - **Repository**: https://github.com/imraywang/wewrite
+  - **Commit**: [`365dcaeb5f3e13d8b27e0974659447678c3a7ed0`](https://github.com/imraywang/wewrite/commit/365dcaeb5f3e13d8b27e0974659447678c3a7ed0) (`2026-11-23`)
 
 > Note for maintainers: Keep upstream provenance references strictly in this `README.md`. Do not introduce upstream brand names, private endpoints, or local filesystem paths into any `SKILL.md`, `references/`, `scripts/`, or board assets.

@@ -1,0 +1,40 @@
+{
+  "name": "elegant-rose",
+  "description": "Soft blush canvas with deep rose typography tailored for lifestyle, design, and personal essays.",
+  "sectionNumbering": false,
+  "typography": {
+    "fontFamily": "sans",
+    "fontSize": 16,
+    "lineHeight": 1.85,
+    "letterSpacing": "0.03em",
+    "borderRadius": "12px"
+  },
+  "layout": {
+    "h1Align": "center",
+    "h2Style": "left-bar",
+    "quoteStyle": "card"
+  },
+  "colors": {
+    "primary": "#be185d",
+    "secondary": "#9d174d",
+    "text": "#3d1f2e",
+    "textLight": "#7a5068",
+    "bg": "#fdf2f8",
+    "surface": "#fce7f3",
+    "codeBg": "#2b1320",
+    "codeText": "#fce7f3",
+    "inlineCodeBg": "#fce7f3",
+    "inlineCodeText": "#9d174d",
+    "quoteBorder": "#be185d",
+    "quoteBg": "#fae4f0",
+    "border": "#f5c2dc"
+  },
+  "darkmode": {
+    "bg": "#1a0f14",
+    "text": "#e8d0dc",
+    "textLight": "#a07888",
+    "primary": "#f472b6",
+    "codeBg": "#2a1520",
+    "quoteBg": "#221018"
+  }
+}

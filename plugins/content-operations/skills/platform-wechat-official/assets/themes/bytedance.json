@@ -1,0 +1,40 @@
+{
+  "name": "bytedance",
+  "description": "Clean product-engineering style with bright cobalt accents and generous vertical breathing room.",
+  "sectionNumbering": false,
+  "typography": {
+    "fontFamily": "sans",
+    "fontSize": 16,
+    "lineHeight": 2.0,
+    "letterSpacing": "0.02em",
+    "borderRadius": "8px"
+  },
+  "layout": {
+    "h1Align": "left",
+    "h2Style": "left-bar",
+    "quoteStyle": "left-bar"
+  },
+  "colors": {
+    "primary": "#1966ff",
+    "secondary": "#0f52d6",
+    "text": "#1f2329",
+    "textLight": "#646a73",
+    "bg": "#ffffff",
+    "surface": "#f5f7fa",
+    "codeBg": "#181c24",
+    "codeText": "#e6edf3",
+    "inlineCodeBg": "#edf3ff",
+    "inlineCodeText": "#1249b8",
+    "quoteBorder": "#1966ff",
+    "quoteBg": "#f0f5ff",
+    "border": "#dee0e3"
+  },
+  "darkmode": {
+    "bg": "#1a1a1a",
+    "text": "#e8e8e8",
+    "textLight": "#a0a0a0",
+    "primary": "#4e8fff",
+    "codeBg": "#242830",
+    "quoteBg": "#1e2a3a"
+  }
+}

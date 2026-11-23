@@ -1,0 +1,40 @@
+{
+  "name": "bauhaus",
+  "description": "Bold geometric accent theme with vivid red/cobalt highlights and structured section pills.",
+  "sectionNumbering": true,
+  "typography": {
+    "fontFamily": "sans",
+    "fontSize": 16,
+    "lineHeight": 1.75,
+    "letterSpacing": "0.01em",
+    "borderRadius": "0px"
+  },
+  "layout": {
+    "h1Align": "left",
+    "h2Style": "bold-bottom",
+    "quoteStyle": "left-bar"
+  },
+  "colors": {
+    "primary": "#dc2626",
+    "secondary": "#1d4ed8",
+    "text": "#18181b",
+    "textLight": "#52525b",
+    "bg": "#fffdf9",
+    "surface": "#f4f4f5",
+    "codeBg": "#18181b",
+    "codeText": "#fafafa",
+    "inlineCodeBg": "#fee2e2",
+    "inlineCodeText": "#b91c1c",
+    "quoteBorder": "#1d4ed8",
+    "quoteBg": "#eff6ff",
+    "border": "#d4d4d8"
+  },
+  "darkmode": {
+    "bg": "#18181b",
+    "text": "#f4f4f5",
+    "textLight": "#a1a1aa",
+    "primary": "#f87171",
+    "codeBg": "#09090b",
+    "quoteBg": "#1e293b"
+  }
+}

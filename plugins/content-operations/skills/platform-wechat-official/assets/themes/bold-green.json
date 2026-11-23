@@ -1,0 +1,40 @@
+{
+  "name": "bold-green",
+  "description": "Forest-green editorial palette for sustainability, health, and calm long-form reading.",
+  "sectionNumbering": false,
+  "typography": {
+    "fontFamily": "sans",
+    "fontSize": 16,
+    "lineHeight": 1.8,
+    "letterSpacing": "0.02em",
+    "borderRadius": "8px"
+  },
+  "layout": {
+    "h1Align": "left",
+    "h2Style": "pill-banner",
+    "quoteStyle": "card"
+  },
+  "colors": {
+    "primary": "#15803d",
+    "secondary": "#16a34a",
+    "text": "#1a2e1a",
+    "textLight": "#4a6a4a",
+    "bg": "#ffffff",
+    "surface": "#f0fdf4",
+    "codeBg": "#0f1f14",
+    "codeText": "#e2f5e6",
+    "inlineCodeBg": "#dcfce7",
+    "inlineCodeText": "#14532d",
+    "quoteBorder": "#15803d",
+    "quoteBg": "#f0fdf4",
+    "border": "#bbf7d0"
+  },
+  "darkmode": {
+    "bg": "#0f1a0f",
+    "text": "#d8e8d8",
+    "textLight": "#8aaa8a",
+    "primary": "#4ade80",
+    "codeBg": "#162816",
+    "quoteBg": "#142014"
+  }
+}

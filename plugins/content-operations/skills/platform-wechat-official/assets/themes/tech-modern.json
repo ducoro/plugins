@@ -1,0 +1,40 @@
+{
+  "name": "tech-modern",
+  "description": "Sharp engineering & AI deep-dive style with cyan-indigo accents and numbered H2 sections.",
+  "sectionNumbering": true,
+  "typography": {
+    "fontFamily": "sans",
+    "fontSize": 15,
+    "lineHeight": 1.8,
+    "letterSpacing": "0.01em",
+    "borderRadius": "8px"
+  },
+  "layout": {
+    "h1Align": "left",
+    "h2Style": "gradient-underline",
+    "quoteStyle": "left-bar"
+  },
+  "colors": {
+    "primary": "#0284c7",
+    "secondary": "#4f46e5",
+    "text": "#1f2937",
+    "textLight": "#64748b",
+    "bg": "#ffffff",
+    "surface": "#f0f9ff",
+    "codeBg": "#0f172a",
+    "codeText": "#e2e8f0",
+    "inlineCodeBg": "#e0f2fe",
+    "inlineCodeText": "#0369a1",
+    "quoteBorder": "#0284c7",
+    "quoteBg": "#f0f9ff",
+    "border": "#e2e8f0"
+  },
+  "darkmode": {
+    "bg": "#0f172a",
+    "text": "#e2e8f0",
+    "textLight": "#94a3b8",
+    "primary": "#38bdf8",
+    "codeBg": "#020617",
+    "quoteBg": "#1e293b"
+  }
+}

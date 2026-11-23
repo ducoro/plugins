@@ -26,9 +26,9 @@ Publishing is the midpoint, not the finish line. Close the loop by turning comme
 2. **Capture work & account snapshots** into `analytics/snapshots.jsonl`:
    - Work snapshots: `views`, `likes`, `comments`, `shares`, `saves` plus `platformMetrics` (percentages as `0–100` floats, ratios as decimals, durations in `*Sec`).
    - Account snapshots (`window: "account"`): follower delta, profile visits, page follows—tracked in `accountSnapshots` by both `aggregate_metrics.py` and `build_boards.py`.
-3. **Write weekly retrospective** (`analytics/retros/YYYY-Www.md`) using `references/retro-attribution.md` (`topWorks`, `bottomWorks`, `crossPlatformTopics` from `aggregate_metrics.py`). Place next-cycle checkboxes strictly under `## Next-Cycle Actions` (parsed into `analytics-retro-board`).
+3. **Write weekly retrospective** (`analytics/retros/YYYY-Www.md`) using `references/retro-attribution.md` (`topWorks`, `bottomWorks`, `crossPlatformTopics` from `aggregate_metrics.py`) **paired with each target platform's own north-star metrics in `../platform-<name>/SKILL.md`** (for example, open/finish/share rates for WeChat Official vs. 3s retention for short video vs. bookmarks/replies for X). Place next-cycle checkboxes strictly under `## Next-Cycle Actions` (parsed into `analytics-retro-board`).
 4. **Feed back into `inbox/` and `topics/topics.json`**:
-   - Promote recurring comments and retro actions into `inbox/` signals for `../topic-research/SKILL.md` (set `cooldownOverrideReason` if intentionally doubling down within 14 days).
+   - Promote recurring comments and retro actions into `inbox/` signals for `../topic-research-cn/SKILL.md` or `../topic-research-global/SKILL.md` (set `cooldownOverrideReason` if intentionally doubling down within 14 days).
    - Rebuild `engagement-inbox-board` and `analytics-retro-board` via `../content-ops-loop/scripts/build_boards.py`.
 
 ## Done When

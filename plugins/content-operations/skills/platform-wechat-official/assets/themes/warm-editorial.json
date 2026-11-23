@@ -1,0 +1,40 @@
+{
+  "name": "warm-editorial",
+  "description": "Warm literary magazine aesthetic with amber-terracotta highlights and generous line rhythm.",
+  "sectionNumbering": false,
+  "typography": {
+    "fontFamily": "serif-body-sans-heading",
+    "fontSize": 16,
+    "lineHeight": 1.85,
+    "letterSpacing": "0.02em",
+    "borderRadius": "8px"
+  },
+  "layout": {
+    "h1Align": "left",
+    "h2Style": "left-bar",
+    "quoteStyle": "card"
+  },
+  "colors": {
+    "primary": "#b45309",
+    "secondary": "#d97706",
+    "text": "#2e2924",
+    "textLight": "#78716c",
+    "bg": "#fdfaf5",
+    "surface": "#f7f1e6",
+    "codeBg": "#292524",
+    "codeText": "#f5f5f4",
+    "inlineCodeBg": "#f5efe4",
+    "inlineCodeText": "#9a3412",
+    "quoteBorder": "#b45309",
+    "quoteBg": "#fbf5eb",
+    "border": "#e7dfd1"
+  },
+  "darkmode": {
+    "bg": "#1c1917",
+    "text": "#e7e5e4",
+    "textLight": "#a8a29e",
+    "primary": "#f59e0b",
+    "codeBg": "#292524",
+    "quoteBg": "#29231d"
+  }
+}

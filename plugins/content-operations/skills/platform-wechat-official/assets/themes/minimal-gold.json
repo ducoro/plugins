@@ -1,0 +1,40 @@
+{
+  "name": "minimal-gold",
+  "description": "Restrained luxury editorial palette with fine warm-gold hairlines on crisp white.",
+  "sectionNumbering": false,
+  "typography": {
+    "fontFamily": "serif-body-sans-heading",
+    "fontSize": 16,
+    "lineHeight": 1.85,
+    "letterSpacing": "0.04em",
+    "borderRadius": "4px"
+  },
+  "layout": {
+    "h1Align": "center",
+    "h2Style": "centered-clean",
+    "quoteStyle": "minimal-rule"
+  },
+  "colors": {
+    "primary": "#8a6206",
+    "secondary": "#b8860b",
+    "text": "#262626",
+    "textLight": "#5f5c55",
+    "bg": "#ffffff",
+    "surface": "#faf8f3",
+    "codeBg": "#1c1914",
+    "codeText": "#f3ede0",
+    "inlineCodeBg": "#f7f2e4",
+    "inlineCodeText": "#6e4e05",
+    "quoteBorder": "#b8860b",
+    "quoteBg": "#fdfbf5",
+    "border": "#e6dcc4"
+  },
+  "darkmode": {
+    "bg": "#141210",
+    "text": "#e0dcd0",
+    "textLight": "#9a9488",
+    "primary": "#d4a843",
+    "codeBg": "#1e1c18",
+    "quoteBg": "#1a1810"
+  }
+}

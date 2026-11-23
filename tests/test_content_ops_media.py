@@ -11,8 +11,8 @@ import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / 'plugins' / 'content-operations' / 'skills'
-IMG_PY = SKILLS / 'media-production' / 'scripts' / 'image_ops.py'
-SPEC_PY = SKILLS / 'media-production' / 'scripts' / 'check_media_specs.py'
+IMG_PY = SKILLS / 'content-ops-loop' / 'scripts' / 'image_ops.py'
+SPEC_PY = SKILLS / 'content-ops-loop' / 'scripts' / 'check_media_specs.py'
 HAS_PILLOW = importlib.util.find_spec('PIL') is not None
 
 

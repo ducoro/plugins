@@ -1,0 +1,40 @@
+{
+  "name": "impeccable",
+  "description": "Refined deep-teal and warm-amber editorial design built for understated authority without AI-template gradients.",
+  "sectionNumbering": false,
+  "typography": {
+    "fontFamily": "serif-body-sans-heading",
+    "fontSize": 16,
+    "lineHeight": 1.9,
+    "letterSpacing": "0.02em",
+    "borderRadius": "6px"
+  },
+  "layout": {
+    "h1Align": "left",
+    "h2Style": "left-bar",
+    "quoteStyle": "card"
+  },
+  "colors": {
+    "primary": "#1a6b5a",
+    "secondary": "#9a6308",
+    "text": "#2c3138",
+    "textLight": "#5c6470",
+    "bg": "#ffffff",
+    "surface": "#f8f9fa",
+    "codeBg": "#1e293b",
+    "codeText": "#e2e8f0",
+    "inlineCodeBg": "#e8f5f0",
+    "inlineCodeText": "#135245",
+    "quoteBorder": "#1a6b5a",
+    "quoteBg": "#edf7f3",
+    "border": "#dbe3e0"
+  },
+  "darkmode": {
+    "bg": "#181a1b",
+    "text": "#d8dce0",
+    "textLight": "#9aa3ad",
+    "primary": "#3db897",
+    "codeBg": "#22262b",
+    "quoteBg": "#1c2a26"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "bold-navy",
+  "description": "Executive report & industry analysis palette with deep navy headers and gold underlines.",
+  "sectionNumbering": true,
+  "typography": {
+    "fontFamily": "sans",
+    "fontSize": 16,
+    "lineHeight": 1.8,
+    "letterSpacing": "0.02em",
+    "borderRadius": "6px"
+  },
+  "layout": {
+    "h1Align": "left",
+    "h2Style": "left-bar-rule",
+    "quoteStyle": "card"
+  },
+  "colors": {
+    "primary": "#1e3a5f",
+    "secondary": "#b48a3e",
+    "text": "#263238",
+    "textLight": "#607d8b",
+    "bg": "#ffffff",
+    "surface": "#f4f7fa",
+    "codeBg": "#102033",
+    "codeText": "#e2e8f0",
+    "inlineCodeBg": "#eef2f7",
+    "inlineCodeText": "#1e3a5f",
+    "quoteBorder": "#b48a3e",
+    "quoteBg": "#f8f9fb",
+    "border": "#dce4ee"
+  },
+  "darkmode": {
+    "bg": "#111827",
+    "text": "#e5e7eb",
+    "textLight": "#9ca3af",
+    "primary": "#93c5fd",
+    "codeBg": "#0b1220",
+    "quoteBg": "#1f2937"
+  }
+}

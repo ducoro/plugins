@@ -1,0 +1,40 @@
+{
+  "name": "midnight",
+  "description": "High-contrast obsidian slate theme tuned for late-night essays and developer notes.",
+  "sectionNumbering": false,
+  "typography": {
+    "fontFamily": "sans",
+    "fontSize": 15,
+    "lineHeight": 1.8,
+    "letterSpacing": "0.02em",
+    "borderRadius": "8px"
+  },
+  "layout": {
+    "h1Align": "left",
+    "h2Style": "left-bar",
+    "quoteStyle": "card"
+  },
+  "colors": {
+    "primary": "#818cf8",
+    "secondary": "#6366f1",
+    "text": "#e2e8f0",
+    "textLight": "#94a3b8",
+    "bg": "#111827",
+    "surface": "#1f2937",
+    "codeBg": "#030712",
+    "codeText": "#e5e7eb",
+    "inlineCodeBg": "#1f2937",
+    "inlineCodeText": "#a5b4fc",
+    "quoteBorder": "#818cf8",
+    "quoteBg": "#1e293b",
+    "border": "#334155"
+  },
+  "darkmode": {
+    "bg": "#111827",
+    "text": "#e2e8f0",
+    "textLight": "#94a3b8",
+    "primary": "#818cf8",
+    "codeBg": "#030712",
+    "quoteBg": "#1e293b"
+  }
+}

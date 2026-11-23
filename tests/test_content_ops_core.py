@@ -12,7 +12,7 @@ SKILLS = ROOT / 'plugins' / 'content-operations' / 'skills'
 INIT_PY = SKILLS / 'content-ops-loop' / 'scripts' / 'init_workspace.py'
 VAL_PY = SKILLS / 'content-ops-loop' / 'scripts' / 'validate_workspace.py'
 BUILD_PY = SKILLS / 'content-ops-loop' / 'scripts' / 'build_boards.py'
-SCORE_PY = SKILLS / 'topic-research' / 'scripts' / 'score_topics.py'
+SCORE_PY = SKILLS / 'content-ops-loop' / 'scripts' / 'score_topics.py'
 AGG_PY = SKILLS / 'engagement-and-analytics' / 'scripts' / 'aggregate_metrics.py'
 
 BOARDS = [

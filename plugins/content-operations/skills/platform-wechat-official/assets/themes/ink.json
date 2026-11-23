@@ -1,0 +1,40 @@
+{
+  "name": "ink",
+  "description": "Warm rice-paper canvas with ink-charcoal typography inspired by classical essays and humanities writing.",
+  "sectionNumbering": false,
+  "typography": {
+    "fontFamily": "serif",
+    "fontSize": 16,
+    "lineHeight": 2.0,
+    "letterSpacing": "0.05em",
+    "borderRadius": "2px"
+  },
+  "layout": {
+    "h1Align": "center",
+    "h2Style": "centered-clean",
+    "quoteStyle": "minimal-rule"
+  },
+  "colors": {
+    "primary": "#3f3f3f",
+    "secondary": "#5c5c5c",
+    "text": "#1a1a1a",
+    "textLight": "#5e5a54",
+    "bg": "#f8f5f0",
+    "surface": "#f0ebe3",
+    "codeBg": "#24211d",
+    "codeText": "#efeae0",
+    "inlineCodeBg": "#ebe4d8",
+    "inlineCodeText": "#2b2824",
+    "quoteBorder": "#7a746b",
+    "quoteBg": "#f2ede4",
+    "border": "#dcd4c6"
+  },
+  "darkmode": {
+    "bg": "#1a1816",
+    "text": "#d8d2c8",
+    "textLight": "#9a9488",
+    "primary": "#b8b0a0",
+    "codeBg": "#252220",
+    "quoteBg": "#222018"
+  }
+}

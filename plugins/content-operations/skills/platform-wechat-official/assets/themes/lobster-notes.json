@@ -1,0 +1,40 @@
+{
+  "name": "lobster-notes",
+  "description": "High-recognition vermilion-orange tutorial palette with dark code cards and mobile-first pacing.",
+  "sectionNumbering": true,
+  "typography": {
+    "fontFamily": "sans",
+    "fontSize": 16,
+    "lineHeight": 2.0,
+    "letterSpacing": "0.5px",
+    "borderRadius": "8px"
+  },
+  "layout": {
+    "h1Align": "left",
+    "h2Style": "pill-banner",
+    "quoteStyle": "card"
+  },
+  "colors": {
+    "primary": "#c8471c",
+    "secondary": "#e05a2b",
+    "text": "#2d2d2d",
+    "textLight": "#666666",
+    "bg": "#ffffff",
+    "surface": "#fff8f5",
+    "codeBg": "#1e1e1e",
+    "codeText": "#e5e5e5",
+    "inlineCodeBg": "#fff0ea",
+    "inlineCodeText": "#9c3310",
+    "quoteBorder": "#c8471c",
+    "quoteBg": "#fff6f2",
+    "border": "#f5d5c8"
+  },
+  "darkmode": {
+    "bg": "#1a1a1a",
+    "text": "#e0e0e0",
+    "textLight": "#999999",
+    "primary": "#ff7d45",
+    "codeBg": "#2d2d2d",
+    "quoteBg": "#2a1f1a"
+  }
+}

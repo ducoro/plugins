@@ -24,7 +24,7 @@ class CatalogValidationTest(unittest.TestCase):
         shutil.copytree(ROOT / 'plugins', self.root / 'plugins')
 
     def test_current_catalog(self):
-        self.assertEqual(validator.validate(self.root), (5, 23, 1))
+        self.assertEqual(validator.validate(self.root), (5, 26, 1))
 
     def test_marketplace_sync_and_boundaries(self):
         original = json.loads((self.root / 'marketplace.json').read_text())
@@ -130,7 +130,7 @@ class CatalogValidationTest(unittest.TestCase):
             original
             + '\nUse `ducoro-cli feedback send "ok"`, `window.ducoro`, and Ducoro Board SDK.\n'
         )
-        self.assertEqual(validator.validate(self.root), (5, 23, 1))
+        self.assertEqual(validator.validate(self.root), (5, 26, 1))
 
 
 if __name__ == '__main__':

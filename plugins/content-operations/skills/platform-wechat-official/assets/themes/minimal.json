@@ -1,0 +1,40 @@
+{
+  "name": "minimal",
+  "description": "Zero-distraction monochrome grayscale layout that puts pure typography and argument first.",
+  "sectionNumbering": false,
+  "typography": {
+    "fontFamily": "sans",
+    "fontSize": 16,
+    "lineHeight": 1.8,
+    "letterSpacing": "0.01em",
+    "borderRadius": "4px"
+  },
+  "layout": {
+    "h1Align": "center",
+    "h2Style": "thin-bottom",
+    "quoteStyle": "minimal-rule"
+  },
+  "colors": {
+    "primary": "#262626",
+    "secondary": "#525252",
+    "text": "#262626",
+    "textLight": "#5c5c5c",
+    "bg": "#ffffff",
+    "surface": "#f7f7f7",
+    "codeBg": "#1c1c1c",
+    "codeText": "#ebebeb",
+    "inlineCodeBg": "#f0f0f0",
+    "inlineCodeText": "#222222",
+    "quoteBorder": "#737373",
+    "quoteBg": "#f7f7f7",
+    "border": "#e0e0e0"
+  },
+  "darkmode": {
+    "bg": "#1a1a1a",
+    "text": "#d4d4d4",
+    "textLight": "#949494",
+    "primary": "#e5e5e5",
+    "codeBg": "#252525",
+    "quoteBg": "#222222"
+  }
+}

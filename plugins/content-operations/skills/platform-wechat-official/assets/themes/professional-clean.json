@@ -1,0 +1,40 @@
+{
+  "name": "professional-clean",
+  "description": "Clean business & editorial default: deep slate text, crisp blue accent, high readability.",
+  "sectionNumbering": false,
+  "typography": {
+    "fontFamily": "sans",
+    "fontSize": 16,
+    "lineHeight": 1.8,
+    "letterSpacing": "0.02em",
+    "borderRadius": "6px"
+  },
+  "layout": {
+    "h1Align": "left",
+    "h2Style": "left-bar-rule",
+    "quoteStyle": "left-bar"
+  },
+  "colors": {
+    "primary": "#2563eb",
+    "secondary": "#1d4ed8",
+    "text": "#2c2c2c",
+    "textLight": "#6b7280",
+    "bg": "#ffffff",
+    "surface": "#f8fafc",
+    "codeBg": "#1e293b",
+    "codeText": "#e2e8f0",
+    "inlineCodeBg": "#f1f5f9",
+    "inlineCodeText": "#0f172a",
+    "quoteBorder": "#2563eb",
+    "quoteBg": "#f8fafc",
+    "border": "#e5e7eb"
+  },
+  "darkmode": {
+    "bg": "#18181b",
+    "text": "#e4e4e7",
+    "textLight": "#a1a1aa",
+    "primary": "#60a5fa",
+    "codeBg": "#0f172a",
+    "quoteBg": "#27272a"
+  }
+}

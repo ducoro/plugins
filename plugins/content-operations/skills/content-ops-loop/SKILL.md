@@ -18,12 +18,19 @@ Load only the skills relevant to the current stage and target platform(s). Never
 
 ## Skill Routing Table
 
+Load **only** the skills needed for the current region, content format, and target platform(s)—never load all 14 platform skills at once, and never mix WeChat long-form workflows into X/Twitter or short-video tasks.
+
 | Stage / Need | Load Skill |
 | --- | --- |
-| Sourcing signals, scoring topics, writing briefs | `../topic-research/SKILL.md` |
-| Writing master copy, adapting variants, image edits, spec validation | `../media-production/SKILL.md` |
-| Comment triage, rate-limited replies, 24h/72h/7d metrics, weekly retros | `../engagement-and-analytics/SKILL.md` |
-| Platform-specific topics, copy style, specs, API or browser publish protocol | `../platform-<name>/SKILL.md` |
+| Sourcing CN-market topics (Weibo/Toutiao/Baidu hot boards, Baidu/360 SEO, CN anchors) | `../topic-research-cn/SKILL.md` |
+| Sourcing Global/EN topics (Hacker News/Lobsters, global anchors, primary English web research) | `../topic-research-global/SKILL.md` |
+| Long-form editorial writing (WeChat essays, blogs, newsletters, LinkedIn/X long-form) | `../longform-writing/SKILL.md` |
+| Short-form social posts, threads & exact-pixel visual cards (X, Xiaohongshu, Threads, IG, Pinterest, WeChat newspic) | `../shortform-social/SKILL.md` |
+| Short/long video scripting, subtitles & code-driven video (Douyin, TikTok, YouTube, Bilibili, Channels, Kuaishou) | `../video-production/SKILL.md` |
+| Cross-platform comment triage, rate limits, 24h/72h/7d/30d snapshots & weekly retro board | `../engagement-and-analytics/SKILL.md` |
+| Platform-specific radar, voice, hard specs, publish protocol & platform-native retro metrics | `../platform-<name>/SKILL.md` |
+
+Shared deterministic utilities in `scripts/` (reused across regions and formats): `init_workspace.py`, `validate_workspace.py`, `diagnose.py`, `score_topics.py`, `check_media_specs.py`, `image_ops.py`, `build_boards.py`.
 
 Available platform skills (14):
 - **CN**: `platform-xiaohongshu`, `platform-douyin`, `platform-bilibili`, `platform-wechat-official`, `platform-wechat-channels`, `platform-kuaishou`
@@ -73,13 +80,14 @@ Every platform supports **only two legitimate execution paths**—never extract 
    - **Outside Ducoro** (when `ducoro-cli` is unavailable, e.g. Claude Code / Codex): run `python3 scripts/init_workspace.py <workspace-root> --timezone <IANA-tz>` (e.g., `Asia/Shanghai`, `America/New_York`, default `UTC`) and point collaborating sessions to the same path via `CONTENT_OPS_ROOT`.
    - Read `brand-profile.md` and `accounts.json`. Never hardcode credentials; `accounts.json` stores only environment variable names (e.g., `X_ACCESS_TOKEN`), never raw tokens.
 2. **Execute the requested stage(s).**
-   - **Intake & topics**: collect signals into `inbox/`, score and deduplicate via `topic-research`, pause at **Approval Gate 1** before investing production effort.
-   - **Production & adaptation**: draft fact-checked `master.md` first, then load each target `platform-<name>` skill to produce native `variants/<platform>.md` and media assets; validate every variant with `media-production/scripts/check_media_specs.py`.
+   - **Intake & topics**: collect regional signals into `inbox/` via `topic-research-cn` or `topic-research-global` (plus platform-native radars such as `platform-wechat-official/scripts/search_wechat_articles.py`), score and deduplicate via `scripts/score_topics.py`, and pause at **Approval Gate 1** before investing production effort.
+   - **Production & adaptation**: load only the matching format workshop (`longform-writing`, `shortform-social`, or `video-production`) plus the target `platform-<name>` skill(s) to produce native `variants/<platform>.md` and media assets; validate every variant with `scripts/check_media_specs.py`.
    - **Schedule & publish**: add entries to `calendar.json`, verify facts + version + authorization at **Approval Gate 2**, execute via the platform's API client or browser workflow, and **read back** the live public URL and work ID into `publish-log.jsonl`. Never mark a post `published` without live verification.
    - **Engagement & analytics**: pull comments and metrics per `engagement-and-analytics`, triage comments into 4 tiers, respect rate limits, record 24h/72h/7d snapshots in `analytics/snapshots.jsonl`, and feed high-signal questions and retro findings back into `inbox/` and `topics/`.
-3. **Validate and refresh boards.**
+3. **Validate, diagnose, and refresh boards.**
    ```sh
    python3 scripts/validate_workspace.py <content-ops-path>
+   python3 scripts/diagnose.py --workspace <content-ops-path> --json
    python3 scripts/build_boards.py <content-ops-path>
    ```
    - Inside Ducoro, canonical data stays in the registered Local Folder (default `~/.ducoro/workspaces/content-ops`), while each Space Board lives under that Space's `boards/<board-id>/`. Create each Board with `ducoro-cli board new --space <space-id> --title "<Board Title>" --json`, then project data from the Local Folder into the Board's `assets/data.json` via `python3 scripts/build_boards.py <local-folder-path> --board <board-name> --board-dir <space-work-root>/boards/<board-id>` (add `--overwrite-templates` on first assembly) and run `ducoro-cli board check` / `ducoro-cli board shot` before sharing links.

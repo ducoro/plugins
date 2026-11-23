@@ -1,0 +1,40 @@
+{
+  "name": "github",
+  "description": "Developer documentation palette modeled after GitHub Markdown with crisp neutral borders.",
+  "sectionNumbering": false,
+  "typography": {
+    "fontFamily": "sans",
+    "fontSize": 15,
+    "lineHeight": 1.75,
+    "letterSpacing": "0",
+    "borderRadius": "6px"
+  },
+  "layout": {
+    "h1Align": "left",
+    "h2Style": "thin-bottom",
+    "quoteStyle": "minimal-rule"
+  },
+  "colors": {
+    "primary": "#0969da",
+    "secondary": "#0550ae",
+    "text": "#1f2328",
+    "textLight": "#57606a",
+    "bg": "#ffffff",
+    "surface": "#f6f8fa",
+    "codeBg": "#0d1117",
+    "codeText": "#e6edf3",
+    "inlineCodeBg": "#eff1f3",
+    "inlineCodeText": "#0550ae",
+    "quoteBorder": "#d0d7de",
+    "quoteBg": "#f6f8fa",
+    "border": "#d0d7de"
+  },
+  "darkmode": {
+    "bg": "#0d1117",
+    "text": "#e6edf3",
+    "textLight": "#8b949e",
+    "primary": "#58a6ff",
+    "codeBg": "#161b22",
+    "quoteBg": "#161b22"
+  }
+}

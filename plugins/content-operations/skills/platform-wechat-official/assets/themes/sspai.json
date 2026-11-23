@@ -1,0 +1,40 @@
+{
+  "name": "sspai",
+  "description": "Warm off-white editorial canvas with signature vermilion red accents for digital life & tools.",
+  "sectionNumbering": false,
+  "typography": {
+    "fontFamily": "sans",
+    "fontSize": 15,
+    "lineHeight": 1.85,
+    "letterSpacing": "0.02em",
+    "borderRadius": "6px"
+  },
+  "layout": {
+    "h1Align": "left",
+    "h2Style": "thin-bottom",
+    "quoteStyle": "left-bar"
+  },
+  "colors": {
+    "primary": "#c7372f",
+    "secondary": "#d4524b",
+    "text": "#333333",
+    "textLight": "#888888",
+    "bg": "#fafaf7",
+    "surface": "#f5f2ed",
+    "codeBg": "#262322",
+    "codeText": "#f5f2ed",
+    "inlineCodeBg": "#f5f2ed",
+    "inlineCodeText": "#c7372f",
+    "quoteBorder": "#c7372f",
+    "quoteBg": "#fdf5f4",
+    "border": "#e8e2d8"
+  },
+  "darkmode": {
+    "bg": "#1c1c1a",
+    "text": "#e0ddd8",
+    "textLight": "#9a9790",
+    "primary": "#e05a52",
+    "codeBg": "#2a2825",
+    "quoteBg": "#2a2220"
+  }
+}
