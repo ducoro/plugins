@@ -1,4 +1,4 @@
-"""Validate the official Skill + MCP plugin marketplace without third-party dependencies."""
+"""Validate the official Ducoro Skill + MCP plugin marketplace without third-party dependencies."""
 import json
 from pathlib import Path
 import re
@@ -8,7 +8,8 @@ NAME = re.compile(r'[a-z0-9]+(?:-[a-z0-9]+)*\Z')
 VERSION = re.compile(r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\Z')
 ENV_PLACEHOLDER = re.compile(r'\$\{[A-Z][A-Z0-9_]*\}')
 SENSITIVE_KEY = re.compile(r'(token|secret|password|passwd|api[_-]?key|authorization)', re.I)
-FORBIDDEN_BUNDLE_ENTRIES = ['hooks', 'commands', 'agents', '.app.json']
+FORBIDDEN_ROOT_ENTRIES = ['.agents', '.claude-plugin']
+FORBIDDEN_BUNDLE_ENTRIES = ['hooks', 'commands', 'agents', '.app.json', '.claude-plugin', '.codex-plugin']
 BARE_DUCORO_CLI = re.compile(
     r'(?<![A-Za-z0-9_.-])ducoro\s+(?:board|feedback|media|local-folder|space|spaces|agent|agents|daemon|job|task|plan|plugin|skill|mcp|cli)\b|`ducoro`\s+CLI'
 )
@@ -28,7 +29,7 @@ def read_object(path):
     return value
 
 
-def extract_marketplace_plugins(catalog, label, expect_string_source=False):
+def extract_marketplace_plugins(catalog, label):
     require(catalog.get('name') == 'ducoro', f'{label}: marketplace identity must be ducoro')
     entries = catalog.get('plugins')
     require(isinstance(entries, list) and entries, f'{label}: catalog must contain plugins')
@@ -42,12 +43,9 @@ def extract_marketplace_plugins(catalog, label, expect_string_source=False):
         seen.add(name)
         source = entry.get('source')
         expected_path = f'./plugins/{name}'
-        if expect_string_source:
-            require(source == expected_path, f'{label}/{name}: source must be "{expected_path}"')
-        else:
-            require(isinstance(source, dict), f'{label}/{name}: source must be an object')
-            require(source.get('source') == 'local', f'{label}/{name}: source must be local')
-            require(source.get('path') == expected_path, f'{label}/{name}: source must point to its bundle')
+        require(isinstance(source, dict), f'{label}/{name}: source must be an object')
+        require(source.get('source') == 'local', f'{label}/{name}: source must be local')
+        require(source.get('path') == expected_path, f'{label}/{name}: source must point to its bundle')
         names.append(name)
     return names
 
@@ -75,6 +73,34 @@ def validate_mcp_file(mcp_path, plugin_name):
                             f'{plugin_name}/{server_id}: {container_key}.{k} must use an ${{ENV_VAR}} placeholder, never a raw secret')
 
 
+def parse_yaml_single_line_scalar(raw_value, skill, field):
+    value = raw_value.strip()
+    require(value, f'{skill}: {field} is required')
+    if value.startswith('"'):
+        try:
+            parsed = json.loads(value)
+        except ValueError as error:
+            raise ValueError(f'{skill}: invalid double-quoted YAML {field}: {error}') from error
+        require(isinstance(parsed, str) and parsed.strip(), f'{skill}: {field} must be a non-empty string')
+        return parsed
+    if value.startswith("'"):
+        require(len(value) >= 2 and value.endswith("'"), f'{skill}: unterminated single-quoted YAML {field}')
+        inner = value[1:-1]
+        require("'" not in inner.replace("''", ''), f'{skill}: invalid single-quoted YAML {field}')
+        parsed = inner.replace("''", "'")
+        require(parsed.strip(), f'{skill}: {field} must be a non-empty string')
+        return parsed
+    # Unquoted YAML plain scalars break standard YAML parsers on ": ", trailing ":",
+    # inline " #" comments, or leading YAML syntax indicator characters.
+    require(': ' not in value and not value.endswith(':'),
+            f'{skill}: {field} contains ": " or trailing ":" and must be quoted in YAML frontmatter')
+    require(' #' not in value,
+            f'{skill}: {field} contains " #" comment sequence and must be quoted in YAML frontmatter')
+    require(value[0] not in '&*!|>%@`[{?#,',
+            f'{skill}: {field} starts with YAML syntax character "{value[0]}" and must be quoted')
+    return value
+
+
 def validate_cli_references(bundle, root):
     for file_path in sorted(bundle.rglob('*')):
         if not file_path.is_file():
@@ -97,15 +123,12 @@ def validate(root):
             continue
         require(not path.is_symlink(), f'{path}: symlinks are not distributable')
 
-    root_catalog = read_object(root / 'marketplace.json')
-    agents_catalog = read_object(root / '.agents/plugins/marketplace.json')
-    claude_catalog = read_object(root / '.claude-plugin/marketplace.json')
+    for forbidden in FORBIDDEN_ROOT_ENTRIES:
+        require(not (root / forbidden).exists(),
+                f'{forbidden}: external host marketplace directory is not allowed in the Ducoro marketplace')
 
-    root_names = extract_marketplace_plugins(root_catalog, 'marketplace.json', expect_string_source=False)
-    agents_names = extract_marketplace_plugins(agents_catalog, '.agents/plugins/marketplace.json', expect_string_source=False)
-    claude_names = extract_marketplace_plugins(claude_catalog, '.claude-plugin/marketplace.json', expect_string_source=True)
-    require(root_names == agents_names == claude_names,
-            'marketplace.json, .agents/plugins/marketplace.json, and .claude-plugin/marketplace.json must list identical plugins in the same order')
+    root_catalog = read_object(root / 'marketplace.json')
+    root_names = extract_marketplace_plugins(root_catalog, 'marketplace.json')
 
     require((root / 'LICENSE').is_file(), 'LICENSE is required')
     readmes = [(root / name).read_text(encoding='utf-8') for name in ['README.md', 'README.zh-CN.md']]
@@ -126,44 +149,28 @@ def validate(root):
 
         for forbidden in FORBIDDEN_BUNDLE_ENTRIES:
             require(not (bundle / forbidden).exists(),
-                    f'{name}: host-specific entry "{forbidden}" is not allowed in portable plugins')
+                    f'{name}: unsupported entry "{forbidden}" is not allowed in Ducoro plugins')
 
-        open_manifest = read_object(bundle / 'plugin.json')
-        codex_manifest = read_object(bundle / '.codex-plugin/plugin.json')
-        claude_manifest = read_object(bundle / '.claude-plugin/plugin.json')
-
-        for label, manifest in [
-            ('plugin.json', open_manifest),
-            ('.codex-plugin/plugin.json', codex_manifest),
-            ('.claude-plugin/plugin.json', claude_manifest),
-        ]:
-            require(manifest.get('name') == name, f'{name} ({label}): manifest identity mismatch')
-            require(isinstance(manifest.get('version'), str) and VERSION.fullmatch(manifest['version']),
-                    f'{name} ({label}): version must be major.minor.patch')
-            require(isinstance(manifest.get('description'), str) and manifest['description'].strip(),
-                    f'{name} ({label}): description is required')
-            require(manifest.get('license') == 'Apache-2.0', f'{name} ({label}): license must be Apache-2.0')
-            require('apps' not in manifest, f'{name} ({label}): host-specific apps field is not allowed')
-
-        for field in ('version', 'description'):
-            require(open_manifest[field] == codex_manifest[field] == claude_manifest[field],
-                    f'{name}: {field} must match across plugin.json, .codex-plugin/plugin.json, and .claude-plugin/plugin.json')
-
-        for label, manifest in [('plugin.json', open_manifest), ('.codex-plugin/plugin.json', codex_manifest)]:
-            require(manifest.get('skills') == './skills/', f'{name} ({label}): skills must be ./skills/')
+        manifest = read_object(bundle / 'plugin.json')
+        require(manifest.get('name') == name, f'{name} (plugin.json): manifest identity mismatch')
+        require(isinstance(manifest.get('version'), str) and VERSION.fullmatch(manifest['version']),
+                f'{name} (plugin.json): version must be major.minor.patch')
+        require(isinstance(manifest.get('description'), str) and manifest['description'].strip(),
+                f'{name} (plugin.json): description is required')
+        require(manifest.get('license') == 'Apache-2.0', f'{name} (plugin.json): license must be Apache-2.0')
+        require('apps' not in manifest, f'{name} (plugin.json): unsupported apps field is not allowed')
+        require(manifest.get('skills') == './skills/', f'{name} (plugin.json): skills must be ./skills/')
 
         mcp_file = bundle / '.mcp.json'
         has_mcp_file = mcp_file.is_file()
-        for label, manifest in [('plugin.json', open_manifest), ('.codex-plugin/plugin.json', codex_manifest)]:
-            if has_mcp_file:
-                require(manifest.get('mcpServers') == './.mcp.json',
-                        f'{name} ({label}): mcpServers must be "./.mcp.json" when .mcp.json is present')
-            else:
-                require('mcpServers' not in manifest,
-                        f'{name} ({label}): mcpServers declared without .mcp.json')
         if has_mcp_file:
+            require(manifest.get('mcpServers') == './.mcp.json',
+                    f'{name} (plugin.json): mcpServers must be "./.mcp.json" when .mcp.json is present')
             validate_mcp_file(mcp_file, name)
             total_mcps += len(read_object(mcp_file)['mcpServers'])
+        else:
+            require('mcpServers' not in manifest,
+                    f'{name} (plugin.json): mcpServers declared without .mcp.json')
 
         skills = bundle / 'skills'
         require(skills.is_dir(), f'{name}: missing skills directory')
@@ -173,6 +180,8 @@ def validate(root):
         for skill in directories:
             require(skill.is_dir() and NAME.fullmatch(skill.name), f'{skill}: invalid skill directory')
             require(skill.name not in plugin_skill_names, f'{name}: duplicate skill: {skill.name}')
+            require(not (skill / 'agents').exists(),
+                    f'{skill}: external host metadata directory "agents" is not allowed')
             plugin_skill_names.add(skill.name)
             total_skills += 1
             try:
@@ -181,11 +190,14 @@ def validate(root):
                 raise ValueError(f'{skill}: missing SKILL.md') from error
             parts = body.split('---', 2)
             require(len(parts) == 3 and not parts[0].strip(), f'{skill}: missing YAML frontmatter')
-            require(re.search(rf'^name:\s*{re.escape(skill.name)}\s*$', parts[1], re.M),
-                    f'{skill}: frontmatter name must match directory')
+            name_match = re.search(r'^name:[ \t]*([^\r\n]*)$', parts[1], re.M)
+            require(name_match, f'{skill}: frontmatter name is required')
+            parsed_name = parse_yaml_single_line_scalar(name_match[1], skill, 'name')
+            require(parsed_name == skill.name, f'{skill}: frontmatter name must match directory')
             description = re.search(r'^description:[ \t]*(\S[^\r\n]*)$', parts[1], re.M)
             require(description, f'{skill}: description is required')
-            require(len(description[1].encode('utf-16-le')) // 2 <= 300,
+            parsed_description = parse_yaml_single_line_scalar(description[1], skill, 'description')
+            require(len(parsed_description.encode('utf-16-le')) // 2 <= 300,
                     f'{skill}: description must fit the 300 UTF-16-unit injection limit')
             require(parts[2].strip(), f'{skill}: instructions are required')
 

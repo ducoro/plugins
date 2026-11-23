@@ -1,6 +1,6 @@
 ---
 name: platform-instagram
-description: Run Instagram end-to-end operations: visual carousel, Reels, and Story planning, strict 4:5 to 1.91:1 aspect-ratio and JPEG checks, Instagram Graph API two-step container publishing, comment engagement, and reach/save Insights retrospectives.
+description: "Run Instagram end-to-end operations: visual carousel, Reels, and Story planning, strict 4:5 to 1.91:1 aspect-ratio and JPEG checks, Instagram Graph API two-step container publishing, comment engagement, and reach/save Insights retrospectives."
 ---
 
 # Instagram Operations Playbook

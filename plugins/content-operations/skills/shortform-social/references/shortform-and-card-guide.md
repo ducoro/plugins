@@ -42,4 +42,4 @@ Use `assets/card-deck-template/index.html` (`card-01` & `card-02` at `1080x1440`
 
 ## 4. Temporary Public HTTPS Media Relay (URL-Fetch APIs)
 
-For official APIs that fetch media from a public HTTPS URL (**Instagram, Facebook Page, Threads, Pinterest**), keep canonical files locally in `drafts/<draft-id>/assets/` and upload **right before publish** via `ducoro-cli media upload <local-file> --json` (resumable upload up to 300 MiB, automatic 5-hour TTL, inspectable via `ducoro-cli media list --json`). Outside Ducoro, use user-owned HTTPS object storage/CDN.
+For official APIs that fetch media from a public HTTPS URL (**Instagram, Facebook Page, Threads, Pinterest**), keep canonical files locally in `drafts/<draft-id>/assets/` and upload **right before publish** via `ducoro-cli media upload <local-file> --json` (resumable upload up to 300 MiB, automatic 5-hour TTL, inspectable via `ducoro-cli media list --json`), or use user-owned HTTPS object storage/CDN if preferred.

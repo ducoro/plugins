@@ -1,10 +1,10 @@
 # Ducoro 插件市场
 
-[Ducoro](https://ducoro.ai) 官方插件仓库，同时可直接用于 **Claude Code** 与 **OpenAI Codex**。
+[Ducoro](https://ducoro.ai) 官方插件仓库。
 
 [English](README.md) | **简体中文**
 
-每个插件以开放的跨宿主格式打包 **Agent Skill**（`SKILL.md`）以及可选的 **MCP 服务声明**（`.mcp.json`）。
+每个插件围绕 Ducoro 的 Space、展板（Board）、Connector 与 `ducoro-cli` 能力打包 **Agent Skill**（`SKILL.md`）、脚本、展板与可选的 **MCP 服务声明**（`.mcp.json`）。
 
 ## 现有插件
 
@@ -18,29 +18,22 @@
 
 ## 使用方式
 
-- **Ducoro**：自动同步本仓库，按需将插件挂载到不同 Bot。
-- **Claude Code**：通过 `.claude-plugin/marketplace.json` 添加本仓库（`/plugin marketplace add ducoro/plugins`）。
-- **OpenAI Codex**：通过 `.agents/plugins/marketplace.json`（或根目录 `marketplace.json`）添加本仓库。
+- **Ducoro**：通过根目录 `marketplace.json` 自动同步本仓库，按需将插件挂载到不同 Bot。
 
-凡是需要凭证的 MCP 服务声明均只写环境变量占位符（例如 `${EXAMPLE_MCP_TOKEN}`），真实密钥请在各自宿主的本地凭证库中配置。
+凡是需要凭证的 MCP 服务声明均只写环境变量占位符（例如 `${EXAMPLE_MCP_TOKEN}`），真实密钥请在 Ducoro 本地凭证库中配置。
 
 ## 仓库结构
 
 ```text
-.agents/plugins/marketplace.json   # 开放 Agent Plugins / Codex 市场索引
-.claude-plugin/marketplace.json    # Claude Code 市场索引
-marketplace.json                   # 根目录市场索引（同步镜像）
+marketplace.json                   # 插件市场索引
 plugins/
   <plugin-name>/
     LICENSE
-    plugin.json                    # 开放 Agent Plugins 清单
-    .claude-plugin/plugin.json     # Claude Code 清单
-    .codex-plugin/plugin.json      # Codex 清单
+    plugin.json                    # 插件清单
     .mcp.json                      # 可选：MCP 服务声明（严禁真实密钥）
     skills/
       <skill-name>/
         SKILL.md
-        agents/openai.yaml         # 可选：发现元数据
 ```
 
 ## 参与贡献

@@ -1,6 +1,6 @@
 ---
 name: platform-bilibili
-description: Run Bilibili end-to-end video operations: deep-dive topic discovery, chaptered video scripting and 16:9 covers, strict category and copyright spec checks, OpenAPI multipart upload and submission, danmaku/comment engagement, and triple-action retrospectives.
+description: "Run Bilibili end-to-end video operations: deep-dive topic discovery, chaptered video scripting and 16:9 covers, strict category and copyright spec checks, OpenAPI multipart upload and submission, danmaku/comment engagement, and triple-action retrospectives."
 ---
 
 # Bilibili Operations Playbook

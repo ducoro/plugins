@@ -2,6 +2,7 @@ import copy
 import importlib.util
 import json
 from pathlib import Path
+import re
 import shutil
 import tempfile
 import unittest
@@ -19,14 +20,12 @@ class CatalogValidationTest(unittest.TestCase):
         self.root = Path(self.tmp.name)
         for name in ['marketplace.json', 'README.md', 'README.zh-CN.md', 'LICENSE']:
             shutil.copy2(ROOT / name, self.root / name)
-        shutil.copytree(ROOT / '.agents', self.root / '.agents')
-        shutil.copytree(ROOT / '.claude-plugin', self.root / '.claude-plugin')
         shutil.copytree(ROOT / 'plugins', self.root / 'plugins')
 
     def test_current_catalog(self):
         self.assertEqual(validator.validate(self.root), (5, 26, 1))
 
-    def test_marketplace_sync_and_boundaries(self):
+    def test_marketplace_boundaries(self):
         original = json.loads((self.root / 'marketplace.json').read_text())
         cases = {
             'duplicate identity': lambda m: m['plugins'].append(copy.deepcopy(m['plugins'][0])),
@@ -45,14 +44,14 @@ class CatalogValidationTest(unittest.TestCase):
                     validator.validate(self.root)
         (self.root / 'marketplace.json').write_text(json.dumps(original))
 
-        # Desync between .claude-plugin/marketplace.json and marketplace.json fails.
-        claude_path = self.root / '.claude-plugin/marketplace.json'
-        claude_original = json.loads(claude_path.read_text())
-        claude_mutated = copy.deepcopy(claude_original)
-        claude_mutated['plugins'].pop()
-        claude_path.write_text(json.dumps(claude_mutated))
-        with self.assertRaises(ValueError):
-            validator.validate(self.root)
+        # External host marketplace directories at repo root are rejected.
+        for forbidden_dir in ('.agents', '.claude-plugin'):
+            with self.subTest(forbidden_dir=forbidden_dir):
+                target = self.root / forbidden_dir
+                target.mkdir()
+                with self.assertRaises(ValueError):
+                    validator.validate(self.root)
+                target.rmdir()
 
     def test_bundle_and_mcp_boundaries(self):
         plugin = self.root / 'plugins/docs-lookup'
@@ -68,8 +67,8 @@ class CatalogValidationTest(unittest.TestCase):
                     validator.validate(self.root)
         manifest_path.write_text(json.dumps(original))
 
-        # Forbidden host-specific directories/files are rejected.
-        for forbidden in ('hooks', 'commands', '.app.json'):
+        # Unsupported or external-host entries inside plugin bundles are rejected.
+        for forbidden in ('hooks', 'commands', '.app.json', '.claude-plugin', '.codex-plugin'):
             with self.subTest(forbidden=forbidden):
                 target = plugin / forbidden
                 if forbidden.endswith('.json'):
@@ -82,6 +81,13 @@ class CatalogValidationTest(unittest.TestCase):
                     target.rmdir()
                 else:
                     target.unlink()
+
+        # External host skill metadata directory (e.g. skills/<name>/agents) is rejected.
+        skill_agents_dir = plugin / 'skills/library-docs/agents'
+        skill_agents_dir.mkdir()
+        with self.assertRaises(ValueError):
+            validator.validate(self.root)
+        skill_agents_dir.rmdir()
 
         # Raw secret in .mcp.json is rejected.
         mcp_path = self.root / 'plugins/starter-template/.mcp.json'
@@ -108,6 +114,30 @@ class CatalogValidationTest(unittest.TestCase):
         skill.write_text(original.replace('description:', 'description: ' + 'x' * 301))
         with self.assertRaises(ValueError):
             validator.validate(self.root)
+        skill.write_text(original)
+        # Unquoted YAML mapping-like ": " in description breaks standard YAML parsers.
+        skill.write_text(
+            re.sub(
+                r'^description:.*$',
+                'description: Run workflow: broken unquoted colon',
+                original,
+                count=1,
+                flags=re.M,
+            )
+        )
+        with self.assertRaises(ValueError):
+            validator.validate(self.root)
+        # Properly quoted description containing ": " is valid.
+        skill.write_text(
+            re.sub(
+                r'^description:.*$',
+                'description: "Run workflow: valid quoted colon"',
+                original,
+                count=1,
+                flags=re.M,
+            )
+        )
+        self.assertEqual(validator.validate(self.root), (5, 26, 1))
         skill.write_text(original)
         readme = self.root / 'README.zh-CN.md'
         readme.write_text(readme.read_text().replace('(plugins/docs-lookup)', '(plugins/missing)'))

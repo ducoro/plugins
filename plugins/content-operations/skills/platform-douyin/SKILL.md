@@ -1,6 +1,6 @@
 ---
 name: platform-douyin
-description: Run Douyin end-to-end operations: hook-driven short video and carousel topic selection, 3-second retention scripting, strict spec validation, OpenAPI and browser-assisted publishing workflows, golden-hour comment engagement, and retention-led retrospectives.
+description: "Run Douyin end-to-end operations: hook-driven short video and carousel topic selection, 3-second retention scripting, strict spec validation, OpenAPI and browser-assisted publishing workflows, golden-hour comment engagement, and retention-led retrospectives."
 ---
 
 # Douyin Operations Playbook

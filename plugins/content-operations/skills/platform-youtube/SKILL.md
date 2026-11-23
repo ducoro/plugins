@@ -1,6 +1,6 @@
 ---
 name: platform-youtube
-description: Run YouTube end-to-end video operations: search and browse topic discovery, thumbnail-and-title packaging for long-form and Shorts, YouTube Data API v3 upload/update/comment workflows, and CTR plus watch-time retrospectives.
+description: "Run YouTube end-to-end video operations: search and browse topic discovery, thumbnail-and-title packaging for long-form and Shorts, YouTube Data API v3 upload/update/comment workflows, and CTR plus watch-time retrospectives."
 ---
 
 # YouTube Operations Playbook

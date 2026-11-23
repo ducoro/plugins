@@ -1,6 +1,6 @@
 ---
 name: platform-pinterest
-description: Run Pinterest end-to-end visual search operations: evergreen search-keyword Pin planning, 2:3 vertical Pin and destination-link packaging, Pinterest API v5 board/Pin publishing and updates, and outbound-click plus save retrospectives.
+description: "Run Pinterest end-to-end visual search operations: evergreen search-keyword Pin planning, 2:3 vertical Pin and destination-link packaging, Pinterest API v5 board/Pin publishing and updates, and outbound-click plus save retrospectives."
 ---
 
 # Pinterest Operations Playbook

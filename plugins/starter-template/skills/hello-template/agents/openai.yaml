@@ -1,7 +1,0 @@
-interface:
-  display_name: Hello Template
-  short_description: Reference skill for verifying plugin loading and authoring new plugins
-  brand_color: "#0EA5E9"
-  default_prompt: Run the starter-template hello check.
-policy:
-  allow_implicit_invocation: true

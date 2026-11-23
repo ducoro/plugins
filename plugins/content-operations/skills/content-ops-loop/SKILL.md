@@ -64,25 +64,23 @@ Every platform supports **only two legitimate execution paths**—never extract 
 
 ## Workflow
 
-1. **Locate or bootstrap the shared workspace (Ducoro Local Folder first).**
-   - **Inside Ducoro (required shared storage pattern)**:
-     1. First check whether a content-operations Local Folder is already registered and reuse it:
-        ```sh
-        ducoro-cli local-folder list --json
-        ducoro-cli space resources get <space-id> --json
-        ```
-     2. If none exists yet, **ask the user before creating and registering it**:
-        - **Default & recommended location**: `~/.ducoro/workspaces/content-ops` (kept cleanly inside `~/.ducoro/workspaces/`, never inside `~/.ducoro/local-folders/` which stores folder registration metadata).
-        - **User-chosen external location**: only place the workspace outside `~/.ducoro/` if the user explicitly asks for another host directory (for example, a folder they prefer to browse directly in Finder).
-        - Explain that registering the directory as a global Local Folder (`content-ops`) makes it visible to every Space on this machine so single-Space and multi-Space relay workflows share the exact same source of truth.
-     3. After the user confirms the path, initialize and register it:
-        ```sh
-        python3 scripts/init_workspace.py ~/.ducoro/workspaces/content-ops --timezone <IANA-tz>
-        ducoro-cli local-folder register content-ops <resolved-absolute-path> --name "Content Operations" --desc "Shared multi-platform content operations workspace (topics, drafts, calendar, publish log, analytics)"
-        ducoro-cli local-folder inspect content-ops
-        ```
-        (Replace `~/.ducoro/workspaces/content-ops` with the user's chosen path only if they requested an external folder.)
-   - **Outside Ducoro** (when `ducoro-cli` is unavailable, e.g. Claude Code / Codex): run `python3 scripts/init_workspace.py <workspace-root> --timezone <IANA-tz>` (e.g., `Asia/Shanghai`, `America/New_York`, default `UTC`) and point collaborating sessions to the same path via `CONTENT_OPS_ROOT`.
+1. **Locate or bootstrap the shared workspace (Ducoro Local Folder).**
+   - First check whether a content-operations Local Folder is already registered and reuse it:
+     ```sh
+     ducoro-cli local-folder list --json
+     ducoro-cli space resources get <space-id> --json
+     ```
+   - If none exists yet, **ask the user before creating and registering it**:
+     - **Default & recommended location**: `~/.ducoro/workspaces/content-ops` (kept cleanly inside `~/.ducoro/workspaces/`, never inside `~/.ducoro/local-folders/` which stores folder registration metadata).
+     - **User-chosen external location**: only place the workspace outside `~/.ducoro/` if the user explicitly asks for another host directory (for example, a folder they prefer to browse directly in Finder).
+     - Explain that registering the directory as a global Local Folder (`content-ops`) makes it visible to every Space on this machine so single-Space and multi-Space relay workflows share the exact same source of truth.
+   - After the user confirms the path, initialize and register it:
+     ```sh
+     python3 scripts/init_workspace.py ~/.ducoro/workspaces/content-ops --timezone <IANA-tz>
+     ducoro-cli local-folder register content-ops <resolved-absolute-path> --name "Content Operations" --desc "Shared multi-platform content operations workspace (topics, drafts, calendar, publish log, analytics)"
+     ducoro-cli local-folder inspect content-ops
+     ```
+     (Replace `~/.ducoro/workspaces/content-ops` with the user's chosen path only if they requested an external folder.)
    - Read `brand-profile.md` and `accounts.json`. Never hardcode credentials; `accounts.json` stores only environment variable names (e.g., `X_ACCESS_TOKEN`), never raw tokens.
 2. **Execute the requested stage(s).**
    - **Intake & topics**: collect regional signals via Connectors (`ducoro-cli mcp catalog`), `topic-research-cn`, or `topic-research-global`, run `scripts/signal_gate.py ingest` + `gate --strict` (sharding large feeds across subagents), score and annotate fuzzy repeats via `scripts/score_topics.py`, and pause at **Approval Gate 1** (or stop honestly on `nothing_solid`).
@@ -95,7 +93,7 @@ Every platform supports **only two legitimate execution paths**—never extract 
    python3 scripts/diagnose.py --workspace <content-ops-path> --json
    python3 scripts/build_boards.py <content-ops-path>
    ```
-   - Inside Ducoro, canonical data stays in the registered Local Folder (default `~/.ducoro/workspaces/content-ops`), while each Space Board lives under that Space's `boards/<board-id>/`. Create each Board with `ducoro-cli board new --space <space-id> --title "<Board Title>" --json`, then project data from the Local Folder into the Board's `assets/data.json` via `python3 scripts/build_boards.py <local-folder-path> --board <board-name> --board-dir <space-work-root>/boards/<board-id>` (add `--overwrite-templates` on first assembly) and run `ducoro-cli board check` / `ducoro-cli board shot` before sharing links.
+   - Canonical data stays in the registered Local Folder (default `~/.ducoro/workspaces/content-ops`), while each Space Board lives under that Space's `boards/<board-id>/`. Create each Board with `ducoro-cli board new --space <space-id> --title "<Board Title>" --json`, then project data from the Local Folder into the Board's `assets/data.json` via `python3 scripts/build_boards.py <local-folder-path> --board <board-name> --board-dir <space-work-root>/boards/<board-id>` (add `--overwrite-templates` on first assembly) and run `ducoro-cli board check` / `ducoro-cli board shot` before sharing links.
 
 ## Hard Guardrails
 

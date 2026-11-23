@@ -1,6 +1,6 @@
 ---
 name: platform-xiaohongshu
-description: Run Xiaohongshu (RedNote) end-to-end operations: search-driven topic discovery, high-save 3:4 carousel and note authoring, strict spec checks, browser-based draft staging with human publish confirmation, comment lead triage, and save-to-like retrospectives.
+description: "Run Xiaohongshu (RedNote) end-to-end operations: search-driven topic discovery, high-save 3:4 carousel and note authoring, strict spec checks, browser-based draft staging with human publish confirmation, comment lead triage, and save-to-like retrospectives."
 ---
 
 # Xiaohongshu (RedNote) Operations Playbook

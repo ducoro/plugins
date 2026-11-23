@@ -33,9 +33,8 @@ Observed: <HTTP status / error code / symptom>
 Expected: <what should have happened>
 ```
 
-- **Inside Ducoro** (default): after the user confirms, send via the built-in feedback command:
-  ```sh
-  ducoro-cli feedback send "<redacted report body>"
-  ```
-  (If a screenshot helps diagnose a browser layout change, obtain explicit user approval before running `ducoro-cli feedback upload <image>`—PNG/JPEG/WebP up to 5 MiB—and attaching up to 4 repeatable `--image <id>` flags.)
-- **Outside Ducoro** (when `ducoro-cli` is unavailable): present the redacted report block directly to the user so they can share it manually. Do not attempt to open external issues automatically.
+After the user confirms, send via the built-in feedback command:
+```sh
+ducoro-cli feedback send "<redacted report body>"
+```
+(If a screenshot helps diagnose a browser layout change, obtain explicit user approval before running `ducoro-cli feedback upload <image>`—PNG/JPEG/WebP up to 5 MiB—and attaching up to 4 repeatable `--image <id>` flags.)

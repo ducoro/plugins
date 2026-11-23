@@ -1,6 +1,6 @@
 ---
 name: platform-linkedin
-description: Run LinkedIn end-to-end operations: B2B practitioner topic discovery, high-dwell structured posts and media uploads, LinkedIn REST Posts API publishing and comment workflows, and dwell-time plus peer-comment retrospectives.
+description: "Run LinkedIn end-to-end operations: B2B practitioner topic discovery, high-dwell structured posts and media uploads, LinkedIn REST Posts API publishing and comment workflows, and dwell-time plus peer-comment retrospectives."
 ---
 
 # LinkedIn Operations Playbook

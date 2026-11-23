@@ -1,6 +1,6 @@
 ---
 name: platform-wechat-channels
-description: Run WeChat Channels (视频号) end-to-end operations: social-graph shareable topic selection, crisp 16-char short-title video packaging, browser-based Creator Studio draft staging with human publish confirmation, and forward-rate retrospectives.
+description: "Run WeChat Channels (视频号) end-to-end operations: social-graph shareable topic selection, crisp 16-char short-title video packaging, browser-based Creator Studio draft staging with human publish confirmation, and forward-rate retrospectives."
 ---
 
 # WeChat Channels (视频号) Operations Playbook

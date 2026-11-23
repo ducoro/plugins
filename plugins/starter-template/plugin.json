@@ -1,6 +1,6 @@
 {
   "name": "starter-template",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Minimal reference plugin demonstrating a standard Skill and MCP server declaration.",
   "license": "Apache-2.0",
   "keywords": [

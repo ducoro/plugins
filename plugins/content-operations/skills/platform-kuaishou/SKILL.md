@@ -1,6 +1,6 @@
 ---
 name: platform-kuaishou
-description: Run Kuaishou (Kwai) end-to-end short-video operations: relatable practical topic selection, direct vertical video scripting, spec validation, Kuaishou OpenAPI chunked upload and publish polling, community engagement, and repeat-viewer retrospectives.
+description: "Run Kuaishou (Kwai) end-to-end short-video operations: relatable practical topic selection, direct vertical video scripting, spec validation, Kuaishou OpenAPI chunked upload and publish polling, community engagement, and repeat-viewer retrospectives."
 ---
 
 # Kuaishou (Kwai) Operations Playbook

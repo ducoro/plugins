@@ -1,6 +1,6 @@
 ---
 name: hello-template
-description: Verify that the starter-template plugin is loaded and demonstrate the minimal structure of a portable Agent Skill.
+description: Verify that the starter-template plugin is loaded and demonstrate the minimal structure of a Ducoro Agent Skill.
 ---
 
 # Hello Template
@@ -14,7 +14,7 @@ Use this skill when verifying plugin installation, indexing, or sync behavior, o
    - Plugin name: `starter-template`
    - Skill name: `hello-template`
    - Whether any optional MCP configuration in `.mcp.json` is needed for the current task (none is required for this verification check).
-3. If the user is authoring a new plugin, direct them to copy `plugins/starter-template/` and replace the manifests, skill files, and optional `.mcp.json`.
+3. If the user is authoring a new plugin, direct them to copy `plugins/starter-template/` and replace `plugin.json`, skill files, and optional `.mcp.json`.
 
 ## Completion criteria
 

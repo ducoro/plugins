@@ -46,7 +46,7 @@ All boards run standalone as static HTML with local data and progressively enhan
 
 ## Quick Start
 
-1. Load `content-ops-loop`. In **Ducoro**, check `ducoro-cli local-folder list --json` first; if no workspace is registered yet, confirm with the user to initialize the default internal path `~/.ducoro/workspaces/content-ops` (or an external folder if the user explicitly prefers one) via `scripts/init_workspace.py`, then register it globally with `ducoro-cli local-folder register content-ops <path>` so every Space shares the same source of truth. Outside Ducoro, run `scripts/init_workspace.py <target-dir> [--timezone <IANA-tz>]`.
+1. Load `content-ops-loop`. Check `ducoro-cli local-folder list --json` first; if no workspace is registered yet, confirm with the user to initialize the default internal path `~/.ducoro/workspaces/content-ops` (or an external folder if the user explicitly prefers one) via `scripts/init_workspace.py`, then register it globally with `ducoro-cli local-folder register content-ops <path>` so every Space shares the same source of truth.
 2. Fill in `brand-profile.md` and `accounts.json` (credentials stay in environment variables—never commit secrets).
 3. Load only the regional radar (`topic-research-cn` or `topic-research-global`), the matching format workshop (`longform-writing`, `shortform-social`, or `video-production`), and the target `platform-<name>` skill(s) for the current turn.
 4. Refresh Space board snapshots from the Local Folder with `scripts/build_boards.py <workspace>` (or `--board <name> --board-dir <space-work-root>/boards/<board-id>`) and verify integrity with `scripts/validate_workspace.py <workspace>`.

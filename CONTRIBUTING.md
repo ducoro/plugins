@@ -12,18 +12,11 @@ Open an issue for a new plugin or a substantial behavior change. Explain the tas
 
 Use [`plugins/starter-template`](plugins/starter-template) as a ready-to-copy blueprint.
 
-1. Create `plugins/<name>/` with three aligned manifests:
-   - `plugin.json` (open Agent Plugins format)
-   - `.claude-plugin/plugin.json` (Claude Code format)
-   - `.codex-plugin/plugin.json` (Codex format)
-   All three must share the same lowercase kebab-case `name`, semantic `version`, non-empty `description`, and `license: "Apache-2.0"`. Set `skills: "./skills/"` in `plugin.json` and `.codex-plugin/plugin.json`.
+1. Create `plugins/<name>/` with a single `plugin.json` manifest declaring lowercase kebab-case `name`, semantic `version`, non-empty `description`, `license: "Apache-2.0"`, and `skills: "./skills/"`.
 2. Put each skill in `skills/<skill-name>/SKILL.md`. Its YAML frontmatter declares `name` (matching the folder name) and a single-line `description` of at most 300 UTF-16 code units. Write clear English instructions covering prerequisites, workflow, observable completion, and failure handling.
-3. Optional `.mcp.json`: if a plugin bundles MCP server declarations, place them in `.mcp.json` and set `"mcpServers": "./.mcp.json"` in `plugin.json` and `.codex-plugin/plugin.json`. Never commit real credentials or machine-specific paths—use environment variable placeholders such as `${SERVICE_API_TOKEN}`.
-4. Do not include host-specific extensions (`hooks/`, `commands/`, `agents/`, `.app.json`) or symlinks.
-5. Register the plugin in all three marketplace catalogs:
-   - `.agents/plugins/marketplace.json`
-   - `.claude-plugin/marketplace.json`
-   - `marketplace.json`
+3. Optional `.mcp.json`: if a plugin bundles MCP server declarations, place them in `.mcp.json` and set `"mcpServers": "./.mcp.json"` in `plugin.json`. Never commit real credentials or machine-specific paths—use environment variable placeholders such as `${SERVICE_API_TOKEN}`.
+4. Do not include unsupported or external-host entries (`.agents/`, `.claude-plugin/`, `.codex-plugin/`, `skills/*/agents/`, `hooks/`, `commands/`, `agents/`, `.app.json`) or symlinks.
+5. Register the plugin in `marketplace.json`.
 6. Update both [README.md](README.md) and [README.zh-CN.md](README.zh-CN.md) when adding, removing, or materially changing a plugin.
 7. Include an unchanged copy of the root `LICENSE` inside `plugins/<name>/LICENSE`.
 
@@ -51,7 +44,7 @@ To enable the repository Git hooks locally (`pre-commit`, `commit-msg`, and `pre
 git config core.hooksPath .githooks
 ```
 
-Validation checks all three marketplace catalogs, plugin manifest consistency, `.mcp.json` schema and secret hygiene, forbidden host-specific extensions, skill frontmatter, and README coverage.
+Validation checks `marketplace.json`, plugin manifests, `.mcp.json` schema and secret hygiene, forbidden unsupported entries, skill frontmatter, `ducoro-cli` invocations, and README coverage.
 
 ## Publish updates
 

@@ -1,6 +1,6 @@
 ---
 name: platform-wechat-official
-description: Run WeChat Official Account (公众号) end-to-end operations: deep long-form topic selection, scannable HTML article authoring and cover specs, Official Account API draft-box and freepublish workflows, and open-rate plus share retrospectives.
+description: "Run WeChat Official Account (公众号) end-to-end operations: deep long-form topic selection, scannable HTML article authoring and cover specs, Official Account API draft-box and freepublish workflows, and open-rate plus share retrospectives."
 ---
 
 # WeChat Official Account (公众号) Operations Playbook

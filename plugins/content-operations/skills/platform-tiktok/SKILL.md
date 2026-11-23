@@ -1,6 +1,6 @@
 ---
 name: platform-tiktok
-description: Run TikTok end-to-end operations: hook-first short video and photo-carousel discovery, native vertical scripting, strict spec and AIGC checks, TikTok Content Posting API v2 init/poll publishing, and completion-rate retrospectives.
+description: "Run TikTok end-to-end operations: hook-first short video and photo-carousel discovery, native vertical scripting, strict spec and AIGC checks, TikTok Content Posting API v2 init/poll publishing, and completion-rate retrospectives."
 ---
 
 # TikTok Operations Playbook

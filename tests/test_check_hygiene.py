@@ -126,7 +126,7 @@ class HygieneCheckTest(unittest.TestCase):
             # Copy minimal repository files needed by scripts/validate.py and hooks.
             for name in ['marketplace.json', 'README.md', 'README.zh-CN.md', 'LICENSE', '.gitignore']:
                 shutil.copy2(ROOT / name, repo / name)
-            for directory in ['.agents', '.claude-plugin', 'plugins', 'scripts', '.githooks']:
+            for directory in ['plugins', 'scripts', '.githooks']:
                 shutil.copytree(ROOT / directory, repo / directory)
             for placeholder in ['.docs/.gitkeep', '.plans/.gitkeep', '.rules/.gitkeep']:
                 target = repo / placeholder

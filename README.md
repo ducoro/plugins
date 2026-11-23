@@ -1,10 +1,10 @@
 # Ducoro Plugins
 
-Official plugin marketplace for [Ducoro](https://ducoro.ai), also directly usable in **Claude Code** and **OpenAI Codex**.
+Official plugin marketplace for [Ducoro](https://ducoro.ai).
 
 **English** | [简体中文](README.zh-CN.md)
 
-Each plugin packages portable **Agent Skills** (`SKILL.md`) and optional **MCP server declarations** (`.mcp.json`) in open, cross-host marketplace formats.
+Each plugin packages **Agent Skills** (`SKILL.md`), scripts, boards, and optional **MCP server declarations** (`.mcp.json`) built around Ducoro Spaces, Boards, Connectors, and `ducoro-cli`.
 
 ## Available plugins
 
@@ -18,29 +18,22 @@ Each plugin packages portable **Agent Skills** (`SKILL.md`) and optional **MCP s
 
 ## Use this marketplace
 
-- **Ducoro**: Automatically synced from this repository; mount any plugin onto individual Bots.
-- **Claude Code**: Add `ducoro/plugins` as a plugin marketplace (`/plugin marketplace add ducoro/plugins`) using `.claude-plugin/marketplace.json`.
-- **OpenAI Codex**: Add `ducoro/plugins` via `.agents/plugins/marketplace.json` (or root `marketplace.json`).
+- **Ducoro**: Automatically synced from this repository via `marketplace.json`; mount any plugin onto individual Bots.
 
-Any MCP server requiring credentials uses environment variable placeholders (for example `${EXAMPLE_MCP_TOKEN}`); supply your own tokens locally in your host tool's credential store.
+Any MCP server requiring credentials uses environment variable placeholders (for example `${EXAMPLE_MCP_TOKEN}`); supply your own tokens locally in Ducoro's credential store.
 
 ## Repository layout
 
 ```text
-.agents/plugins/marketplace.json   # Open Agent Plugins / Codex marketplace index
-.claude-plugin/marketplace.json    # Claude Code marketplace index
-marketplace.json                   # Root marketplace index (mirror)
+marketplace.json                   # Marketplace index
 plugins/
   <plugin-name>/
     LICENSE
-    plugin.json                    # Open Agent Plugins manifest
-    .claude-plugin/plugin.json     # Claude Code manifest
-    .codex-plugin/plugin.json      # Codex manifest
+    plugin.json                    # Plugin manifest
     .mcp.json                      # Optional MCP server declarations (no secrets)
     skills/
       <skill-name>/
         SKILL.md
-        agents/openai.yaml         # Optional discovery metadata
 ```
 
 ## Contribute

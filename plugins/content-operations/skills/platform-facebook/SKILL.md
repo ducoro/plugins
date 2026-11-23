@@ -1,6 +1,6 @@
 ---
 name: platform-facebook
-description: Run Facebook Page end-to-end operations: community-oriented topic discovery, Feed/Photo/Video/Reels authoring, strict spec checks, Meta Graph API Page publishing and comment engagement, and Page Insights retrospectives.
+description: "Run Facebook Page end-to-end operations: community-oriented topic discovery, Feed/Photo/Video/Reels authoring, strict spec checks, Meta Graph API Page publishing and comment engagement, and Page Insights retrospectives."
 ---
 
 # Facebook Page Operations Playbook

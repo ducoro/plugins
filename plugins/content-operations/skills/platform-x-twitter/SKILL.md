@@ -1,6 +1,6 @@
 ---
 name: platform-x-twitter
-description: Run X (Twitter) end-to-end operations: live discourse topic discovery, punchy posts and multi-tweet threads, strict 280-char and media spec checks, X API v2 publishing and engagement, and bookmark-driven retrospectives.
+description: "Run X (Twitter) end-to-end operations: live discourse topic discovery, punchy posts and multi-tweet threads, strict 280-char and media spec checks, X API v2 publishing and engagement, and bookmark-driven retrospectives."
 ---
 
 # X (Twitter) Operations Playbook

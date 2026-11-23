@@ -1,6 +1,6 @@
 ---
 name: platform-threads
-description: Run Threads end-to-end operations: conversational topic discovery, crisp 500-char posts with single native topic tags, Threads API two-step container publishing, reply management, and conversation-depth retrospectives.
+description: "Run Threads end-to-end operations: conversational topic discovery, crisp 500-char posts with single native topic tags, Threads API two-step container publishing, reply management, and conversation-depth retrospectives."
 ---
 
 # Threads Operations Playbook
