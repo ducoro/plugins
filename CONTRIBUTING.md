@@ -39,6 +39,12 @@ python3 scripts/check_hygiene.py --tracked
 python3 -m unittest discover -s tests -v
 ```
 
+To explicitly run opt-in live network smoke tests locally against public endpoints (skipped in CI):
+
+```sh
+RUN_LIVE_TESTS=1 python3 -m unittest tests/test_live_public_sources.py -v
+```
+
 To enable the repository Git hooks locally (`pre-commit`, `commit-msg`, and `pre-push`):
 
 ```sh
