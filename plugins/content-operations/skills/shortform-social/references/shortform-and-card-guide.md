@@ -31,14 +31,23 @@ Publishable body copy goes here...
 - Avoid asking AI image generators to render dense Chinese/UI typography—use `image_generate` for illustration/art, then place it inside HTML cards exported via `ducoro-cli board shot`.
 - Start with `n: 1` and confirm with the user before multi-image batches; copy approved outputs into `drafts/<draft-id>/assets/`.
 
-## 3. Exact-Pixel Card & Carousel Rendering (`ducoro-cli board shot`)
+## 3. Exact-Pixel Visual Card Studio (`scripts/card_deck.py` + `ducoro-cli board shot`)
 
-Use `assets/card-deck-template/index.html` (`card-01` & `card-02` at `1080x1440`, `thumb-16x9` at `1280x720`, `wechat-cover` at `900x383`):
-1. `ducoro-cli board new --space <space-id> --title "<Card Deck Title>" --json`
-2. Copy `assets/card-deck-template/index.html` into that Board folder, customize copy/palette/assets, and delete unused frames.
-3. `ducoro-cli board check --space <space-id> --board boards/<board-id> --json` — fix any overflow or missing assets.
-4. `ducoro-cli board shot --space <space-id> --board boards/<board-id> --query frame=card-01 --json` (or `--query pack=all --json` for ZIP of all `[data-ducoro-export-frame]` slides). If `renderer-installable` is returned, ask the human before running `ducoro-cli board install-renderer`.
-5. Visually inspect exported PNGs and copy them into `drafts/<draft-id>/assets/`.
+Use the bundled Visual Card Studio (3 visual languages, 11 WCAG-verified palettes, 10 semantic `3:4` blueprints, paired WeChat `900x383` + `1080x1080` covers, and `1280x720` video thumbnails; see `references/card-design-system.md` & `references/visual-craft-and-covers.md`):
+
+1. Create a Space Board:
+   `ducoro-cli board new --space <space-id> --title "<Card Deck Title>" --json`
+2. Scaffold the Board with the chosen preset, style, and palette:
+   `python3 scripts/card_deck.py scaffold <space-work-root>/boards/<board-id> --preset xhs-carousel --style paper-studio --theme warm-linen --pages 5 --title "<Title>" --brand "@Handle" --overwrite --json`
+   (For WeChat cover pairs, use `--preset wechat-cover-pair`; for custom brand color, pass `--brand-hex "#RRGGBB"`.)
+3. Edit `index.html` with real copy and verified local visuals under `assets/` (keep `data-card` and `data-mark-item` stable for interactive review).
+4. Run offline structural & contrast audit:
+   `python3 scripts/card_deck.py audit <space-work-root>/boards/<board-id> --json`
+5. Run live browser layout & font verification:
+   `ducoro-cli board check --space <space-id> --board boards/<board-id> --json`
+6. Export exact-pixel PNGs or ZIP:
+   `ducoro-cli board shot --space <space-id> --board boards/<board-id> --query frame=card-01 --json` (or `--query pack=all --json`). If `renderer-installable` is returned, ask the human before running `ducoro-cli board install-renderer`.
+7. Present rendered PNGs for human visual sign-off, copy approved files into `drafts/<draft-id>/assets/`, and run `check_media_specs.py`.
 
 ## 4. Temporary Public HTTPS Media Relay (URL-Fetch APIs)
 

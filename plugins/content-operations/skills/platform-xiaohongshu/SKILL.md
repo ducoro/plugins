@@ -14,7 +14,7 @@ Operate Xiaohongshu as a visual search-and-save engine rather than a broadcast f
 
 ## 2. Native Content & Cover Structure
 - **Cover (Card 1)**: `3:4` vertical (`1080x1440`) preferred. One crisp focal visual + bold 8–14 character headline promising a concrete takeaway. Readable at mobile two-column feed width.
-- **Carousel (3–9 cards)**: one idea per slide; large clean typography; end with a summary checklist or save cue.
+- **Carousel (3–9 cards)**: one idea per slide; large clean typography; end with a summary checklist or save cue. Scaffold multi-style decks with `../shortform-social/scripts/card_deck.py scaffold <board-dir> --preset xhs-carousel` and verify via `card_deck.py audit` + `ducoro-cli board check` / `board shot` (see `../shortform-social/SKILL.md`).
 - **Title (`<= 20` chars)**: front-load the primary search keyword + concrete benefit/number.
 - **Body (`<= 1000` chars)**: short scannable paragraphs, bullet points, natural conversational tone (first-person tested experience beats brochure copy), closing prompt inviting a specific comment question.
 - **Topics (`<= 5` tags)**: mix 1 broad category tag + 2 mid-tail search tags + 2 niche intent tags.

@@ -84,8 +84,10 @@ class ContentOpsContractsTest(unittest.TestCase):
         self.assertTrue(template.is_file(), 'Missing card-deck-template/index.html')
         html = template.read_text(encoding='utf-8')
         frames = re.findall(r'data-ducoro-export-frame="([^"]+)"', html)
-        self.assertEqual(frames, ['card-01', 'card-02', 'thumb-16x9', 'wechat-cover'])
+        self.assertEqual(frames, ['card-01', 'card-02', 'thumb-16x9', 'wechat-cover', 'wechat-square'])
         self.assertIn('html[data-ducoro-render="shot"]', html)
+        self.assertIn('data-mark-ignore', html)
+        self.assertTrue((SKILLS / 'shortform-social' / 'assets' / 'card-deck-template' / 'README.md').is_file())
 
 
 if __name__ == '__main__':
