@@ -239,6 +239,31 @@ def validate_workspace(ws: Path) -> list[str]:
         if not isinstance(metrics, dict):
             errors.append(f'analytics/snapshots.jsonl:{lineno}: missing metrics object')
 
+    wl_path = ws / 'watchlist.json'
+    if wl_path.is_file():
+        wl_data = load_json(wl_path, errors)
+        if isinstance(wl_data, dict):
+            tracks = wl_data.get('tracks')
+            if not isinstance(tracks, list):
+                errors.append('watchlist.json: "tracks" must be a list')
+            else:
+                seen_wl_ids: set[str] = set()
+                for i, tr in enumerate(tracks):
+                    if not isinstance(tr, dict):
+                        errors.append(f'watchlist.json[{i}]: must be an object')
+                        continue
+                    wid = tr.get('id')
+                    if not isinstance(wid, str) or not wid.strip():
+                        errors.append(f'watchlist.json[{i}]: missing track id')
+                    elif wid in seen_wl_ids:
+                        errors.append(f'watchlist.json[{i}]: duplicate track id "{wid}"')
+                    else:
+                        seen_wl_ids.add(wid)
+                    if not str(tr.get('query') or '').strip():
+                        errors.append(f'watchlist.json[{i}]: missing query')
+                    if tr.get('region') not in {'cn', 'global'}:
+                        errors.append(f'watchlist.json[{i}]: invalid region "{tr.get("region")}"')
+
     return errors
 
 

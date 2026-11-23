@@ -22,15 +22,20 @@ Load **only** the skills needed for the current region, content format, and targ
 
 | Stage / Need | Load Skill |
 | --- | --- |
-| Sourcing CN-market topics (Weibo/Toutiao/Baidu hot boards, Baidu/360 SEO, CN anchors) | `../topic-research-cn/SKILL.md` |
-| Sourcing Global/EN topics (Hacker News/Lobsters, global anchors, primary English web research) | `../topic-research-global/SKILL.md` |
+| Sourcing CN-market topics (Connectors, Weibo/Toutiao/Baidu, Baidu/360 SEO, hard signal gate) | `../topic-research-cn/SKILL.md` |
+| Sourcing Global/EN topics (Connectors, HN/Lobsters/GitHub/Polymarket/DEV.to/arXiv, hard signal gate) | `../topic-research-global/SKILL.md` |
 | Long-form editorial writing (WeChat essays, blogs, newsletters, LinkedIn/X long-form) | `../longform-writing/SKILL.md` |
 | Short-form social posts, threads & exact-pixel visual cards (X, Xiaohongshu, Threads, IG, Pinterest, WeChat newspic) | `../shortform-social/SKILL.md` |
 | Short/long video scripting, subtitles & code-driven video (Douyin, TikTok, YouTube, Bilibili, Channels, Kuaishou) | `../video-production/SKILL.md` |
 | Cross-platform comment triage, rate limits, 24h/72h/7d/30d snapshots & weekly retro board | `../engagement-and-analytics/SKILL.md` |
 | Platform-specific radar, voice, hard specs, publish protocol & platform-native retro metrics | `../platform-<name>/SKILL.md` |
 
-Shared deterministic utilities in `scripts/` (reused across regions and formats): `init_workspace.py`, `validate_workspace.py`, `diagnose.py`, `score_topics.py`, `check_media_specs.py`, `image_ops.py`, `build_boards.py`.
+Shared deterministic utilities in `scripts/` (reused across regions and formats): `init_workspace.py`, `validate_workspace.py`, `diagnose.py`, `signal_gate.py`, `score_topics.py`, `check_media_specs.py`, `image_ops.py`, `build_boards.py`.
+
+## Native Orchestration & Deterministic Boundaries
+
+- **Semantic judgment & fan-out belong to strong models and native runtime primitives**: query authenticated sources via configured Connectors (`ducoro-cli mcp catalog` / `status` / `call`), shard high-volume raw feeds (`100–300+` items) across parallel subagents, schedule recurring `watchlist.json` delta scans with `ducoro-cli task create` (and persistent background runs via `ducoro-cli job`), and delegate cross-role handoffs via `ducoro-cli space send`.
+- **Hard invariants belong to deterministic scripts**: `scripts/signal_gate.py` enforces grounded `http(s)://` URLs, ISO timestamps, keep-richest URL dedupe, incremental `seen-signals.json` deltas, anti-hallucination URL verification, hard signal floors, and honest `nothing_solid` empty states; `scripts/score_topics.py` adds annotate-only fuzzy repeat detection (`repeatAnnotation` + inherited `alreadyCovered`).
 
 Available platform skills (14):
 - **CN**: `platform-xiaohongshu`, `platform-douyin`, `platform-bilibili`, `platform-wechat-official`, `platform-wechat-channels`, `platform-kuaishou`
@@ -80,7 +85,7 @@ Every platform supports **only two legitimate execution paths**—never extract 
    - **Outside Ducoro** (when `ducoro-cli` is unavailable, e.g. Claude Code / Codex): run `python3 scripts/init_workspace.py <workspace-root> --timezone <IANA-tz>` (e.g., `Asia/Shanghai`, `America/New_York`, default `UTC`) and point collaborating sessions to the same path via `CONTENT_OPS_ROOT`.
    - Read `brand-profile.md` and `accounts.json`. Never hardcode credentials; `accounts.json` stores only environment variable names (e.g., `X_ACCESS_TOKEN`), never raw tokens.
 2. **Execute the requested stage(s).**
-   - **Intake & topics**: collect regional signals into `inbox/` via `topic-research-cn` or `topic-research-global` (plus platform-native radars such as `platform-wechat-official/scripts/search_wechat_articles.py`), score and deduplicate via `scripts/score_topics.py`, and pause at **Approval Gate 1** before investing production effort.
+   - **Intake & topics**: collect regional signals via Connectors (`ducoro-cli mcp catalog`), `topic-research-cn`, or `topic-research-global`, run `scripts/signal_gate.py ingest` + `gate --strict` (sharding large feeds across subagents), score and annotate fuzzy repeats via `scripts/score_topics.py`, and pause at **Approval Gate 1** (or stop honestly on `nothing_solid`).
    - **Production & adaptation**: load only the matching format workshop (`longform-writing`, `shortform-social`, or `video-production`) plus the target `platform-<name>` skill(s) to produce native `variants/<platform>.md` and media assets; validate every variant with `scripts/check_media_specs.py`.
    - **Schedule & publish**: add entries to `calendar.json`, verify facts + version + authorization at **Approval Gate 2**, execute via the platform's API client or browser workflow, and **read back** the live public URL and work ID into `publish-log.jsonl`. Never mark a post `published` without live verification.
    - **Engagement & analytics**: pull comments and metrics per `engagement-and-analytics`, triage comments into 4 tiers, respect rate limits, record 24h/72h/7d snapshots in `analytics/snapshots.jsonl`, and feed high-signal questions and retro findings back into `inbox/` and `topics/`.

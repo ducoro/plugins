@@ -18,9 +18,9 @@ One cohesive plugin covers the entire content operations domain so a single agen
 
 | Skill | Responsibility |
 | --- | --- |
-| `content-ops-loop` | Orchestrator: shared workspace schema, readiness diagnostics (`diagnose.py`), shared deterministic utilities (`score_topics.py`, `check_media_specs.py`, `image_ops.py`), two human approval gates, 5 interactive boards, and routing index |
-| `topic-research-cn` | Chinese-market trend radar (Weibo/Toutiao/Baidu live hot boards, Baidu/360 autocomplete demand, CN seasonal calendar, graduated cooldown, Gate 1 brief authoring) |
-| `topic-research-global` | Global/English trend radar (Hacker News & Lobsters live boards, primary English web verification, global seasonal calendar, Gate 1 brief authoring) |
+| `content-ops-loop` | Orchestrator: shared workspace schema, readiness diagnostics (`diagnose.py`), hard provenance & signal-floor gate (`signal_gate.py`), non-destructive repeat-annotating topic scorer (`score_topics.py`), shared media/image utilities (`check_media_specs.py`, `image_ops.py`), two human approval gates, 5 interactive boards, and routing index |
+| `topic-research-cn` | Chinese-market trend radar (Connectors, Weibo/Toutiao/Baidu live hot boards, Baidu/360 autocomplete demand, subagent sharding for large feeds, hard provenance/signal gate, CN seasonal calendar, Gate 1 brief authoring) |
+| `topic-research-global` | Global/English trend radar (Connectors, 6 keyless live sources: Hacker News, Lobsters, GitHub, Polymarket, DEV.to, arXiv; subagent sharding for large feeds, hard provenance/signal gate, global seasonal calendar, Gate 1 brief authoring) |
 | `longform-writing` | Deep long-form editorial workshop (WeChat essays, blogs, newsletters, LinkedIn/X long-form): verifiable source ledger (`source_ledger.py`), 7 frameworks & 7 personas, 5-dimension editorial gate (`content_eval.py`), corpus style bootstrap (`build_playbook.py`), ownership-safe exemplar library (`extract_exemplar.py`), mechanical style-risk checks (`check_writing_quality.py`), and scoped time-decayed edit-learning flywheel (`learn_edits.py`) |
 | `shortform-social` | Short-form posts, microblog threads & exact-pixel visual cards (X/Twitter, Xiaohongshu, Threads, Instagram, Pinterest, Facebook, WeChat `newspic`): native hooks, anti-clone rewrites, `image_generate`, and `ducoro-cli board shot` card deck template |
 | `video-production` | Short & long video scripting, subtitles & code-driven video (Douyin, TikTok, YouTube, Bilibili, WeChat Channels, Kuaishou): 0–3s hooks, spoken/shot scripts, safe zones, Remotion/HyperFrames code-driven video & real footage packaging (no text-to-video APIs) |
@@ -54,13 +54,3 @@ All boards run standalone as static HTML with local data and progressively enhan
 ## Problem Reporting
 
 When a built-in script fails unexpectedly or an upstream platform API / Creator Studio layout changes, the agent follows `skills/content-ops-loop/references/issue-reporting.md`: drafts a redacted report tagged `[plugin:content-operations@<version>] [skill:<name>] [location:<file-or-step>]`, asks for user confirmation, and submits it through Ducoro's built-in `ducoro-cli feedback send` channel (no GitHub account required).
-
-## References & Upstream Inspiration
-
-This plugin is an independent, self-contained, zero-dependency implementation with zero external backend or MCP dependencies. Its WeChat Official Account 18 standalone themes & gallery, inline-HTML formatting fixes, 16-rule HTML validation, `newspic` image-carousel draft support, verifiable source ledger, 5-dimension editorial gate, writing personas, mechanical style-risk checks, rewrite similarity gate, and scoped time-decayed edit-learning flywheel drew conceptual inspiration from:
-
-- **WeWrite** (MIT License):
-  - **Repository**: https://github.com/imraywang/wewrite
-  - **Commit**: [`365dcaeb5f3e13d8b27e0974659447678c3a7ed0`](https://github.com/imraywang/wewrite/commit/365dcaeb5f3e13d8b27e0974659447678c3a7ed0) (`2026-11-23`)
-
-> Note for maintainers: Keep upstream provenance references strictly in this `README.md`. Do not introduce upstream brand names, private endpoints, or local filesystem paths into any `SKILL.md`, `references/`, `scripts/`, or board assets.

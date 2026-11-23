@@ -15,7 +15,8 @@ content-ops/
 │   ├── exemplars.json        # Structural & pacing fingerprints extracted from admired reference articles
 │   └── themes/*.json         # Custom WeChat themes learned via learn_theme.py (loaded automatically via --workspace)
 ├── accounts.json             # Account registry (no secrets—env var names only)
-├── inbox/                    # Raw source signals (YYYY-MM-DD-<slug>.md)
+├── watchlist.json            # Optional recurring radar tracks (managed via signal_gate.py watchlist)
+├── inbox/                    # Raw source signals (YYYY-MM-DD-<slug>.md), signal envelopes/pools, and seen-signals.json delta state
 ├── topics/
 │   ├── topics.json           # Scored topic pool and lifecycle state
 │   └── briefs/<topic-id>.md  # Approved topic briefs (after Gate 1)
@@ -111,6 +112,11 @@ Browser-only accounts use `"authType": "browser_session"`, `"status": "manual_br
 ```
 Allowed `status`: `candidate`, `shortlisted`, `approved`, `produced`, `archived`.
 Allowed `sourceType`: `internal_fact`, `platform_trend`, `comment_feedback`, `seasonal_evergreen`, `cross_platform_repurpose`.
+Optional `repeatAnnotation` (written by `score_topics.py` when fuzzy title overlap `>= 0.6` without merging/deleting rows): `{"matchedTopicId": "top-...", "matchedTitle": "...", "overlap": 0.75, "surfacedCount": 2, "alreadyCovered": true}`.
+
+### `watchlist.json` (Optional) & `inbox/seen-signals.json`
+- `watchlist.json`: `{"version": 1, "tracks": [{"id": "ai-agents", "query": "AI agents", "region": "global", "cadence": "daily", "platforms": ["x-twitter"], "enabled": true, "lastRunAt": null, "lastOutcome": null, "lastNewSignals": 0}]}`
+- `inbox/seen-signals.json`: `{"version": 1, "updatedAt": "...", "seen": {"https://canonical.url/...": "2026-11-23T09:00:00Z"}}` (maintained by `signal_gate.py ingest --mark-seen`, pruned automatically after 90 days).
 
 ### `drafts/plans.json`
 ```json

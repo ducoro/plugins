@@ -497,7 +497,7 @@ def hello():
                 'hackernews': f'{base}/hn-top',
                 'lobsters': f'{base}/lobsters',
             }), patch.object(fh_gl, 'HN_ITEM_TMPL', f'{base}/hn-item/{{id}}'), patch('sys.stdout', buf_gl):
-                rc_gl = fh_gl.main(['--limit', '10', '--json'])
+                rc_gl = fh_gl.main(['--sources', 'hackernews,lobsters', '--limit', '10', '--json'])
             self.assertEqual(rc_gl, 0)
             hot_gl = json.loads(buf_gl.getvalue())
             self.assertEqual(hot_gl['sourcesOk'], ['hackernews', 'lobsters'])
