@@ -62,3 +62,13 @@ python3 -m unittest discover -s tests -v
 - Bump `version` (semver) in all three plugin manifests whenever distributed skill instructions or `.mcp.json` change.
 - Never rename an existing plugin directory without coordinating migration, because consumers reference plugins by `name`.
 - Run both validation commands before committing or opening a pull request.
+
+## Workspace Indexes
+
+If `.rules/README.md`, `.plans/README.md`, or `.docs/README.md` exist in the local workspace, check them for additional context:
+
+- `.rules/README.md`: repository workflow and maintenance rules
+- `.plans/README.md`: active plans and working notes
+- `.docs/README.md`: design and architecture references
+
+Keep these index files updated when adding, renaming, or removing files in their directories, and do not stage git-ignored files inside them.

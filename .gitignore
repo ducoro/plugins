@@ -3,3 +3,9 @@ __pycache__/
 .DS_Store
 .env
 .env.*
+/.docs/*
+!/.docs/.gitkeep
+/.plans/*
+!/.plans/.gitkeep
+/.rules/*
+!/.rules/.gitkeep
