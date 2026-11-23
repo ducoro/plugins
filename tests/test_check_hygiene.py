@@ -130,6 +130,12 @@ class HygieneCheckTest(unittest.TestCase):
                 target = repo / placeholder
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text('', encoding='utf-8')
+            smoke_test = repo / 'tests/test_smoke.py'
+            smoke_test.parent.mkdir(parents=True, exist_ok=True)
+            smoke_test.write_text(
+                'import unittest\n\nclass Smoke(unittest.TestCase):\n    def test_ok(self):\n        self.assertTrue(True)\n',
+                encoding='utf-8',
+            )
 
             self.assertEqual(git(repo, 'add', '.').returncode, 0)
             self.assertEqual(git(repo, 'commit', '-m', 'chore: initial commit').returncode, 0)

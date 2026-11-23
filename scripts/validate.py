@@ -9,6 +9,9 @@ VERSION = re.compile(r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\Z')
 ENV_PLACEHOLDER = re.compile(r'\$\{[A-Z][A-Z0-9_]*\}')
 SENSITIVE_KEY = re.compile(r'(token|secret|password|passwd|api[_-]?key|authorization)', re.I)
 FORBIDDEN_BUNDLE_ENTRIES = ['hooks', 'commands', 'agents', '.app.json']
+BARE_DUCORO_CLI = re.compile(
+    r'(?<![A-Za-z0-9_.-])ducoro\s+(?:board|feedback|media|local-folder|space|spaces|agent|agents|daemon|job|task|plan|plugin|skill|mcp|cli)\b|`ducoro`\s+CLI'
+)
 
 
 def require(condition, message):
@@ -70,6 +73,21 @@ def validate_mcp_file(mcp_path, plugin_name):
                 if SENSITIVE_KEY.search(k):
                     require(ENV_PLACEHOLDER.search(v),
                             f'{plugin_name}/{server_id}: {container_key}.{k} must use an ${{ENV_VAR}} placeholder, never a raw secret')
+
+
+def validate_cli_references(bundle, root):
+    for file_path in sorted(bundle.rglob('*')):
+        if not file_path.is_file():
+            continue
+        raw = file_path.read_bytes()
+        if b'\x00' in raw:
+            continue
+        rel = file_path.relative_to(root).as_posix()
+        for lineno, line in enumerate(raw.decode('utf-8', errors='replace').splitlines(), start=1):
+            require(
+                not BARE_DUCORO_CLI.search(line),
+                f'{rel}:{lineno}: use "ducoro-cli" instead of bare "ducoro" CLI invocation',
+            )
 
 
 def validate(root):
@@ -173,6 +191,8 @@ def validate(root):
 
         for readme in readmes:
             require(f'(plugins/{name})' in readme, f'{name}: missing README catalog link')
+
+        validate_cli_references(bundle, root)
 
     on_disk = {p.name for p in (root / 'plugins').iterdir() if p.is_dir()}
     require(on_disk == plugin_names, 'every plugin directory must be registered exactly once')

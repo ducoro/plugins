@@ -114,6 +114,24 @@ class CatalogValidationTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             validator.validate(self.root)
 
+    def test_bare_ducoro_cli_invocation_is_rejected(self):
+        skill = self.root / 'plugins/docs-lookup/skills/library-docs/SKILL.md'
+        original = skill.read_text()
+        for bad_snippet in [
+            '\nRun `ducoro feedback send "bug"`.\n',
+            '\nRun `ducoro media upload file.jpg --json`.\n',
+            '\nWhen `ducoro` CLI is unavailable, print text.\n',
+        ]:
+            with self.subTest(snippet=bad_snippet.strip()):
+                skill.write_text(original + bad_snippet)
+                with self.assertRaises(ValueError):
+                    validator.validate(self.root)
+        skill.write_text(
+            original
+            + '\nUse `ducoro-cli feedback send "ok"`, `window.ducoro`, and Ducoro Board SDK.\n'
+        )
+        self.assertEqual(validator.validate(self.root), (5, 23, 1))
+
 
 if __name__ == '__main__':
     unittest.main()
