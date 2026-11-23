@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "example-http": {
+      "type": "http",
+      "url": "https://mcp.example.com/v1",
+      "headers": {
+        "Authorization": "Bearer ${EXAMPLE_MCP_TOKEN}"
+      }
+    }
+  }
+}

@@ -19,12 +19,14 @@ class CatalogValidationTest(unittest.TestCase):
         self.root = Path(self.tmp.name)
         for name in ['marketplace.json', 'README.md', 'README.zh-CN.md', 'LICENSE']:
             shutil.copy2(ROOT / name, self.root / name)
+        shutil.copytree(ROOT / '.agents', self.root / '.agents')
+        shutil.copytree(ROOT / '.claude-plugin', self.root / '.claude-plugin')
         shutil.copytree(ROOT / 'plugins', self.root / 'plugins')
 
     def test_current_catalog(self):
-        self.assertEqual(validator.validate(self.root), (3, 4))
+        self.assertEqual(validator.validate(self.root), (4, 5, 1))
 
-    def test_catalog_boundaries(self):
+    def test_marketplace_sync_and_boundaries(self):
         original = json.loads((self.root / 'marketplace.json').read_text())
         cases = {
             'duplicate identity': lambda m: m['plugins'].append(copy.deepcopy(m['plugins'][0])),
@@ -41,13 +43,23 @@ class CatalogValidationTest(unittest.TestCase):
                 (self.root / 'marketplace.json').write_text(json.dumps(manifest))
                 with self.assertRaises(ValueError):
                     validator.validate(self.root)
+        (self.root / 'marketplace.json').write_text(json.dumps(original))
 
-    def test_bundle_boundaries(self):
+        # Desync between .claude-plugin/marketplace.json and marketplace.json fails.
+        claude_path = self.root / '.claude-plugin/marketplace.json'
+        claude_original = json.loads(claude_path.read_text())
+        claude_mutated = copy.deepcopy(claude_original)
+        claude_mutated['plugins'].pop()
+        claude_path.write_text(json.dumps(claude_mutated))
+        with self.assertRaises(ValueError):
+            validator.validate(self.root)
+
+    def test_bundle_and_mcp_boundaries(self):
         plugin = self.root / 'plugins/docs-lookup'
-        manifest_path = plugin / '.codex-plugin/plugin.json'
+        manifest_path = plugin / 'plugin.json'
         original = json.loads(manifest_path.read_text())
         for field, value in [('name', 'different'), ('version', 'latest'), ('license', 'unknown'),
-                             ('skills', '../skills'), ('mcpServers', './connector.json'),
+                             ('skills', '../skills'), ('mcpServers', './.mcp.json'),
                              ('apps', './bindings.json')]:
             with self.subTest(field=field):
                 manifest = {**original, field: value}
@@ -55,18 +67,33 @@ class CatalogValidationTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     validator.validate(self.root)
         manifest_path.write_text(json.dumps(original))
-        license_path = plugin / 'LICENSE'
-        license_path.write_text('incomplete license')
+
+        # Forbidden host-specific directories/files are rejected.
+        for forbidden in ('hooks', 'commands', '.app.json'):
+            with self.subTest(forbidden=forbidden):
+                target = plugin / forbidden
+                if forbidden.endswith('.json'):
+                    target.write_text('{}')
+                else:
+                    target.mkdir()
+                with self.assertRaises(ValueError):
+                    validator.validate(self.root)
+                if target.is_dir():
+                    target.rmdir()
+                else:
+                    target.unlink()
+
+        # Raw secret in .mcp.json is rejected.
+        mcp_path = self.root / 'plugins/starter-template/.mcp.json'
+        original_mcp = json.loads(mcp_path.read_text())
+        bad_mcp = copy.deepcopy(original_mcp)
+        bad_mcp['mcpServers']['example-http']['headers']['Authorization'] = 'Bearer sk-live-raw-secret'
+        mcp_path.write_text(json.dumps(bad_mcp))
         with self.assertRaises(ValueError):
             validator.validate(self.root)
-        license_path.unlink()
-        with self.assertRaises(ValueError):
-            validator.validate(self.root)
-        license_path.write_text((self.root / 'LICENSE').read_text())
-        (plugin / '.mcp.json').write_text('{}')
-        with self.assertRaises(ValueError):
-            validator.validate(self.root)
-        (plugin / '.mcp.json').unlink()
+        mcp_path.write_text(json.dumps(original_mcp))
+
+        # Symlink inside bundle is rejected.
         (plugin / 'escaped').symlink_to(self.root.parent)
         with self.assertRaises(ValueError):
             validator.validate(self.root)

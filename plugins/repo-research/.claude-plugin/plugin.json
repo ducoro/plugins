@@ -1,0 +1,17 @@
+{
+  "name": "repo-research",
+  "version": "1.0.0",
+  "description": "Research any public GitHub repository through its AI-generated wiki: structure first, then targeted questions.",
+  "author": {
+    "name": "Ducoro",
+    "url": "https://github.com/ducoro"
+  },
+  "homepage": "https://github.com/ducoro/plugins/tree/main/plugins/repo-research",
+  "repository": "https://github.com/ducoro/plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "github",
+    "research",
+    "deepwiki"
+  ]
+}

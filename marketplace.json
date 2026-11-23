@@ -5,11 +5,21 @@
   },
   "plugins": [
     {
+      "name": "starter-template",
+      "source": {
+        "source": "local",
+        "path": "./plugins/starter-template"
+      },
+      "description": "Minimal reference plugin demonstrating a standard Skill and MCP server declaration.",
+      "category": "Templates"
+    },
+    {
       "name": "repo-research",
       "source": {
         "source": "local",
         "path": "./plugins/repo-research"
       },
+      "description": "Research any public GitHub repository through its AI-generated wiki: structure first, then targeted questions.",
       "category": "Research"
     },
     {
@@ -18,6 +28,7 @@
         "source": "local",
         "path": "./plugins/docs-lookup"
       },
+      "description": "Look up current, version-accurate library and framework documentation instead of answering from memory.",
       "category": "Research"
     },
     {
@@ -26,6 +37,7 @@
         "source": "local",
         "path": "./plugins/git-workflows"
       },
+      "description": "Write AI-readable commit messages and actionable pull-request descriptions.",
       "category": "Developer Tools"
     }
   ]

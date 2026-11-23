@@ -1,0 +1,17 @@
+{
+  "name": "starter-template",
+  "version": "1.0.0",
+  "description": "Minimal reference plugin demonstrating a standard Skill and MCP server declaration.",
+  "author": {
+    "name": "Ducoro",
+    "url": "https://github.com/ducoro"
+  },
+  "homepage": "https://github.com/ducoro/plugins/tree/main/plugins/starter-template",
+  "repository": "https://github.com/ducoro/plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "template",
+    "starter",
+    "example"
+  ]
+}

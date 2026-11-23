@@ -1,64 +1,52 @@
-# Ducoro 插件
+# Ducoro 插件市场
 
-[Ducoro](https://ducoro.ai) 官方插件仓库，独立于应用维护与更新。
+[Ducoro](https://ducoro.ai) 官方插件仓库，同时可直接用于 **Claude Code** 与 **OpenAI Codex**。
 
 [English](README.md) | **简体中文**
 
-每个插件按照 Ducoro 支持的插件仓库格式打包 Agent 技能。[`marketplace.json`](marketplace.json) 是插件目录，每个插件都有自己的清单和技能说明。
+每个插件以开放的跨宿主格式打包 **Agent Skill**（`SKILL.md`）以及可选的 **MCP 服务声明**（`.mcp.json`）。
 
 ## 现有插件
 
-| 插件 | 用途 | 依赖的连接器 |
+| 插件 | 用途 | 包含内容 |
 | --- | --- | --- |
-| [Docs Lookup](plugins/docs-lookup) | 根据最新文档回答库与框架相关问题 | Context7 |
-| [Repo Research](plugins/repo-research) | 通过文档理解公开 GitHub 仓库 | DeepWiki |
-| [Git Workflows](plugins/git-workflows) | 编写清楚的提交信息和 Pull Request 描述 | 无 |
+| [Starter Template](plugins/starter-template) | 用于联调测试与新建插件的最小参考模板 | Skill + MCP 示例 |
+| [Docs Lookup](plugins/docs-lookup) | 根据最新文档回答库与框架相关问题 | Skill（Context7） |
+| [Repo Research](plugins/repo-research) | 通过文档理解公开 GitHub 仓库 | Skill（DeepWiki） |
+| [Git Workflows](plugins/git-workflows) | 编写清楚的提交信息和 Pull Request 描述 | Skill |
 
-连接器在 Ducoro 中单独配置。技能说明会告诉 Agent 需要哪个连接器，以及如何添加。
+## 使用方式
 
-## 在 Ducoro 中使用
+- **Ducoro**：自动同步本仓库，按需将插件挂载到不同 Bot。
+- **Claude Code**：通过 `.claude-plugin/marketplace.json` 添加本仓库（`/plugin marketplace add ducoro/plugins`）。
+- **OpenAI Codex**：通过 `.agents/plugins/marketplace.json`（或根目录 `marketplace.json`）添加本仓库。
 
-Ducoro 自动登记并保留这个官方来源。在「插件 → 发现 → 官方」中打开它，核对插件内容与许可证后安装。
-
-也可以使用 Ducoro CLI：
-
-```sh
-ducoro-cli plugin browse --marketplace ducoro-official --json
-```
-
-来源名称固定保留为 `ducoro-official`。核对插件内容和许可证后，可以让 Agent 安装；安装使用本次浏览结果返回的 review token。
-
-立即检查更新：
-
-```sh
-ducoro-cli plugin marketplace refresh ducoro-official
-```
-
-## 更新方式
-
-Ducoro 读取仓库的默认分支。来源同步成功后，新增插件会出现在发现列表中，从该来源安装的已有插件会跟随更新。新增插件由用户选择安装，已安装记录保留来源 commit，便于追溯。
-
-在这个仓库发布插件更新，无须发布新的 Ducoro 应用版本。客户端会在下一次定时同步或主动同步时收到更新。插件声明的许可证发生变化时，已有安装需要重新核对后才能继续跟随。
+凡是需要凭证的 MCP 服务声明均只写环境变量占位符（例如 `${EXAMPLE_MCP_TOKEN}`），真实密钥请在各自宿主的本地凭证库中配置。
 
 ## 仓库结构
 
 ```text
-marketplace.json
+.agents/plugins/marketplace.json   # 开放 Agent Plugins / Codex 市场索引
+.claude-plugin/marketplace.json    # Claude Code 市场索引
+marketplace.json                   # 根目录市场索引（同步镜像）
 plugins/
   <plugin-name>/
     LICENSE
-    .codex-plugin/plugin.json
+    plugin.json                    # 开放 Agent Plugins 清单
+    .claude-plugin/plugin.json     # Claude Code 清单
+    .codex-plugin/plugin.json      # Codex 清单
+    .mcp.json                      # 可选：MCP 服务声明（严禁真实密钥）
     skills/
       <skill-name>/
         SKILL.md
-        agents/openai.yaml
+        agents/openai.yaml         # 可选：发现元数据
 ```
-
-插件目录中的路径以仓库根目录为基准。本仓库分发技能，连接器依赖通过技能元数据声明。
 
 ## 参与贡献
 
-插件格式、本地检查和更新流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。问题和建议可以提交到 [GitHub Issues](https://github.com/ducoro/plugins/issues)。安全问题请通过[私密漏洞报告](https://github.com/ducoro/plugins/security/advisories/new)反馈，详情见 [SECURITY.md](SECURITY.md)。
+- 人工贡献者请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。
+- AI Agent 请直接阅读 [AGENTS.md](AGENTS.md)，按清单新建、修改与校验插件。
+- 安全问题请通过[私密漏洞报告](https://github.com/ducoro/plugins/security/advisories/new)反馈，详情见 [SECURITY.md](SECURITY.md)。
 
 ## 许可证
 

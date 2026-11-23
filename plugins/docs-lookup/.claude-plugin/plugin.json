@@ -1,0 +1,17 @@
+{
+  "name": "docs-lookup",
+  "version": "1.0.0",
+  "description": "Look up current, version-accurate library and framework documentation instead of answering from memory.",
+  "author": {
+    "name": "Ducoro",
+    "url": "https://github.com/ducoro"
+  },
+  "homepage": "https://github.com/ducoro/plugins/tree/main/plugins/docs-lookup",
+  "repository": "https://github.com/ducoro/plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "documentation",
+    "libraries",
+    "context7"
+  ]
+}

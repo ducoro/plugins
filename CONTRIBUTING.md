@@ -1,22 +1,33 @@
 # Contributing
 
-Thank you for helping improve the official Ducoro plugins.
+Thank you for helping improve the official Ducoro plugin marketplace.
+
+If you are an AI agent working on this repository, start with [AGENTS.md](AGENTS.md) for the exact step-by-step checklist.
 
 ## Propose a change
 
-Open an issue for a new plugin or a substantial behavior change. Explain the task it supports, when an agent should use it, required tools, and how you will verify the result. Small corrections can go directly to a pull request.
+Open an issue for a new plugin or a substantial behavior change. Explain the task it supports, when an agent should use it, any required MCP servers or tools, and how you will verify the result. Small corrections can go directly to a pull request.
 
 ## Plugin contract
 
-1. Create `plugins/<name>/.codex-plugin/plugin.json` with a stable lowercase, hyphenated name, a semantic version, a description, `license: "Apache-2.0"`, and `skills: "./skills/"`.
-2. Put each skill in `skills/<skill-name>/SKILL.md`. Its YAML frontmatter declares `name` and a single-line `description` of at most 300 UTF-16 code units, matching Ducoro’s skill-index injection limit. Explain prerequisites, the workflow, observable completion, and failure handling in English.
-3. Put discovery metadata in `skills/<skill-name>/agents/openai.yaml`. Declare required connectors under `dependencies.tools`. Keep secrets and machine-specific paths out of the bundle.
-4. Add a local entry to the root `marketplace.json`, using `./plugins/<name>` as its source path. Keep the marketplace entry name and plugin manifest name identical.
-5. Update both README catalogs when adding, removing, or materially changing a plugin. English is the default documentation language; the root README links to Simplified Chinese.
+Use [`plugins/starter-template`](plugins/starter-template) as a ready-to-copy blueprint.
 
-Each plugin bundle must include an unchanged copy of the root `LICENSE`, so separately installed copies retain the license text.
+1. Create `plugins/<name>/` with three aligned manifests:
+   - `plugin.json` (open Agent Plugins format)
+   - `.claude-plugin/plugin.json` (Claude Code format)
+   - `.codex-plugin/plugin.json` (Codex format)
+   All three must share the same lowercase kebab-case `name`, semantic `version`, non-empty `description`, and `license: "Apache-2.0"`. Set `skills: "./skills/"` in `plugin.json` and `.codex-plugin/plugin.json`.
+2. Put each skill in `skills/<skill-name>/SKILL.md`. Its YAML frontmatter declares `name` (matching the folder name) and a single-line `description` of at most 300 UTF-16 code units. Write clear English instructions covering prerequisites, workflow, observable completion, and failure handling.
+3. Optional `.mcp.json`: if a plugin bundles MCP server declarations, place them in `.mcp.json` and set `"mcpServers": "./.mcp.json"` in `plugin.json` and `.codex-plugin/plugin.json`. Never commit real credentials or machine-specific paths—use environment variable placeholders such as `${SERVICE_API_TOKEN}`.
+4. Do not include host-specific extensions (`hooks/`, `commands/`, `agents/`, `.app.json`) or symlinks.
+5. Register the plugin in all three marketplace catalogs:
+   - `.agents/plugins/marketplace.json`
+   - `.claude-plugin/marketplace.json`
+   - `marketplace.json`
+6. Update both [README.md](README.md) and [README.zh-CN.md](README.zh-CN.md) when adding, removing, or materially changing a plugin.
+7. Include an unchanged copy of the root `LICENSE` inside `plugins/<name>/LICENSE`.
 
-Only contribute material you have the right to distribute under the repository's Apache-2.0 license. Keep third-party attributions and license notices with any permitted third-party material. Report provenance in the pull request.
+Only contribute material you have the right to distribute under Apache-2.0. Keep third-party attributions and license notices with any permitted third-party material.
 
 ## Validate locally
 
@@ -27,10 +38,8 @@ python3 scripts/validate.py
 python3 -m unittest discover -s tests -v
 ```
 
-Validation checks the catalog, plugin identities, versions, package paths, skill frontmatter, README catalog coverage, and the repository's skills-only distribution boundary. It complements manual review: verify the changed skill with its declared tools and include the result in your pull request. A structural check cannot prove that an instruction produces a useful result.
+Validation checks all three marketplace catalogs, plugin manifest consistency, `.mcp.json` schema and secret hygiene, forbidden host-specific extensions, skill frontmatter, and README coverage.
 
 ## Publish updates
 
-Open a pull request against `main`. Keep each change focused and describe the behavior, validation, and any new tool dependency. Increment a plugin's version when changing its distributed content; use semantic versioning to communicate compatibility. Describe breaking behavior changes prominently.
-
-The default branch is the delivery source. Once a reviewed change lands on `main`, clients can receive it on their next successful sync; an application release is not needed. Installation provenance records the commit. To undo a published change, submit a revert commit so the history remains auditable.
+Open a pull request against `main`. Keep changes focused and bump the plugin `version` whenever distributed content changes. Once merged to `main`, clients pick up updates automatically on their next sync without requiring an application release.

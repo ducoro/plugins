@@ -1,0 +1,12 @@
+{
+  "name": "docs-lookup",
+  "version": "1.0.0",
+  "description": "Look up current, version-accurate library and framework documentation instead of answering from memory.",
+  "license": "Apache-2.0",
+  "keywords": [
+    "documentation",
+    "libraries",
+    "context7"
+  ],
+  "skills": "./skills/"
+}

@@ -1,64 +1,52 @@
 # Ducoro Plugins
 
-Official plugins for [Ducoro](https://ducoro.ai), maintained independently of the application.
+Official plugin marketplace for [Ducoro](https://ducoro.ai), also directly usable in **Claude Code** and **OpenAI Codex**.
 
 **English** | [简体中文](README.zh-CN.md)
 
-Each plugin packages agent skills in the marketplace format supported by Ducoro. The catalog lives in [`marketplace.json`](marketplace.json); each plugin has its own manifest and skill instructions.
+Each plugin packages portable **Agent Skills** (`SKILL.md`) and optional **MCP server declarations** (`.mcp.json`) in open, cross-host marketplace formats.
 
 ## Available plugins
 
-| Plugin | What it helps with | Connector dependency |
+| Plugin | What it helps with | Components |
 | --- | --- | --- |
-| [Docs Lookup](plugins/docs-lookup) | Answer library and framework questions using current documentation | Context7 |
-| [Repo Research](plugins/repo-research) | Understand public GitHub repositories through their documentation | DeepWiki |
-| [Git Workflows](plugins/git-workflows) | Write clear commit messages and pull request descriptions | None |
+| [Starter Template](plugins/starter-template) | Minimal reference plugin for testing and authoring new plugins | Skill + MCP example |
+| [Docs Lookup](plugins/docs-lookup) | Answer library and framework questions using current documentation | Skill (Context7) |
+| [Repo Research](plugins/repo-research) | Understand public GitHub repositories through their documentation | Skill (DeepWiki) |
+| [Git Workflows](plugins/git-workflows) | Write clear commit messages and pull request descriptions | Skill |
 
-Connectors are configured separately in Ducoro. The skills explain which connector they need and how to add it.
+## Use this marketplace
 
-## Use in Ducoro
+- **Ducoro**: Automatically synced from this repository; mount any plugin onto individual Bots.
+- **Claude Code**: Add `ducoro/plugins` as a plugin marketplace (`/plugin marketplace add ducoro/plugins`) using `.claude-plugin/marketplace.json`.
+- **OpenAI Codex**: Add `ducoro/plugins` via `.agents/plugins/marketplace.json` (or root `marketplace.json`).
 
-Ducoro registers this repository automatically as its permanent official source. Open **Plugins → Discover → Official**, review a plugin's contents and license, then install it.
-
-With the Ducoro CLI:
-
-```sh
-ducoro-cli plugin browse --marketplace ducoro-official --json
-```
-
-The source name is reserved as `ducoro-official`. Ask an agent to install a plugin after you have reviewed its contents and license; installation uses the review token returned by the current browse response.
-
-To check for updates now:
-
-```sh
-ducoro-cli plugin marketplace refresh ducoro-official
-```
-
-## Updates
-
-Ducoro reads the repository's default branch. A successful source sync makes newly added plugins discoverable and updates plugins already installed from that source. New plugins remain optional installations. The installed record retains the source commit for traceability.
-
-Plugin updates can be published here without releasing a new Ducoro application version. Clients receive them when they next sync, either on the application's schedule or through an explicit sync. A declared license change requires renewed review before an installed plugin follows it.
+Any MCP server requiring credentials uses environment variable placeholders (for example `${EXAMPLE_MCP_TOKEN}`); supply your own tokens locally in your host tool's credential store.
 
 ## Repository layout
 
 ```text
-marketplace.json
+.agents/plugins/marketplace.json   # Open Agent Plugins / Codex marketplace index
+.claude-plugin/marketplace.json    # Claude Code marketplace index
+marketplace.json                   # Root marketplace index (mirror)
 plugins/
   <plugin-name>/
     LICENSE
-    .codex-plugin/plugin.json
+    plugin.json                    # Open Agent Plugins manifest
+    .claude-plugin/plugin.json     # Claude Code manifest
+    .codex-plugin/plugin.json      # Codex manifest
+    .mcp.json                      # Optional MCP server declarations (no secrets)
     skills/
       <skill-name>/
         SKILL.md
-        agents/openai.yaml
+        agents/openai.yaml         # Optional discovery metadata
 ```
-
-Marketplace entry paths resolve from the repository root. Plugins declare connector dependencies in their skill metadata; this repository distributes skills.
 
 ## Contribute
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the plugin format, local validation, and update process. Bug reports and proposals are welcome through [GitHub issues](https://github.com/ducoro/plugins/issues). Please use [private vulnerability reporting](https://github.com/ducoro/plugins/security/advisories/new) for security concerns; see [SECURITY.md](SECURITY.md).
+- Human contributors: see [CONTRIBUTING.md](CONTRIBUTING.md).
+- AI agents: see [AGENTS.md](AGENTS.md) for the exact authoring and validation checklist.
+- Security concerns: please use [private vulnerability reporting](https://github.com/ducoro/plugins/security/advisories/new); see [SECURITY.md](SECURITY.md).
 
 ## License
 

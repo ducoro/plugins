@@ -1,0 +1,12 @@
+{
+  "name": "repo-research",
+  "version": "1.0.0",
+  "description": "Research any public GitHub repository through its AI-generated wiki: structure first, then targeted questions.",
+  "license": "Apache-2.0",
+  "keywords": [
+    "github",
+    "research",
+    "deepwiki"
+  ],
+  "skills": "./skills/"
+}

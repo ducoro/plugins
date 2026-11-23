@@ -1,0 +1,33 @@
+{
+  "name": "ducoro",
+  "owner": {
+    "name": "Ducoro",
+    "url": "https://github.com/ducoro"
+  },
+  "metadata": {
+    "description": "Official Ducoro plugin marketplace distributing portable Skills and MCP declarations.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "starter-template",
+      "source": "./plugins/starter-template",
+      "description": "Minimal reference plugin demonstrating a standard Skill and MCP server declaration."
+    },
+    {
+      "name": "repo-research",
+      "source": "./plugins/repo-research",
+      "description": "Research any public GitHub repository through its AI-generated wiki: structure first, then targeted questions."
+    },
+    {
+      "name": "docs-lookup",
+      "source": "./plugins/docs-lookup",
+      "description": "Look up current, version-accurate library and framework documentation instead of answering from memory."
+    },
+    {
+      "name": "git-workflows",
+      "source": "./plugins/git-workflows",
+      "description": "Write AI-readable commit messages and actionable pull-request descriptions."
+    }
+  ]
+}
