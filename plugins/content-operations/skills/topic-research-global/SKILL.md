@@ -1,6 +1,6 @@
 ---
 name: topic-research-global
-description: Source global/English topics via connected MCP connectors, 6 keyless live radars (HN, Lobsters, GitHub, Polymarket, DEV.to, arXiv), and web verification; shard large feeds across subagents, enforce hard provenance/signal gates, and write Gate 1 briefs.
+description: Source global/English topics via connected MCP connectors, 7 keyless live radars (HN/Algolia, Lobsters, GitHub, Polymarket, DEV.to, arXiv, Google News), and web verification; shard large feeds across subagents, enforce hard gates, and write Gate 1 briefs.
 ---
 
 # Global Topic Research & Trend Radar
@@ -16,9 +16,9 @@ Capture global/English demand signals without mixing in domestic-CN feeds. **Str
 1. **Connected Platform Connectors (Highest Priority)**: Inspect available connectors with `ducoro-cli mcp catalog` and `ducoro-cli mcp status <slug>` (for example X, GitHub, YouTube, Reddit, Slack). Query authenticated feeds via `ducoro-cli mcp tools <slug>` / `ducoro-cli mcp call <slug> <tool>` and write results as `content-ops-signal-envelope/1` JSON (`region: "global"`).
 2. **Verified Keyless Public Radars (Zero-Config Fallback)**:
    ```sh
-   python3 scripts/fetch_hotspots_global.py --sources hackernews,lobsters,github,polymarket,devto,arxiv --query "<topic>" --window-days 30 --limit 30 --envelope > <workspace>/inbox/global-public.json
+   python3 scripts/fetch_hotspots_global.py --sources hackernews,lobsters,github,polymarket,devto,arxiv,gnews --query "<topic>" --window-days 30 --limit 30 --envelope > <workspace>/inbox/global-public.json
    ```
-   (Omit `--query` for broad daily scanning; Reddit public JSON blocks unauthenticated requests, so route Reddit through a Connector or `web_search` `site:reddit.com`.)
+   (Omit `--query` for broad daily scanning; with `--query`, `hackernews` switches to HN Algolia date search, `gnews` queries Google News RSS, and `arxiv` applies exact-phrase matching. Reddit blocks keyless JSON, so route Reddit via a Connector or `web_search` `site:reddit.com`.)
 3. **Primary Web Verification**: Use `web_search` and `web_fetch` to verify release notes, official docs, benchmarks, and high-signal discussions tailored to the target platform (`../platform-x-twitter/SKILL.md`, `../platform-youtube/SKILL.md`, `../platform-linkedin/SKILL.md`, etc.).
 4. **Local Workspace Corpus**: Fold in `engagement/inbox.json` high-intent questions and `analytics/retros/` findings.
 

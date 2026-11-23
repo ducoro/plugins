@@ -15,10 +15,11 @@ Capture Chinese-market demand signals without mixing in overseas/English feeds. 
 
 1. **Connected Platform Connectors (Highest Priority)**: Check `ducoro-cli mcp catalog` and `ducoro-cli mcp status <slug>` for configured connectors; query via `ducoro-cli mcp call <slug> <tool>` and normalize results into `content-ops-signal-envelope/1` JSON (`region: "cn"`).
 2. **CN Keyless Live Radars & Search Demand**:
-   - **CN Hot Boards**:
+   - **CN Hot Boards & Keyword News**:
      ```sh
-     python3 scripts/fetch_hotspots_cn.py --sources weibo,toutiao,baidu --limit 30 --envelope > <workspace>/inbox/cn-public.json
+     python3 scripts/fetch_hotspots_cn.py --limit 30 --envelope > <workspace>/inbox/cn-public.json
      ```
+     (Pass `--query "<keyword>" --window-days 7` to automatically include Chinese Google News RSS `gnews_cn` alongside filtered Weibo/Toutiao/Baidu hot boards.)
    - **CN Search Autocomplete Demand**: `python3 scripts/seo_keywords_cn.py "<kw1>" "<kw2>" --json` (Baidu + 360 long-tail search intent).
    - **WeChat-specific radar**: only when targeting WeChat Official Account, run `../platform-wechat-official/scripts/search_wechat_articles.py "<keyword>" --days 7 --limit 10 --json` (stops cleanly on CAPTCHA).
 3. **Primary Web Verification**: Use `web_search` and `web_fetch` to verify primary Chinese announcements, official data, and native cues for Xiaohongshu / Douyin / Bilibili / Kuaishou per the target `../platform-<name>/SKILL.md`.

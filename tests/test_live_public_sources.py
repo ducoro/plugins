@@ -35,15 +35,15 @@ class LivePublicSourcesSmokeTest(unittest.TestCase):
             proc = subprocess.run(
                 [
                     sys.executable, str(GLOBAL_SCRIPTS / 'fetch_hotspots_global.py'),
-                    '--sources', 'hackernews,lobsters,github,polymarket,devto,arxiv',
-                    '--limit', '12', '--envelope',
+                    '--sources', 'hackernews,lobsters,github,polymarket,devto,arxiv,gnews',
+                    '--limit', '14', '--envelope',
                 ],
                 capture_output=True, text=True, check=True, timeout=45,
             )
             env = json.loads(proc.stdout)
             self.assertEqual(env['schema'], 'content-ops-signal-envelope/1')
-            # Core 5 must succeed; arXiv occasionally returns transient 429 on rapid bursts
-            for core_source in ('hackernews', 'lobsters', 'github', 'polymarket', 'devto'):
+            # Core 6 must succeed; arXiv occasionally returns transient 429 on rapid bursts
+            for core_source in ('hackernews', 'lobsters', 'github', 'polymarket', 'devto', 'gnews'):
                 self.assertIn(core_source, env['sourcesOk'], f'{core_source} failed: {env["sourcesFailed"]}')
             self.assertGreater(len(env['items']), 0)
 
@@ -59,6 +59,27 @@ class LivePublicSourcesSmokeTest(unittest.TestCase):
             self.assertTrue(ing['ok'])
             self.assertEqual(ing['stats']['dropped'], 0, f'Unexpected dropped rows: {ing["rejectedRows"]}')
             self.assertEqual(ing['stats']['deltaCount'], len(env['items']))
+
+            # Keyword mode live smoke test (HN Algolia + Google News RSS + GitHub)
+            kw_proc = subprocess.run(
+                [
+                    sys.executable, str(GLOBAL_SCRIPTS / 'fetch_hotspots_global.py'),
+                    '--sources', 'hackernews,gnews,github', '--query', 'grok bot',
+                    '--window-days', '30', '--limit', '12', '--envelope',
+                ],
+                capture_output=True, text=True, check=True, timeout=45,
+            )
+            kw_env = json.loads(kw_proc.stdout)
+            for s in ('hackernews', 'gnews', 'github'):
+                self.assertIn(s, kw_env['sourcesOk'], f'keyword {s} failed: {kw_env["sourcesFailed"]}')
+            kw_path = tdir / 'kw-env.json'
+            kw_path.write_text(kw_proc.stdout, encoding='utf-8')
+            kw_ing = json.loads(subprocess.run(
+                [sys.executable, str(LOOP_SCRIPTS / 'signal_gate.py'), 'ingest', '--input', str(kw_path)],
+                capture_output=True, text=True, check=True,
+            ).stdout)
+            self.assertTrue(kw_ing['ok'])
+            self.assertEqual(kw_ing['stats']['dropped'], 0)
 
     def test_live_cn_public_radars_seo_and_signal_gate_ingest(self):
         with tempfile.TemporaryDirectory() as tmp:

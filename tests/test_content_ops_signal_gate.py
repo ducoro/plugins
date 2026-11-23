@@ -360,14 +360,19 @@ class SignalGateAndPipelineTest(unittest.TestCase):
             self.assertEqual(out_weak['outcome'], 'nothing_solid')
             self.assertEqual(out_weak['closestCandidate']['topicId'], 'top-weak')
 
-    def test_global_6_sources_and_cn_envelope_pipe_to_signal_gate(self):
+    def test_global_7_sources_keyword_mode_and_cn_envelope_pipe_to_signal_gate(self):
         now_ts = int(datetime.now(timezone.utc).timestamp())
         now_iso = iso_utc(-1)
+        rfc_date = datetime.now(timezone.utc).strftime('%a, %d %b %Y %H:%M:%S GMT')
+        seen_paths: list[str] = []
 
         class MockHandler(BaseHTTPRequestHandler):
             def do_GET(self):
+                seen_paths.append(self.path)
                 if self.path.startswith('/hn/top'):
                     body, ctype = json.dumps([101]).encode(), 'application/json'
+                elif self.path.startswith('/hn/search'):
+                    body, ctype = json.dumps({'hits': [{'objectID': '909', 'title': 'Grok Bot Agent News', 'points': 95, 'num_comments': 42, 'author': 'dev1', 'created_at': now_iso, 'url': 'https://example.org/grok-hn'}]}).encode(), 'application/json'
                 elif self.path.startswith('/hn/item/101'):
                     body, ctype = json.dumps({'id': 101, 'title': 'AI Agent Memory Architecture', 'score': 320, 'descendants': 88, 'by': 'pg', 'time': now_ts, 'url': 'https://example.org/agent-memory'}).encode(), 'application/json'
                 elif self.path.startswith('/lobsters'):
@@ -390,6 +395,15 @@ class SignalGateAndPipelineTest(unittest.TestCase):
                       </entry>
                     </feed>'''
                     body, ctype = xml.encode(), 'application/atom+xml'
+                elif self.path.startswith('/gnews'):
+                    rss = f'''<?xml version="1.0" encoding="UTF-8"?>
+                    <rss version="2.0"><channel><item>
+                      <title>Grok Bot Enterprise Rollout Update</title>
+                      <link>https://news.example.com/grok-bot-rollout</link>
+                      <pubDate>{rfc_date}</pubDate>
+                      <source>ExampleNews</source>
+                    </item></channel></rss>'''
+                    body, ctype = rss.encode(), 'application/rss+xml'
                 elif self.path.startswith('/weibo'):
                     body, ctype = json.dumps({'data': {'realtime': [{'note': '开源AI框架发布', 'num': 990000}]}}).encode(), 'application/json'
                 elif self.path.startswith('/toutiao'):
@@ -416,39 +430,55 @@ class SignalGateAndPipelineTest(unittest.TestCase):
             gmod = load_module(GLOBAL_SCRIPTS / 'fetch_hotspots_global.py', 'fetch_hotspots_global_test')
             mock_gl = {
                 'hackernews': f'http://127.0.0.1:{port}/hn/top',
+                'hackernews_search': f'http://127.0.0.1:{port}/hn/search',
                 'lobsters': f'http://127.0.0.1:{port}/lobsters',
                 'github': f'http://127.0.0.1:{port}/github',
                 'polymarket': f'http://127.0.0.1:{port}/polymarket',
                 'devto': f'http://127.0.0.1:{port}/devto',
                 'arxiv': f'http://127.0.0.1:{port}/arxiv',
+                'gnews': f'http://127.0.0.1:{port}/gnews/tech',
+                'gnews_search': f'http://127.0.0.1:{port}/gnews/search',
             }
             with tempfile.TemporaryDirectory() as tmp:
+                import io
                 env_file = Path(tmp) / 'gl-env.json'
                 with patch.dict(gmod.ENDPOINTS, mock_gl), patch.object(gmod, 'HN_ITEM_TMPL', f'http://127.0.0.1:{port}/hn/item/{{id}}'):
-                    import io
+                    # 1. Broad 7-source scan
                     buf = io.StringIO()
                     with patch('sys.stdout', buf):
                         rc = gmod.main(['--limit', '20', '--envelope'])
                     self.assertEqual(rc, 0)
                     env_doc = json.loads(buf.getvalue())
                     self.assertEqual(env_doc['schema'], 'content-ops-signal-envelope/1')
-                    self.assertEqual(len(env_doc['sourcesOk']), 6)
+                    self.assertEqual(len(env_doc['sourcesOk']), 7)
                     env_file.write_text(json.dumps(env_doc), encoding='utf-8')
+
+                    # 2. Keyword mode (--query "grok bot"): switches HN to Algolia, uses gnews_search, quotes arXiv phrase
+                    buf_q = io.StringIO()
+                    with patch('sys.stdout', buf_q):
+                        rc_q = gmod.main(['--sources', 'hackernews,gnews,arxiv', '--query', 'grok bot', '--envelope'])
+                    self.assertEqual(rc_q, 0)
+                    q_doc = json.loads(buf_q.getvalue())
+                    self.assertEqual(sorted(q_doc['sourcesOk']), ['arxiv', 'gnews', 'hackernews'])
+                    self.assertTrue(any(p.startswith('/hn/search?') for p in seen_paths))
+                    self.assertTrue(any(p.startswith('/gnews/search?') for p in seen_paths))
+                    self.assertTrue(any('/arxiv?' in p and '%22grok+bot%22' in p for p in seen_paths))
 
                 ing = json.loads(subprocess.run(
                     [sys.executable, str(LOOP_SCRIPTS / 'signal_gate.py'), 'ingest', '--input', str(env_file)],
                     capture_output=True, text=True, check=True,
                 ).stdout)
                 self.assertTrue(ing['ok'])
-                self.assertEqual(ing['stats']['deduped'], 6)
+                self.assertEqual(ing['stats']['deduped'], 7)
                 self.assertEqual(ing['stats']['dropped'], 0)
 
-                # CN envelope check
+                # CN envelope check (broad 3 sources + keyword mode auto-adding gnews_cn)
                 cmod = load_module(CN_SCRIPTS / 'fetch_hotspots_cn.py', 'fetch_hotspots_cn_test')
                 mock_cn = {
                     'weibo': f'http://127.0.0.1:{port}/weibo',
                     'toutiao': f'http://127.0.0.1:{port}/toutiao',
                     'baidu': f'http://127.0.0.1:{port}/baidu',
+                    'gnews_cn': f'http://127.0.0.1:{port}/gnews/cn',
                 }
                 cn_file = Path(tmp) / 'cn-env.json'
                 with patch.dict(cmod.ENDPOINTS, mock_cn):
@@ -460,6 +490,13 @@ class SignalGateAndPipelineTest(unittest.TestCase):
                     self.assertEqual(cn_doc['region'], 'cn')
                     self.assertEqual(len(cn_doc['sourcesOk']), 3)
                     cn_file.write_text(json.dumps(cn_doc), encoding='utf-8')
+
+                    buf3 = io.StringIO()
+                    with patch('sys.stdout', buf3):
+                        rc3 = cmod.main(['--query', 'grok bot', '--limit', '10', '--envelope'])
+                    self.assertEqual(rc3, 0)
+                    cn_q = json.loads(buf3.getvalue())
+                    self.assertIn('gnews_cn', cn_q['sourcesOk'])
 
                 ing_cn = json.loads(subprocess.run(
                     [sys.executable, str(LOOP_SCRIPTS / 'signal_gate.py'), 'ingest', '--input', str(cn_file)],

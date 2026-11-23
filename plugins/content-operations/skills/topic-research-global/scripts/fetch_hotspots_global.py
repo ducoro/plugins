@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Zero-dependency real-time Global trend radar (HN, Lobsters, GitHub, Polymarket, DEV.to, arXiv)."""
+"""Zero-dependency real-time Global trend & keyword radar (HN/Algolia, Lobsters, GitHub, Polymarket, DEV.to, arXiv, Google News)."""
 from __future__ import annotations
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 import json
 import sys
 import urllib.parse
@@ -13,16 +14,19 @@ import xml.etree.ElementTree as ET
 
 HEADERS = {
     'User-Agent': 'ducoro-content-ops/1.3 (+https://github.com/ducoro/plugins)',
-    'Accept': 'application/json, application/atom+xml, text/plain, */*',
+    'Accept': 'application/json, application/atom+xml, application/rss+xml, text/plain, */*',
 }
 
 ENDPOINTS = {
     'hackernews': 'https://hacker-news.firebaseio.com/v0/topstories.json',
+    'hackernews_search': 'https://hn.algolia.com/api/v1/search_by_date',
     'lobsters': 'https://lobste.rs/hottest.json',
     'github': 'https://api.github.com/search/repositories',
     'polymarket': 'https://gamma-api.polymarket.com/markets',
     'devto': 'https://dev.to/api/articles',
     'arxiv': 'https://export.arxiv.org/api/query',
+    'gnews': 'https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en-US&gl=US&ceid=US:en',
+    'gnews_search': 'https://news.google.com/rss/search',
 }
 HN_ITEM_TMPL = 'https://hacker-news.firebaseio.com/v0/item/{id}.json'
 ATOM_NS = {'atom': 'http://www.w3.org/2005/Atom'}
@@ -36,6 +40,18 @@ def _epoch_to_iso(ts: int | float | None) -> str:
     if not ts:
         return _iso_now()
     return datetime.fromtimestamp(float(ts), tz=timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def _rfc2822_to_iso(value: str | None) -> str:
+    if not value:
+        return _iso_now()
+    try:
+        dt = parsedate_to_datetime(value.strip())
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    except (TypeError, ValueError):
+        return _iso_now()
 
 
 def fetch_text(url: str, extra_headers: dict | None = None, timeout: int = 12) -> str:
@@ -53,19 +69,53 @@ def _matches_query(query: str, *fields: str) -> bool:
     if not q:
         return True
     haystack = ' '.join(f or '' for f in fields).lower()
+    if q in haystack:
+        return True
     tokens = [tok for tok in q.split() if len(tok) >= 2]
-    if not tokens:
-        return q in haystack
-    return any(tok in haystack for tok in tokens)
+    return bool(tokens) and all(tok in haystack for tok in tokens)
 
 
 def fetch_hackernews(limit: int = 15, query: str = '', window_days: int = 30) -> list[dict]:
+    if query.strip():
+        cutoff_ts = int((datetime.now(timezone.utc) - timedelta(days=max(1, window_days))).timestamp())
+        params = urllib.parse.urlencode({
+            'query': query.strip(),
+            'tags': 'story',
+            'numericFilters': f'created_at_i>{cutoff_ts}',
+            'hitsPerPage': min(max(limit, 5), 30),
+        })
+        data = fetch_json(f"{ENDPOINTS['hackernews_search']}?{params}")
+        hits = data.get('hits', []) if isinstance(data, dict) else []
+        items: list[dict] = []
+        for h in hits[:limit]:
+            if not isinstance(h, dict):
+                continue
+            title = str(h.get('title') or '').strip()
+            oid = str(h.get('objectID') or '').strip()
+            if not title or not oid:
+                continue
+            score = int(h.get('points') or 0)
+            comments = int(h.get('num_comments') or 0)
+            items.append({
+                'title': title,
+                'source': 'hackernews',
+                'hot': score,
+                'url': str(h.get('url') or f'https://news.ycombinator.com/item?id={oid}'),
+                'author': str(h.get('author') or ''),
+                'snippet': str(h.get('story_text') or '')[:400],
+                'publishedAt': str(h.get('created_at') or _epoch_to_iso(h.get('created_at_i'))),
+                'engagement': {'score': score, 'comments': comments},
+                'tag': '',
+                'isSeedListing': True,
+                'isPrimarySource': False,
+            })
+        return items
+
     ids = fetch_json(ENDPOINTS['hackernews'])
     if not isinstance(ids, list):
         return []
-    scan_cap = min(len(ids), max(limit * 2, 25) if query else limit)
-    items: list[dict] = []
-    for sid in ids[:scan_cap]:
+    items = []
+    for sid in ids[:limit]:
         try:
             entry = fetch_json(HN_ITEM_TMPL.format(id=sid), timeout=6)
         except Exception:
@@ -73,7 +123,7 @@ def fetch_hackernews(limit: int = 15, query: str = '', window_days: int = 30) ->
         if not isinstance(entry, dict):
             continue
         title = str(entry.get('title') or '').strip()
-        if not title or not _matches_query(query, title):
+        if not title:
             continue
         score = int(entry.get('score') or 0)
         comments = int(entry.get('descendants') or 0)
@@ -90,8 +140,6 @@ def fetch_hackernews(limit: int = 15, query: str = '', window_days: int = 30) ->
             'isSeedListing': True,
             'isPrimarySource': False,
         })
-        if len(items) >= limit:
-            break
     return items
 
 
@@ -133,7 +181,7 @@ def fetch_lobsters(limit: int = 15, query: str = '', window_days: int = 30) -> l
 def fetch_github(limit: int = 12, query: str = '', window_days: int = 30) -> list[dict]:
     since_days = min(max(window_days, 1), 30) if query else 7
     since_date = (datetime.now(timezone.utc) - timedelta(days=since_days)).strftime('%Y-%m-%d')
-    q_expr = f'{query} pushed:>={since_date}' if query else f'created:>={since_date} stars:>25'
+    q_expr = f'{query.strip()} pushed:>={since_date}' if query.strip() else f'created:>={since_date} stars:>25'
     url = f"{ENDPOINTS['github']}?{urllib.parse.urlencode({'q': q_expr, 'sort': 'stars', 'order': 'desc', 'per_page': min(limit, 25)})}"
     data = fetch_json(url, extra_headers={'Accept': 'application/vnd.github+json'})
     rows = data.get('items', []) if isinstance(data, dict) else []
@@ -167,10 +215,7 @@ def fetch_github(limit: int = 12, query: str = '', window_days: int = 30) -> lis
 
 def fetch_polymarket(limit: int = 12, query: str = '', window_days: int = 30) -> list[dict]:
     params = urllib.parse.urlencode({
-        'active': 'true',
-        'closed': 'false',
-        'order': 'volume24hr',
-        'ascending': 'false',
+        'active': 'true', 'closed': 'false', 'order': 'volume24hr', 'ascending': 'false',
         'limit': max(limit * 2, 20) if query else limit,
     })
     data = fetch_json(f"{ENDPOINTS['polymarket']}?{params}")
@@ -244,7 +289,11 @@ def fetch_devto(limit: int = 12, query: str = '', window_days: int = 30) -> list
 
 
 def fetch_arxiv(limit: int = 10, query: str = '', window_days: int = 30) -> list[dict]:
-    search_q = f'all:{query}' if query else 'cat:cs.AI'
+    q = query.strip()
+    if q:
+        search_q = f'all:"{q}"' if (' ' in q and '"' not in q) else f'all:{q}'
+    else:
+        search_q = 'cat:cs.AI'
     params = urllib.parse.urlencode({
         'search_query': search_q,
         'sortBy': 'submittedDate',
@@ -279,6 +328,45 @@ def fetch_arxiv(limit: int = 10, query: str = '', window_days: int = 30) -> list
     return items
 
 
+def fetch_gnews(limit: int = 12, query: str = '', window_days: int = 30) -> list[dict]:
+    q = query.strip()
+    if q:
+        q_term = f'"{q}"' if (' ' in q and '"' not in q) else q
+        params = urllib.parse.urlencode({
+            'q': f'{q_term} when:{max(1, min(window_days, 90))}d',
+            'hl': 'en-US',
+            'gl': 'US',
+            'ceid': 'US:en',
+        })
+        url = f"{ENDPOINTS['gnews_search']}?{params}"
+    else:
+        url = ENDPOINTS['gnews']
+    xml_text = fetch_text(url)
+    root = ET.fromstring(xml_text)
+    items: list[dict] = []
+    for rank, entry in enumerate(root.findall('.//item')[:limit]):
+        title = ' '.join((entry.findtext('title') or '').split())
+        link = (entry.findtext('link') or '').strip()
+        pub_date = _rfc2822_to_iso(entry.findtext('pubDate'))
+        publisher = (entry.findtext('source') or 'google-news').strip()
+        if not title or not link:
+            continue
+        items.append({
+            'title': title,
+            'source': 'gnews',
+            'hot': max(1, limit - rank),
+            'url': link,
+            'author': publisher,
+            'snippet': '',
+            'publishedAt': pub_date,
+            'engagement': {'score': max(1, limit - rank)},
+            'tag': 'news',
+            'isSeedListing': True,
+            'isPrimarySource': False,
+        })
+    return items
+
+
 SOURCE_FETCHERS = {
     'hackernews': fetch_hackernews,
     'lobsters': fetch_lobsters,
@@ -286,6 +374,7 @@ SOURCE_FETCHERS = {
     'polymarket': fetch_polymarket,
     'devto': fetch_devto,
     'arxiv': fetch_arxiv,
+    'gnews': fetch_gnews,
 }
 
 
@@ -311,14 +400,14 @@ def normalize_and_merge(items: list[dict], limit: int) -> list[dict]:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
-        description='Fetch live Global trend signals (HN, Lobsters, GitHub, Polymarket, DEV.to, arXiv).'
+        description='Fetch live Global trend & keyword signals (HN/Algolia, Lobsters, GitHub, Polymarket, DEV.to, arXiv, Google News).'
     )
     ap.add_argument(
         '--sources',
-        default='hackernews,lobsters,github,polymarket,devto,arxiv',
-        help='Comma-separated sources to query (default: all 6 verified keyless sources).',
+        default='hackernews,lobsters,github,polymarket,devto,arxiv,gnews',
+        help='Comma-separated sources to query (default: all 7 verified keyless sources).',
     )
-    ap.add_argument('--query', default='', help='Optional topic/entity filter for search-capable and hot feeds.')
+    ap.add_argument('--query', default='', help='Optional topic/entity keyword query.')
     ap.add_argument('--window-days', type=int, default=30, help='Lookback window in days (default 30).')
     ap.add_argument('--limit', type=int, default=20, help='Maximum merged items to return (default 20).')
     ap.add_argument('--envelope', action='store_true', help='Emit content-ops-signal-envelope/1 JSON for signal_gate.py ingest.')
@@ -335,10 +424,7 @@ def main(argv=None) -> int:
 
     if args.dry_run:
         print(json.dumps({
-            'dryRun': True,
-            'region': 'global',
-            'query': args.query,
-            'windowDays': args.window_days,
+            'dryRun': True, 'region': 'global', 'query': args.query, 'windowDays': args.window_days,
             'sources': {name: ENDPOINTS[name] for name, _ in selected},
         }, indent=2, ensure_ascii=False))
         return 0
@@ -365,7 +451,7 @@ def main(argv=None) -> int:
     now_str = _iso_now()
 
     if args.envelope:
-        envelope = {
+        print(json.dumps({
             'schema': 'content-ops-signal-envelope/1',
             'generatedAt': now_str,
             'region': 'global',
@@ -377,18 +463,13 @@ def main(argv=None) -> int:
             'sourcesOk': sorted(ok_sources),
             'sourcesFailed': failed_sources,
             'items': merged,
-        }
-        print(json.dumps(envelope, indent=2, ensure_ascii=False))
+        }, indent=2, ensure_ascii=False))
         return 0 if merged else 1
 
     payload = {
-        'timestamp': now_str,
-        'region': 'global',
-        'query': args.query,
-        'sourcesOk': sorted(ok_sources),
-        'sourcesFailed': failed_sources,
-        'count': len(merged),
-        'items': merged,
+        'timestamp': now_str, 'region': 'global', 'query': args.query,
+        'sourcesOk': sorted(ok_sources), 'sourcesFailed': failed_sources,
+        'count': len(merged), 'items': merged,
     }
     if not merged:
         payload['fallbackHint'] = 'All global feeds failed; use Ducoro Connectors (ducoro-cli mcp catalog) or built-in web_search.'
