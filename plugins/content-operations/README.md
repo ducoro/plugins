@@ -19,8 +19,8 @@ One cohesive plugin covers the entire content operations domain so a single agen
 | Skill | Responsibility |
 | --- | --- |
 | `content-ops-loop` | Orchestrator: local workspace schema, two human approval gates, recurring operating cadence, board templates, and routing index |
-| `topic-research` | 5-channel topic sourcing, 4-dimension scoring card, deduplication cooldown, seasonal calendar, and brief authoring |
-| `media-production` | Fact-checked master draft, multi-platform adaptation without fact drift, visual/video guidance, deterministic image edits, and automated spec checks |
+| `topic-research` | 5-channel topic sourcing (directly using built-in `web_search` / `web_fetch` in Ducoro), 4-dimension scoring card, deduplication cooldown, seasonal calendar, and brief authoring |
+| `media-production` | Fact-checked master draft, multi-platform adaptation without fact drift, built-in `image_generate` artwork & `ducoro-cli board shot` exact-pixel card deck rendering, deterministic image edits, and automated spec checks |
 | `engagement-and-analytics` | 4-tier comment intent triage, rate-limit safety guardrails, 24h/72h/7d metric snapshots, cross-platform attribution, and retro feedback into the topic pool |
 
 ### Per-Platform Vertical Skills (14 Platforms)

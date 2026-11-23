@@ -15,6 +15,7 @@ Turn noisy signals into high-conviction, evidence-backed topic briefs before spe
 ## Workflow
 
 1. **Capture raw signals into `content-ops/inbox/`.**
+   - Inside Ducoro, call the built-in `web_search` and `web_fetch` tools directly to pull live industry updates, trending searches, and verifiable primary sources (outside Ducoro, use whatever web/search tools the host provides).
    - Save each raw batch as `inbox/YYYY-MM-DD-<slug>.md` with source URL/origin, date, verbatim facts, and unverified gaps.
    - When recycling weekly retrospective findings into next cycle's pool, use `sourceType: "cross_platform_repurpose"` (for doubling down on winning formats) or `"internal_fact"` (for hook/packaging experiments), and set `cooldownOverrideReason` if intentionally revisiting a theme within 14 days.
 2. **Decompose, merge, and score.**

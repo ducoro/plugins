@@ -79,6 +79,14 @@ class ContentOpsContractsTest(unittest.TestCase):
                     f'{board_name}: inline placeholder keys drift from build_boards.py output',
                 )
 
+    def test_media_production_card_deck_template_declares_export_frames(self):
+        template = SKILLS / 'media-production' / 'assets' / 'card-deck-template' / 'index.html'
+        self.assertTrue(template.is_file(), 'Missing card-deck-template/index.html')
+        html = template.read_text(encoding='utf-8')
+        frames = re.findall(r'data-ducoro-export-frame="([^"]+)"', html)
+        self.assertEqual(frames, ['card-01', 'card-02', 'thumb-16x9', 'wechat-cover'])
+        self.assertIn('html[data-ducoro-render="shot"]', html)
+
 
 if __name__ == '__main__':
     unittest.main()
