@@ -4,15 +4,17 @@ All 5 prebuilt boards in `assets/boards/` are File-Backed Executable Documents (
 
 ## Installing Into a Ducoro Space Board
 
+In Ducoro, keep canonical operational files in your registered global Local Folder (default `~/.ducoro/workspaces/content-ops`, or a user-chosen external directory if requested), while each Board lives under its owning Space's `boards/<board-id>/`. Boards read their own `assets/data.json` projection rather than referencing arbitrary host paths directly.
+
 1. Create the board folder via the host CLI so `board.json` is initialized cleanly:
    ```sh
    ducoro-cli board new --space <space-id> --title "<Board Title>" --json
    ```
-2. Assemble the template (`index.html`, `README.md`, `runtime/board-sdk-bridge.js` from `assets/boards/shared/board-sdk-bridge.js`) and write `assets/data.json` in one command:
+2. Assemble the template (`index.html`, `README.md`, `runtime/board-sdk-bridge.js` from `assets/boards/shared/board-sdk-bridge.js`) and project data from the Local Folder into `assets/data.json` in one command:
    ```sh
-   python3 scripts/build_boards.py <workspace>/content-ops --board <board-name> --board-dir <space-work-root>/boards/<board-id> --overwrite-templates
+   python3 scripts/build_boards.py <local-folder-path> --board <board-name> --board-dir <space-work-root>/boards/<board-id> --overwrite-templates
    ```
-   (Subsequent data refreshes omit `--overwrite-templates` so only `assets/data.json` changes and live sessions apply updates in place via `ducoro.board.revalidate` without reloading.)
+   (For example, `<local-folder-path>` is `~/.ducoro/workspaces/content-ops` by default. Subsequent data refreshes omit `--overwrite-templates` so only `assets/data.json` changes and live sessions apply updates in place via `ducoro.board.revalidate` without reloading.)
 3. Verify layout, fonts, and capture before sharing the board link:
    ```sh
    ducoro-cli board check --space <space-id> --board boards/<board-id> --json

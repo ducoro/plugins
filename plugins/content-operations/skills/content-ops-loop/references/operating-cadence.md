@@ -21,8 +21,10 @@ Stop and hand back to the human immediately when:
 
 ## Multi-Workspace Relay Handoff
 
-When separate workspaces handle monitoring, drafting, publishing, and analytics:
-- **Shared root discovery**: point all workspaces at the same `content-ops/` path via the `CONTENT_OPS_ROOT` environment variable (or shared synced directory).
+When separate Spaces or workspaces handle monitoring, drafting, publishing, and analytics:
+- **Shared root discovery**:
+  - **Inside Ducoro**: register the canonical workspace once as a global Local Folder (recommended slug `content-ops`, default path `~/.ducoro/workspaces/content-ops`; use an external directory only if the user explicitly asks to store it outside `~/.ducoro/`). Every Space discovers its resolved path automatically via `ducoro-cli local-folder list --json` / `ducoro-cli space resources get <space-id> --json`.
+  - **Outside Ducoro**: point all collaborating sessions at the same `content-ops/` path via the `CONTENT_OPS_ROOT` environment variable.
 - **Single-writer ownership** (prevents lost updates on mutable JSON files):
   - **Monitoring / Engagement / Analytics workspace**: writes `inbox/*.md`, `engagement/inbox.json`, `analytics/snapshots.jsonl`, `analytics/retros/*.md`.
   - **Drafting workspace**: exclusively owns `topics/topics.json`, `topics/briefs/*.md`, and `drafts/<id>/**` (including `meta.json`).

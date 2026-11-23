@@ -68,7 +68,7 @@ def assemble_board(board_name: str, dest_dir: Path, force: bool = False) -> None
 
 
 def init_workspace(target_root: Path, timezone_name: str = 'UTC', force: bool = False) -> Path:
-    root = target_root.resolve()
+    root = target_root.expanduser().resolve()
     ws = root if root.name == 'content-ops' else root / 'content-ops'
     now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 

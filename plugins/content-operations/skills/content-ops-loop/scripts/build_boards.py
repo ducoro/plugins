@@ -513,11 +513,11 @@ def main(argv=None) -> int:
     )
     args = parser.parse_args(argv)
 
-    ws = Path(args.workspace).resolve()
+    ws = Path(args.workspace).expanduser().resolve()
     payloads = build_payloads(ws)
 
     if args.board:
-        dest = Path(args.board_dir).resolve() if args.board_dir else (ws / 'boards' / args.board)
+        dest = Path(args.board_dir).expanduser().resolve() if args.board_dir else (ws / 'boards' / args.board)
         sync_board_dir(
             args.board,
             dest,

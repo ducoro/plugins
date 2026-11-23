@@ -77,7 +77,7 @@ def scan_secrets(ws: Path, errors: list[str]) -> None:
 
 def validate_workspace(ws: Path) -> list[str]:
     errors: list[str] = []
-    ws = ws.resolve()
+    ws = ws.expanduser().resolve()
     if not ws.is_dir():
         return [f'{ws}: workspace directory does not exist']
 
@@ -253,7 +253,7 @@ def main(argv=None) -> int:
         for err in errors:
             print(f'  - {err}', file=sys.stderr)
         return 1
-    print(f'Workspace validation passed: {Path(args.workspace).resolve()}')
+    print(f'Workspace validation passed: {Path(args.workspace).expanduser().resolve()}')
     return 0
 
 
