@@ -1,32 +1,29 @@
 ---
 name: platform-x-twitter
-description: "Neutral X (Twitter) platform advisor covering For You vs Following feed mechanics, author-reply and bookmark weights, single posts/threads/Premium long posts/Articles, link-placement trade-offs, browser/API delivery, and engagement guardrails."
+description: "Neutral X (Twitter) advisor covering For You/Following mechanics, benchmark-account radar & outbound replies/quotes, profile funnel, single posts/threads/firstReply/Premium long posts/Articles, 1200x675 cards, browser/API delivery, and rate caps."
 ---
 
 # X (Twitter) Platform Expert Guide
 
-X is a **real-time public town square and interest graph** where speed, sharp perspective, conversation, and bookmarkable utility drive reach.
+X is a **real-time public town square and interest graph** where speed, sharp perspective, conversation, and bookmarkable utility drive reach. Always defer to the mounted agent's own context (profile, memory, private skills, Space consensus, `brand-profile.md`) for voice, goals, and concrete targets—never hardcode personas or benchmark handles.
 
-## 1. Audience, Mindset & Distribution Mechanics
-- **Two feeds**: **Following** (chronological core audience) and **For You** (algorithmic expansion into adjacent interest graphs).
-- **Primary distribution levers**:
-  - **Conversation depth (especially author replies)**: Replies—and specifically back-and-forth exchanges where the author replies back—carry heavy algorithmic weight.
-  - **Bookmarks & reposts/quote-posts**: Bookmarks signal high perceived value even when readers stay silent; quote-posts bridge into new audiences.
-  - **Media & dwell time**: Native images, concise videos, and clean multi-tweet threads keep users on-platform longer.
-  - **External link trade-off**: Outbound URLs in the root post frequently receive lower feed distribution; placing links in the **first reply** (or publishing native X Articles / long posts for Premium accounts) typically preserves root reach.
+## 1. Distribution & Conversion Mechanics
+- **Two feeds**: **Following** (chronological core) and **For You** (algorithmic expansion across interest graphs).
+- **Primary levers**:
+  - **Early conversation depth (first 30–60 min)**: Author back-and-forth replies carry heavy weight.
+  - **Bookmarks & quote-posts**: Bookmarks signal silent utility; quote-posts bridge into adjacent audiences.
+  - **Native media & link trade-off**: Use native images, `1200×675` cards (`card_deck.py --preset x-card`), concise video, or threads. Root outbound links often reduce `For You` reach—place links in `options.firstReply` (validated by `check_media_specs.py`) or publish Premium long posts / X Articles.
+- **Profile funnel (`Post → Profile → Bio + Pinned Post → Follow`)**: Review `profileClickRate` alongside whether Bio and pinned post match current positioning.
 
-## 2. Formats & Content Spectrum
-- **Specs (`references/specs.json`)**: Standard posts `<= 280` weighted chars (`t.co` URL = 23 chars; CJK/emoji = 2 weights); up to 4 images (`<= 5MB`, GIF `<= 15MB`) or 1 native video (`<= 140s` standard / longer for Premium). Multi-tweet threads separate posts with `\n---\n` or `meta.threads[]`. Premium long posts set `options.long_post: true` to bypass the 280-char check in `check_media_specs.py`.
-- **Style spectrum (not one voice)**: Crisp single-sentence observations, breaking news synthesis, visual data/diagram cards (`../shortform-social/scripts/card_deck.py`), behind-the-scenes build logs, humorous takes, curated threads, and native X Articles.
-- **Tags**: Native prose reads cleaner than hashtag stuffing; 0–2 topical tags at most (or none when keywords appear naturally in text).
+## 2. Benchmark Radar & Outbound Engagement
+- High-signal replies/quote-posts under active niche peers drive early discovery.
+- **Human-approved targets only (`engagement/benchmark-accounts.json`)**: If context lacks targets, propose candidates as `"status": "proposed"` for human confirmation (`"active"` requires `approvedBy`, enforced by `validate_workspace.py`). Poll via browser, X MCP connector, or `scripts/client.py user-tweets`.
+- Stage drafted replies/quotes in `engagement/outbound-queue.json` (reviewed on `engagement-inbox-board` **Benchmark Radar** tab); inbound and outbound share one budget in `engagement_guard.py`.
 
-## 3. Delivery & Verification (`references/protocol.md`)
-- Follow the shared browser / OpenAPI / Gate 2 workflow in `../content-ops-loop/references/channel-access-matrix.md` and `approval-gates.md`.
-- **Platform specifics**: Validate via `check_media_specs.py`. Default path: `https://x.com/compose/post` (supports drafts, scheduling, Premium long posts, X Articles). Optional OpenAPI: `scripts/client.py` (`X_ACCESS_TOKEN`; note v2 API tier limits on posting/analytics). Verify Gate 2 (`validate_workspace.py --verify-slot <slotId>`) before publishing.
+## 3. Formats & Delivery (`references/specs.json`, `references/protocol.md`)
+- **Specs**: `<= 280` weighted chars (`t.co` = 23; CJK/emoji = 2); `<= 4` images (`<= 5MB`, GIF `<= 15MB`) or 1 video (`<= 140s` standard); never mix image+video. Threads split by `\n---\n` or `meta.threads[]`; follow-up link/CTA in `options.firstReply`; Premium long posts set `options.long_post: true`. Use 0–2 topical tags at most.
+- **Channels**: Default `https://x.com/compose/post` (full support for drafts, scheduling, Premium long posts, X Articles, readback without API paywalls). Optional API: `scripts/client.py` (`X_ACCESS_TOKEN`; `post-thread --variant` chains threads + `firstReply` with partial-failure resume). Run `check_media_specs.py` and `validate_workspace.py --verify-slot <slotId>` before publishing.
 
-## 4. Platform Red Lines & Engagement
-- **Safety**: Avoid repetitive automated replies, mass follow/unfollow churn, or link-only spam blasts (triggers automated reach limits or locks).
-- **Rate cap**: Enforce `<= 15/hour`, `<= 80/day` (30–60s spacing) via `../engagement-and-analytics/scripts/engagement_guard.py`.
-
-## 5. North-Star Metrics (`platformMetrics`)
-Track `bookmarkRate`, `replyDepth`, `profileClickRate`, `repostQuoteRatio`, and `engagementRate`.
+## 4. Red Lines & North-Star Metrics (`platformMetrics`)
+- Avoid repetitive automated replies, follow/unfollow churn, or link blasts. Enforce shared cap `<= 15/hour`, `<= 80/day` (30–60s spacing) via `engagement_guard.py`.
+- Track `bookmarkRate`, `replyDepth`, `profileClickRate`, `repostQuoteRatio`, and `engagementRate`.

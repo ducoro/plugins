@@ -18,10 +18,17 @@
 2. **Create post / reply / quote**: `POST /2/tweets`
    - JSON body: `text`, optional `media: { media_ids }`, `reply: { in_reply_to_tweet_id }`, `quote_tweet_id`, `reply_settings`, `poll`.
    - Returns `data.id` → live URL `https://x.com/i/status/<id>`.
+3. **Publish thread + optional `firstReply` (`scripts/client.py post-thread`)**:
+   - `python3 scripts/client.py post-thread --variant <workspace>/drafts/<id>/variants/x-twitter.md [--media-ids <id...>] [--dry-run]`
+   - Chains root post → subsequent thread items (`\n---\n` or `meta.threads[]`) → `options.firstReply` via `reply.in_reply_to_tweet_id`.
+   - On partial failure, exits non-zero and returns `publishedTweets` plus `resumeReplyTo` so the remaining tail can resume via `--resume-reply-to <id>` without duplicating already-posted tweets.
 
-## Engagement & Analytics Endpoints
+## Engagement, Benchmark Radar & Analytics Endpoints
 - **Self profile**: `GET /2/users/me?user.fields=public_metrics,username`
 - **Read tweet & metrics**: `GET /2/tweets/<id>?tweet.fields=public_metrics,created_at,conversation_id`
+- **Benchmark account recent tweets (`scripts/client.py user-tweets`)**:
+  - Resolves handle via `GET /2/users/by/username/<username>` when `--username` is given, then calls `GET /2/users/<uid>/tweets?since_id=<cursor>&exclude=retweets&tweet.fields=created_at,public_metrics,conversation_id,lang`.
+  - Requires a paid X API v2 tier with read access; otherwise use the official browser session or a connected X MCP connector.
 - **List replies (conversation)**: `GET /2/tweets/search/recent?query=conversation_id:<id>&tweet.fields=author_id,created_at,public_metrics`
 - **Like / Unlike**: `POST /2/users/<uid>/likes` (`{ tweet_id }`) / `DELETE /2/users/<uid>/likes/<tweet_id>`
 - **Repost / Undo**: `POST /2/users/<uid>/retweets` / `DELETE /2/users/<uid>/retweets/<tweet_id>`
@@ -30,7 +37,7 @@
 - **Delete tweet**: `DELETE /2/tweets/<id>`
 
 ## Default Official Browser Composer Path (Zero API Setup)
-When no X Developer API credentials are configured:
+When no X Developer API credentials are configured (or when using Premium long posts / X Articles / readback without paid API tiers):
 1. Open `https://x.com/compose/post` in the user's browser session (pause if sign-in/2FA/CAPTCHA appears—never harvest cookies).
 2. Enter post text (or click `+` to build a multi-post thread), attach local images/GIF/video directly from `drafts/<id>/assets/`, and add alt text.
-3. Save draft (`draft_saved`) or pause before clicking **Post** until Gate 2 approval is explicit; afterward copy the verified `https://x.com/i/status/<id>` into `publish-log.jsonl`.
+3. Save draft (`draft_saved`) or pause before clicking **Post** until Gate 2 approval is explicit; afterward, if `options.firstReply` is present, reply to the newly published root post with the approved `firstReply` text and record the verified `https://x.com/i/status/<id>` into `publish-log.jsonl`.

@@ -159,6 +159,8 @@ def build_payloads(ws: Path) -> dict[str, dict]:
     slots = cal_doc.get('slots', [])
     publish_log = read_jsonl(ws / 'publish-log.jsonl')
     comments = read_json(ws / 'engagement' / 'inbox.json', {'comments': []}).get('comments', [])
+    benchmark_accounts = read_json(ws / 'engagement' / 'benchmark-accounts.json', {'accounts': []}).get('accounts', [])
+    outbound_queue = read_json(ws / 'engagement' / 'outbound-queue.json', {'items': []}).get('items', [])
     action_log = read_jsonl(ws / 'engagement' / 'action-log.jsonl')
     snapshots = read_jsonl(ws / 'analytics' / 'snapshots.jsonl')
 
@@ -167,6 +169,8 @@ def build_payloads(ws: Path) -> dict[str, dict]:
         *(s.get('platform') for s in slots if s.get('platform')),
         *(p.get('platform') for p in publish_log if p.get('platform')),
         *(c.get('platform') for c in comments if c.get('platform')),
+        *(b.get('platform') for b in benchmark_accounts if b.get('platform')),
+        *(o.get('platform') for o in outbound_queue if o.get('platform')),
         *(sn.get('platform') for sn in snapshots if sn.get('platform')),
         *(pl for t in topics for pl in t.get('targetPlatforms', []) if pl),
     })
@@ -316,9 +320,15 @@ def build_payloads(ws: Path) -> dict[str, dict]:
             'general': sum(1 for c in comments if c.get('tier') == 'general'),
             'spam': sum(1 for c in comments if c.get('tier') == 'spam'),
             'awaitingApproval': sum(1 for c in comments if c.get('requiresApproval') and c.get('status') in ('open', 'drafted')),
+            'activeBenchmarks': sum(1 for b in benchmark_accounts if b.get('status') == 'active'),
+            'proposedBenchmarks': sum(1 for b in benchmark_accounts if b.get('status') == 'proposed'),
+            'outboundOpen': sum(1 for o in outbound_queue if o.get('status') in ('discovered', 'drafted', 'approved')),
+            'outboundAwaitingApproval': sum(1 for o in outbound_queue if o.get('requiresApproval', True) and o.get('status') in ('discovered', 'drafted')),
         },
         'rateLimits': rate_limits,
         'comments': comments,
+        'benchmarkAccounts': benchmark_accounts,
+        'outboundQueue': outbound_queue,
     }
 
     dt_min = datetime.min.replace(tzinfo=timezone.utc)

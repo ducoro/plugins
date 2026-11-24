@@ -25,6 +25,9 @@ SLOT_STATUSES = {'planned', 'awaiting_approval', 'approved', 'published', 'faile
 PUBLISH_STATUSES = {'published', 'draft_saved', 'failed'}
 COMMENT_TIERS = {'high_intent', 'feedback', 'general', 'spam'}
 COMMENT_STATUSES = {'open', 'drafted', 'replied', 'escalated', 'ignored'}
+BENCHMARK_STATUSES = {'proposed', 'active', 'paused'}
+OUTBOUND_ACTION_TYPES = {'reply', 'quote', 'repost', 'like', 'bookmark'}
+OUTBOUND_STATUSES = {'discovered', 'drafted', 'approved', 'sent', 'skipped'}
 SNAPSHOT_WINDOWS = {'24h', '72h', '7d', '30d', 'account'}
 SECRET_PATTERNS = [
     re.compile(r'-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----'),
@@ -338,6 +341,79 @@ def validate_workspace(ws: Path) -> list[str]:
                     errors.append(f'engagement/inbox.json[{i}]: invalid tier "{item.get("tier")}"')
                 if item.get('status') not in COMMENT_STATUSES:
                     errors.append(f'engagement/inbox.json[{i}]: invalid status "{item.get("status")}"')
+
+    bench_ids: set[str] = set()
+    bench_path = ws / 'engagement' / 'benchmark-accounts.json'
+    if bench_path.is_file():
+        bench_data = load_json(bench_path, errors)
+        if isinstance(bench_data, dict):
+            b_accounts = bench_data.get('accounts')
+            if not isinstance(b_accounts, list):
+                errors.append('engagement/benchmark-accounts.json: "accounts" must be a list')
+            else:
+                for i, item in enumerate(b_accounts):
+                    if not isinstance(item, dict):
+                        errors.append(f'engagement/benchmark-accounts.json[{i}]: must be an object')
+                        continue
+                    wid = item.get('watchId')
+                    if not isinstance(wid, str) or not wid.strip():
+                        errors.append(f'engagement/benchmark-accounts.json[{i}]: missing watchId')
+                    elif wid in bench_ids:
+                        errors.append(f'engagement/benchmark-accounts.json[{i}]: duplicate watchId "{wid}"')
+                    else:
+                        bench_ids.add(wid)
+                    if not str(item.get('platform') or '').strip():
+                        errors.append(f'engagement/benchmark-accounts.json[{i}]: missing platform')
+                    if not str(item.get('handle') or '').strip():
+                        errors.append(f'engagement/benchmark-accounts.json[{i}]: missing handle')
+                    if item.get('profileUrl') and not _is_http_url(item.get('profileUrl')):
+                        errors.append(f'engagement/benchmark-accounts.json[{i}]: profileUrl must be a valid http(s):// URL')
+                    st = item.get('status')
+                    if st not in BENCHMARK_STATUSES:
+                        errors.append(f'engagement/benchmark-accounts.json[{i}]: invalid status "{st}"')
+                    elif st == 'active' and not str(item.get('approvedBy') or '').strip():
+                        errors.append(f'engagement/benchmark-accounts.json[{i}]: active benchmark account requires non-empty approvedBy')
+                    if item.get('lastCheckedAt') and not _is_iso_ts(item.get('lastCheckedAt')):
+                        errors.append(f'engagement/benchmark-accounts.json[{i}]: invalid ISO lastCheckedAt "{item.get("lastCheckedAt")}"')
+
+    outbound_path = ws / 'engagement' / 'outbound-queue.json'
+    if outbound_path.is_file():
+        outbound_data = load_json(outbound_path, errors)
+        if isinstance(outbound_data, dict):
+            ob_items = outbound_data.get('items')
+            if not isinstance(ob_items, list):
+                errors.append('engagement/outbound-queue.json: "items" must be a list')
+            else:
+                seen_ob_ids: set[str] = set()
+                for i, item in enumerate(ob_items):
+                    if not isinstance(item, dict):
+                        errors.append(f'engagement/outbound-queue.json[{i}]: must be an object')
+                        continue
+                    oid = item.get('outboundId')
+                    if not isinstance(oid, str) or not oid.strip():
+                        errors.append(f'engagement/outbound-queue.json[{i}]: missing outboundId')
+                    elif oid in seen_ob_ids:
+                        errors.append(f'engagement/outbound-queue.json[{i}]: duplicate outboundId "{oid}"')
+                    else:
+                        seen_ob_ids.add(oid)
+                    if not str(item.get('platform') or '').strip():
+                        errors.append(f'engagement/outbound-queue.json[{i}]: missing platform')
+                    if not str(item.get('targetPostId') or '').strip():
+                        errors.append(f'engagement/outbound-queue.json[{i}]: missing targetPostId')
+                    if not _is_http_url(item.get('targetUrl')):
+                        errors.append(f'engagement/outbound-queue.json[{i}]: targetUrl must be a valid http(s):// URL')
+                    if item.get('actionType') not in OUTBOUND_ACTION_TYPES:
+                        errors.append(f'engagement/outbound-queue.json[{i}]: invalid actionType "{item.get("actionType")}"')
+                    st = item.get('status')
+                    if st not in OUTBOUND_STATUSES:
+                        errors.append(f'engagement/outbound-queue.json[{i}]: invalid status "{st}"')
+                    elif st == 'sent' and not str(item.get('executedActionId') or '').strip():
+                        errors.append(f'engagement/outbound-queue.json[{i}]: status "sent" requires executedActionId')
+                    ref_wid = item.get('watchId')
+                    if ref_wid and bench_path.is_file() and ref_wid not in bench_ids:
+                        errors.append(f'engagement/outbound-queue.json[{i}]: unknown watchId "{ref_wid}"')
+                    if item.get('discoveredAt') and not _is_iso_ts(item.get('discoveredAt')):
+                        errors.append(f'engagement/outbound-queue.json[{i}]: invalid ISO discoveredAt "{item.get("discoveredAt")}"')
 
     for lineno, row in load_jsonl(ws / 'engagement' / 'action-log.jsonl', errors):
         for req_key in ('actionId', 'executedAt', 'platform', 'accountId', 'targetId', 'actionType'):

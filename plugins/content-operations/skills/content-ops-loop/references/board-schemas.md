@@ -30,9 +30,11 @@
    - `accounts`: sanitized accounts from `accounts.json` (no raw secrets).
    - `records`: reverse-chronological entries from `publish-log.jsonl`.
 4. **`engagement-inbox-board`**
-   - `summary`: `{ openTotal, highIntent, feedback, general, spam, awaitingApproval }`
-   - `rateLimits`: per-platform `{ platform, usedToday, dailyCap }` computed from `engagement/action-log.jsonl` (`executedAt`).
+   - `summary`: `{ openTotal, highIntent, feedback, general, spam, awaitingApproval, activeBenchmarks, proposedBenchmarks, outboundOpen, outboundAwaitingApproval }`
+   - `rateLimits`: per-platform `{ platform, usedToday, dailyCap }` computed from `engagement/action-log.jsonl` (`executedAt`, covering both inbound and outbound actions).
    - `comments`: items from `engagement/inbox.json`.
+   - `benchmarkAccounts`: human-approved / proposed benchmark accounts from `engagement/benchmark-accounts.json`.
+   - `outboundQueue`: drafted outbound replies and quote-posts from `engagement/outbound-queue.json`.
 5. **`analytics-retro-board`**
    - `summary`: `{ totalWorks, totalViews, totalLikes, totalComments, totalShares, totalSaves, avgEngagementRate }`
    - `trend` & `trendByPlatform`: per-platform deduplicated daily series `{ date, views, interactions, engagementRate }`.

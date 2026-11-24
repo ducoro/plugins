@@ -10,9 +10,9 @@ Publishing is the midpoint, not the finish line. Close the loop by turning audie
 ## Workflow
 
 ### Part A — Engagement Triage & Deterministic Rate-Limit Guard
-1. **Pull recent comments** on active works (early replies in the first 1–2 hours boost distribution on most feed platforms) via the target `platform-<name>` API client or browser workflow.
-2. **Classify every comment** into the 4 tiers in `references/comment-triage.md` (`high_intent`, `feedback`, `general`, `spam`) and write to `engagement/inbox.json` (`{"version": 1, "comments": [...]}`).
-3. **Enforce budget & idempotency in code (`scripts/engagement_guard.py`) before acting**:
+1. **Pull recent comments & benchmark activity**: Pull inbound comments on active works (early replies in the first 1–2 hours boost distribution on most feed platforms) via the target `platform-<name>` API client or browser workflow. For platforms where outbound conversation drives discovery (e.g., X/Twitter), optionally monitor **human-approved** targets in `engagement/benchmark-accounts.json` (`status: "active"`, `approvedBy` set) and stage value-add replies/quote-posts in `engagement/outbound-queue.json` (never silently activate benchmark accounts—stage `proposed` rows for human approval on `engagement-inbox-board`).
+2. **Classify every inbound comment** into the 4 tiers in `references/comment-triage.md` (`high_intent`, `feedback`, `general`, `spam`) and write to `engagement/inbox.json` (`{"version": 1, "comments": [...]}`).
+3. **Enforce shared budget & idempotency in code (`scripts/engagement_guard.py`) before any inbound OR outbound action**:
    ```sh
    python3 scripts/engagement_guard.py check-budget <workspace> --platform <plat> --account-id <acct>
    python3 scripts/engagement_guard.py check-idempotent <workspace> --platform <plat> --account-id <acct> --target-id <id> --action-type reply

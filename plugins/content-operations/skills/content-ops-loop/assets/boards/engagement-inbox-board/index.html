@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Engagement Inbox &amp; Lead Triage Board</title>
+  <title>Engagement Inbox &amp; Benchmark Radar Board</title>
   <link rel="stylesheet" href="./runtime/board-ui.css" />
   <style>
     .caps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
@@ -11,17 +11,24 @@
     .cap-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
     .cmt-list { display: flex; flex-direction: column; gap: 10px; }
     .cmt-body { font-size: 14px; line-height: 1.55; color: var(--foreground); }
+    .bench-link { color: var(--foreground); text-decoration: none; font-weight: 500; }
+    .bench-link:hover { text-decoration: underline; }
+    .outbound-excerpt { font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
   </style>
 </head>
 <body>
   <div class="ui-shell" data-export-frame="engagement-summary">
-    <header class="ui-header" data-card="engagement-header" data-card-title="Engagement Inbox">
+    <header class="ui-header" data-card="engagement-header" data-card-title="Engagement &amp; Radar">
       <div>
-        <h1 class="ui-title" data-mark-item="board-title" data-mark-label="Engagement Title">Engagement Inbox &amp; Lead Triage</h1>
+        <h1 class="ui-title" data-mark-item="board-title" data-mark-label="Engagement Title">Engagement Inbox &amp; Benchmark Radar</h1>
         <p class="ui-subtitle" id="subtitle">Loading engagement snapshot...</p>
       </div>
       <div class="ui-toolbar" data-mark-ignore>
-        <div class="ui-tabs" role="tablist" aria-label="Comment tiers">
+        <div class="ui-tabs" role="tablist" aria-label="Engagement view">
+          <button class="ui-tab" type="button" role="tab" data-mode="inbound">Inbound</button>
+          <button class="ui-tab" type="button" role="tab" data-mode="outbound">Benchmark Radar</button>
+        </div>
+        <div class="ui-tabs" id="tierTabs" role="tablist" aria-label="Comment tiers">
           <button class="ui-tab" type="button" role="tab" data-tier="all">All</button>
           <button class="ui-tab" type="button" role="tab" data-tier="high_intent">High Intent</button>
           <button class="ui-tab" type="button" role="tab" data-tier="feedback">Feedback</button>
@@ -33,36 +40,54 @@
     </header>
 
     <div class="ui-alert" data-bridge-status data-mark-ignore hidden></div>
-    <section class="ui-kpi-grid" id="kpis" data-card="engagement-kpis" data-card-title="Inbox Summary"></section>
+    <section class="ui-kpi-grid" id="kpis" data-card="engagement-kpis" data-card-title="Engagement Summary"></section>
 
     <section class="ui-section" id="rateSection">
       <div class="ui-section-head">
-        <h2 class="ui-section-title">Daily Rate-Limit Budget</h2>
+        <h2 class="ui-section-title">Daily Rate-Limit Budget (Inbound + Outbound)</h2>
         <span class="ui-muted">UTC day window</span>
       </div>
       <div class="caps-grid" id="rateLimits" data-card="rate-limits" data-card-title="Daily Rate Limits"></div>
     </section>
 
-    <section class="ui-section">
+    <section class="ui-section" id="inboundSection">
       <div class="ui-section-head">
-        <h2 class="ui-section-title">Comment Queue</h2>
+        <h2 class="ui-section-title">Inbound Comment Queue</h2>
       </div>
       <main id="commentsList"></main>
+    </section>
+
+    <section class="ui-section" id="benchmarkSection" hidden>
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">Benchmark Accounts</h2>
+        <span class="ui-muted">Human-approved targets only</span>
+      </div>
+      <div id="benchmarkTable"></div>
+    </section>
+
+    <section class="ui-section" id="outboundSection" hidden>
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">Outbound Engagement Queue</h2>
+        <span class="ui-muted">Value-add replies &amp; quote-posts within daily caps</span>
+      </div>
+      <div id="outboundList"></div>
     </section>
   </div>
 
   <script id="board-initial-data" type="application/json">
-  {"schemaVersion":1,"board":"engagement-inbox-board","generatedAt":"","timezone":"UTC","platforms":[],"summary":{"openTotal":0,"highIntent":0,"feedback":0,"general":0,"spam":0,"awaitingApproval":0},"rateLimits":[],"comments":[]}
+  {"schemaVersion":1,"board":"engagement-inbox-board","generatedAt":"","timezone":"UTC","platforms":[],"summary":{"openTotal":0,"highIntent":0,"feedback":0,"general":0,"spam":0,"awaitingApproval":0,"activeBenchmarks":0,"proposedBenchmarks":0,"outboundOpen":0,"outboundAwaitingApproval":0},"rateLimits":[],"comments":[],"benchmarkAccounts":[],"outboundQueue":[]}
   </script>
 
   <script type="module">
     import { createBoardBridge } from './runtime/board-sdk-bridge.js';
 
+    const VALID_MODES = ['inbound', 'outbound'];
     const VALID_TIERS = ['all', 'high_intent', 'feedback', 'general', 'spam'];
     let payload = null;
-    const view = { tier: 'all', platform: 'all', focusCommentId: '' };
+    const view = { mode: 'inbound', tier: 'all', platform: 'all', focusCommentId: '', focusOutboundId: '' };
     const platEl = document.getElementById('platformFilter');
     const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const safeHref = (u) => (/^https?:\/\//i.test(String(u || '').trim()) ? String(u).trim() : '');
 
     const tierBadge = (tier) => {
       if (tier === 'high_intent') return 'ui-badge-primary';
@@ -71,11 +96,18 @@
       return 'ui-badge-secondary';
     };
 
+    const outboundActionBadge = (action) => {
+      if (action === 'quote') return 'ui-badge-primary';
+      if (action === 'reply') return 'ui-badge-secondary';
+      return 'ui-badge-outline';
+    };
+
     const bridge = createBoardBridge({
       boardId: 'engagement-inbox-board',
-      defaultView: { tier: 'all', platform: 'all' },
-      getView: () => ({ tier: view.tier, platform: view.platform }),
+      defaultView: { mode: 'inbound', tier: 'all', platform: 'all' },
+      getView: () => ({ mode: view.mode, tier: view.tier, platform: view.platform }),
       onApplyView: (saved) => {
+        if (VALID_MODES.includes(saved.mode)) view.mode = saved.mode;
         if (VALID_TIERS.includes(saved.tier)) view.tier = saved.tier;
         if (typeof saved.platform === 'string') view.platform = saved.platform;
         syncInputs();
@@ -91,18 +123,29 @@
         render();
       },
       commands: {
+        switchMode: {
+          describe: 'Switch between inbound comments and benchmark radar / outbound engagement.',
+          params: { mode: 'One of: inbound, outbound.' },
+          run: ({ mode }) => {
+            if (!VALID_MODES.includes(mode)) throw new Error(`mode must be one of: ${VALID_MODES.join(', ')}`);
+            view.mode = mode;
+            syncInputs();
+            render();
+          },
+        },
         selectTier: {
           describe: 'Switch active comment triage tier tab.',
           params: { tier: 'One of: all, high_intent, feedback, general, spam.' },
           run: ({ tier }) => {
             if (!VALID_TIERS.includes(tier)) throw new Error(`tier must be one of: ${VALID_TIERS.join(', ')}`);
+            view.mode = 'inbound';
             view.tier = tier;
             syncInputs();
             render();
           },
         },
         filterPlatform: {
-          describe: 'Filter comments by platform slug or "all".',
+          describe: 'Filter comments and benchmark radar by platform slug or "all".',
           params: { platform: 'Platform slug or "all".' },
           run: ({ platform }) => {
             const valid = ['all', ...(payload?.platforms || [])];
@@ -119,6 +162,7 @@
             const cmts = payload?.comments || [];
             const match = cmts.find((c) => c.commentId === commentId);
             if (!match) throw new Error(`Unknown commentId "${commentId}". Valid IDs: ${cmts.map((c) => c.commentId).join(', ') || '(none)'}`);
+            view.mode = 'inbound';
             if (view.tier !== 'all' && match.tier !== view.tier) view.tier = 'all';
             if (view.platform !== 'all' && match.platform !== view.platform) view.platform = 'all';
             view.focusCommentId = commentId;
@@ -127,11 +171,32 @@
             document.querySelector(`[data-mark-item="comment-${CSS.escape(commentId)}"]`)?.scrollIntoView({ behavior: 'auto', block: 'center' });
           },
         },
+        focusOutbound: {
+          describe: 'Highlight and scroll to a specific outboundId in Benchmark Radar.',
+          params: { outboundId: 'Exact outboundId from engagement/outbound-queue.json.' },
+          run: ({ outboundId }) => {
+            const items = payload?.outboundQueue || [];
+            const match = items.find((o) => o.outboundId === outboundId);
+            if (!match) throw new Error(`Unknown outboundId "${outboundId}". Valid IDs: ${items.map((o) => o.outboundId).join(', ') || '(none)'}`);
+            view.mode = 'outbound';
+            if (view.platform !== 'all' && match.platform !== view.platform) view.platform = 'all';
+            view.focusOutboundId = outboundId;
+            syncInputs();
+            render();
+            document.querySelector(`[data-mark-item="outbound-${CSS.escape(outboundId)}"]`)?.scrollIntoView({ behavior: 'auto', block: 'center' });
+          },
+        },
       },
     });
 
     function syncInputs() {
       platEl.value = view.platform;
+      for (const btn of document.querySelectorAll('.ui-tab[data-mode]')) {
+        const active = btn.dataset.mode === view.mode;
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-selected', String(active));
+      }
+      document.getElementById('tierTabs').hidden = view.mode !== 'inbound';
       for (const btn of document.querySelectorAll('.ui-tab[data-tier]')) {
         const active = btn.dataset.tier === view.tier;
         btn.classList.toggle('is-active', active);
@@ -145,16 +210,32 @@
       const s = payload.summary || {};
       const awaiting = s.awaitingApproval ?? 0;
       const fb = s.feedback ?? 0;
-      document.getElementById('kpis').innerHTML = [
-        ['Open Items', s.openTotal ?? 0, 'kpi-open', ''],
-        ['High Intent', s.highIntent ?? 0, 'kpi-high', ''],
-        ['Feedback / Disputes', fb, 'kpi-fb', fb > 0 ? 'warning' : ''],
-        ['Awaiting Reply Approval', awaiting, 'kpi-approval', awaiting > 0 ? 'warning' : ''],
-      ].map(([label, val, id, tone]) => `
-        <div class="ui-kpi" data-mark-item="${id}" data-mark-label="${label}">
-          <div class="ui-kpi-label">${label}</div>
-          <div class="ui-kpi-value"${tone ? ` data-tone="${tone}"` : ''}>${val}</div>
-        </div>`).join('');
+      const proposedBench = s.proposedBenchmarks ?? 0;
+      const obAwaiting = s.outboundAwaitingApproval ?? 0;
+
+      if (view.mode === 'inbound') {
+        document.getElementById('kpis').innerHTML = [
+          ['Open Inbound', s.openTotal ?? 0, 'kpi-open', ''],
+          ['High Intent', s.highIntent ?? 0, 'kpi-high', ''],
+          ['Feedback / Disputes', fb, 'kpi-fb', fb > 0 ? 'warning' : ''],
+          ['Awaiting Reply Approval', awaiting, 'kpi-approval', awaiting > 0 ? 'warning' : ''],
+        ].map(([label, val, id, tone]) => `
+          <div class="ui-kpi" data-mark-item="${id}" data-mark-label="${label}">
+            <div class="ui-kpi-label">${label}</div>
+            <div class="ui-kpi-value"${tone ? ` data-tone="${tone}"` : ''}>${val}</div>
+          </div>`).join('');
+      } else {
+        document.getElementById('kpis').innerHTML = [
+          ['Active Benchmarks', s.activeBenchmarks ?? 0, 'kpi-bench-active', ''],
+          ['Proposed Benchmarks', proposedBench, 'kpi-bench-proposed', proposedBench > 0 ? 'warning' : ''],
+          ['Open Outbound Queue', s.outboundOpen ?? 0, 'kpi-outbound-open', ''],
+          ['Outbound Awaiting Approval', obAwaiting, 'kpi-outbound-approval', obAwaiting > 0 ? 'warning' : ''],
+        ].map(([label, val, id, tone]) => `
+          <div class="ui-kpi" data-mark-item="${id}" data-mark-label="${label}">
+            <div class="ui-kpi-label">${label}</div>
+            <div class="ui-kpi-value"${tone ? ` data-tone="${tone}"` : ''}>${val}</div>
+          </div>`).join('');
+      }
 
       const limits = payload.rateLimits || [];
       document.getElementById('rateSection').hidden = limits.length === 0;
@@ -171,12 +252,15 @@
           </div>`;
       }).join('');
 
+      document.getElementById('inboundSection').hidden = view.mode !== 'inbound';
+      document.getElementById('benchmarkSection').hidden = view.mode !== 'outbound';
+      document.getElementById('outboundSection').hidden = view.mode !== 'outbound';
+
       let comments = (payload.comments || []).slice();
       if (view.tier !== 'all') comments = comments.filter((c) => c.tier === view.tier);
       if (view.platform !== 'all') comments = comments.filter((c) => c.platform === view.platform);
 
-      const container = document.getElementById('commentsList');
-      container.innerHTML = `
+      document.getElementById('commentsList').innerHTML = `
         <div class="cmt-list" data-card="triage-queue" data-card-title="Triage Queue">
           ${comments.length === 0 ? '<div class="ui-empty">No comments match the current filter.</div>' : comments.map((c) => {
             const focused = view.focusCommentId === c.commentId ? ' focused' : '';
@@ -205,13 +289,98 @@
               </article>`;
           }).join('')}
         </div>`;
+
+      let benchmarks = (payload.benchmarkAccounts || []).slice();
+      if (view.platform !== 'all') benchmarks = benchmarks.filter((b) => b.platform === view.platform);
+      document.getElementById('benchmarkTable').innerHTML = benchmarks.length === 0
+        ? '<div class="ui-empty" data-card="benchmark-accounts" data-card-title="Benchmark Accounts">No benchmark accounts configured yet. Ask your bot to propose niche accounts based on your context, then approve the ones you want to watch.</div>'
+        : `
+          <div class="ui-table-wrap" data-card="benchmark-accounts" data-card-title="Benchmark Accounts">
+            <table class="ui-table">
+              <thead>
+                <tr>
+                  <th>Account</th>
+                  <th>Platform</th>
+                  <th>Watch Goal</th>
+                  <th>Cadence</th>
+                  <th>Status</th>
+                  <th>Approved</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${benchmarks.map((b) => {
+                  const href = safeHref(b.profileUrl);
+                  const stTone = b.status === 'proposed' ? 'warning' : 'neutral';
+                  return `
+                    <tr data-mark-item="bench-${esc(b.watchId)}" data-mark-label="${esc(b.handle || b.watchId)}">
+                      <td>
+                        ${href ? `<a class="bench-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(b.handle)}</a>` : `<strong>${esc(b.handle)}</strong>`}
+                        ${b.displayName ? `<div class="ui-muted">${esc(b.displayName)}</div>` : ''}
+                      </td>
+                      <td><span class="ui-badge ui-badge-outline">${esc(b.platform)}</span></td>
+                      <td>${esc(b.watchGoal || '—')}</td>
+                      <td class="ui-muted">${esc(b.cadence || 'daily')}</td>
+                      <td><span class="ui-status ui-status-${stTone}">${esc(b.status)}</span></td>
+                      <td class="ui-muted">${esc(b.approvedBy || 'Pending')}</td>
+                      <td data-mark-ignore>
+                        ${b.status === 'proposed'
+                          ? `<button class="ui-btn ui-btn-xs ui-btn-primary-ghost" type="button" data-requires-sdk data-action="approve-benchmark" data-id="${esc(b.watchId)}">Stage Approval</button>`
+                          : `<button class="ui-btn ui-btn-xs ui-btn-ghost" type="button" data-requires-sdk data-action="scan-benchmark" data-id="${esc(b.watchId)}">Scan Now</button>`}
+                      </td>
+                    </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>`;
+
+      let outbound = (payload.outboundQueue || []).slice();
+      if (view.platform !== 'all') outbound = outbound.filter((o) => o.platform === view.platform);
+      document.getElementById('outboundList').innerHTML = `
+        <div class="cmt-list" data-card="outbound-queue" data-card-title="Outbound Queue">
+          ${outbound.length === 0 ? '<div class="ui-empty">No outbound engagement candidates match the current filter.</div>' : outbound.map((o) => {
+            const focused = view.focusOutboundId === o.outboundId ? ' focused' : '';
+            const href = safeHref(o.targetUrl);
+            const stTone = o.status === 'drafted' ? 'warning' : 'neutral';
+            return `
+              <article class="ui-card${focused}" style="display:flex;flex-direction:column;gap:8px" data-mark-item="outbound-${esc(o.outboundId)}" data-mark-label="${esc(o.targetHandle || o.outboundId)}">
+                <div class="ui-meta-row" style="justify-content:space-between">
+                  <div class="ui-meta-row">
+                    <span class="ui-badge ${outboundActionBadge(o.actionType)}">${esc(o.actionType)}</span>
+                    <span class="ui-badge ui-badge-outline">${esc(o.platform)}</span>
+                    <strong style="font-size:13px;font-weight:500">${esc(o.targetHandle || o.targetPostId)}</strong>
+                    ${href ? `<a class="ui-muted" href="${esc(href)}" target="_blank" rel="noopener noreferrer">View post ↗</a>` : ''}
+                  </div>
+                  <span class="ui-status ui-status-${stTone}">${esc(o.status)}</span>
+                </div>
+                ${o.targetExcerpt ? `<div class="outbound-excerpt">${esc(o.targetExcerpt)}</div>` : ''}
+                ${o.angle ? `<div class="ui-muted">Angle: ${esc(o.angle)}</div>` : ''}
+                ${o.draftText ? `<div class="ui-quote"><span class="ui-muted" style="display:block;margin-bottom:2px">Drafted ${esc(o.actionType)}</span>${esc(o.draftText)}</div>` : ''}
+                <div class="ui-actions" data-mark-ignore>
+                  ${o.status !== 'sent' && o.status !== 'skipped'
+                    ? `<button class="ui-btn ui-btn-xs ui-btn-primary-ghost" type="button" data-requires-sdk data-action="approve-outbound" data-id="${esc(o.outboundId)}">Stage ${esc(o.actionType)}</button>`
+                    : ''}
+                  <button class="ui-btn ui-btn-xs ui-btn-ghost" type="button" data-requires-sdk data-action="outbound-to-topic" data-id="${esc(o.outboundId)}">Save as Topic Signal</button>
+                </div>
+              </article>`;
+          }).join('')}
+        </div>`;
+
       bridge.updateWriteControls();
     }
 
     document.querySelector('.ui-toolbar').addEventListener('click', (event) => {
-      const btn = event.target.closest('.ui-tab[data-tier]');
-      if (!btn) return;
-      view.tier = btn.dataset.tier;
+      const modeBtn = event.target.closest('.ui-tab[data-mode]');
+      if (modeBtn) {
+        view.mode = modeBtn.dataset.mode;
+        syncInputs();
+        render();
+        void bridge.persistView();
+        return;
+      }
+      const tierBtn = event.target.closest('.ui-tab[data-tier]');
+      if (!tierBtn) return;
+      view.tier = tierBtn.dataset.tier;
       syncInputs();
       render();
       void bridge.persistView();
@@ -236,6 +405,42 @@
       } else if (btn.dataset.action === 'to-topic') {
         void bridge.stageDraft(
           `Convert comment ${c.commentId} on ${c.platform} ("${c.text}") into a new inbox signal and score it as a candidate topic in topics/topics.json.`,
+          btn,
+        );
+      }
+    });
+
+    document.getElementById('benchmarkTable').addEventListener('click', (event) => {
+      const btn = event.target.closest('button[data-action]');
+      if (!btn) return;
+      const b = (payload?.benchmarkAccounts || []).find((x) => x.watchId === btn.dataset.id);
+      if (!b) return;
+      if (btn.dataset.action === 'approve-benchmark') {
+        void bridge.stageDraft(
+          `Approve benchmark account ${b.watchId} (${b.platform} ${b.handle}) in engagement/benchmark-accounts.json: set status="active" and record approvedBy with today's human approval reference.`,
+          btn,
+        );
+      } else if (btn.dataset.action === 'scan-benchmark') {
+        void bridge.stageDraft(
+          `Scan recent posts from approved benchmark account ${b.watchId} (${b.platform} ${b.handle}) since ${b.lastSeenPostId || 'latest'}, and draft value-add reply/quote candidates in engagement/outbound-queue.json.`,
+          btn,
+        );
+      }
+    });
+
+    document.getElementById('outboundList').addEventListener('click', (event) => {
+      const btn = event.target.closest('button[data-action]');
+      if (!btn) return;
+      const o = (payload?.outboundQueue || []).find((x) => x.outboundId === btn.dataset.id);
+      if (!o) return;
+      if (btn.dataset.action === 'approve-outbound') {
+        void bridge.stageDraft(
+          `Approved outbound ${o.actionType} ${o.outboundId} on ${o.platform} targeting ${o.targetHandle} (${o.targetUrl}): "${o.draftText || '[edit draft here]'}". Check engagement_guard.py budget + idempotency before sending and log executedActionId.`,
+          btn,
+        );
+      } else if (btn.dataset.action === 'outbound-to-topic') {
+        void bridge.stageDraft(
+          `Convert benchmark post ${o.outboundId} from ${o.targetHandle} (${o.targetUrl}) into a new inbox signal and score it as a candidate topic in topics/topics.json.`,
           btn,
         );
       }

@@ -26,6 +26,7 @@ PRESETS = (
     'xhs-carousel',
     'ig-carousel',
     'linkedin-pdf',
+    'x-card',
     'wechat-cover-pair',
     'video-thumb',
     'full-showcase',
@@ -86,6 +87,18 @@ def scaffold_deck(
                     ratio_label='4:5',
                 )
             )
+    elif preset == 'x-card':
+        x_defaults = ('thesis', 'metric-hero', 'compare-two', 'checklist', 'quote-note')
+        if layouts:
+            seq = bp.pick_carousel_layouts(len(layouts), layouts)
+        else:
+            if pages < 1 or pages > 20:
+                raise ValueError(f'pages must be between 1 and 20, got {pages}')
+            seq = [x_defaults[i % len(x_defaults)] for i in range(pages)]
+        total = len(seq)
+        print_page_css = '@page { size: 1200px 675px; margin: 0; }'
+        for idx, layout in enumerate(seq, start=1):
+            frames_blocks.append(bp.render_x_card(f'x-card-{idx:02d}', layout, idx, total, brand=brand, deck_title=title))
     elif preset == 'wechat-cover-pair':
         print_page_css = '@page { size: 1080px 1080px; margin: 0; }'
         frames_blocks.append(bp.render_wechat_pair(wide_title=title, brand=brand))

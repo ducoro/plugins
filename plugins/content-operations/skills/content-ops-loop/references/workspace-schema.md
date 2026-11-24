@@ -30,8 +30,10 @@ content-ops/
 ├── calendar.json             # Scheduled slots across all platforms
 ├── publish-log.jsonl         # Append-only ledger of real publish attempts and live URLs
 ├── engagement/
-│   ├── inbox.json            # Triaged comment items (high_intent, feedback, general, spam)
-│   └── action-log.jsonl      # Append-only executed engagement actions (for rate limits & audit)
+│   ├── inbox.json            # Triaged inbound comment items (high_intent, feedback, general, spam)
+│   ├── benchmark-accounts.json # Optional human-approved benchmark accounts for radar monitoring
+│   ├── outbound-queue.json   # Optional drafted outbound value-add replies / quote-posts
+│   └── action-log.jsonl      # Append-only executed inbound + outbound actions (rate limits & idempotency)
 ├── analytics/
 │   ├── snapshots.jsonl       # Append-only 24h/72h/7d work & account metric snapshots
 │   └── retros/YYYY-Www.md    # Weekly attribution retrospectives and next-cycle actions
@@ -189,6 +191,14 @@ Required keys: `publishId`, `slotId`, `draftId`, `platform`, `accountId`, `statu
 ### `engagement/inbox.json`
 Top-level wrapper: `{"version": 1, "comments": [ ... ]}`.
 Each comment item: `commentId`, `platform`, `accountId`, `workId`, `workTitle`, `author`, `text`, `createdAt`, `tier` (`high_intent` | `feedback` | `general` | `spam`), `status` (`open` | `drafted` | `replied` | `escalated` | `ignored`), `draftReply`, `requiresApproval` (bool), `topicCandidate` (bool).
+
+### `engagement/benchmark-accounts.json` (Optional)
+Top-level wrapper: `{"version": 1, "accounts": [ ... ]}` (initialized empty—never pre-populated with hardcoded handles).
+Each item: `watchId`, `platform`, `handle`, `displayName`, `profileUrl` (`http(s)://`), `category`, `watchGoal`, `cadence` (`daily` | `twice_daily` | `weekly`), `status` (`proposed` | `active` | `paused`), `approvedBy` (**required non-empty string whenever `status == "active"`**), `lastCheckedAt` (ISO-8601 UTC or `null`), `lastSeenPostId` (string or `null`), `notes`.
+
+### `engagement/outbound-queue.json` (Optional)
+Top-level wrapper: `{"version": 1, "items": [ ... ]}`.
+Each item: `outboundId`, `platform`, `accountId`, `watchId` (optional FK into `benchmark-accounts.json`), `targetHandle`, `targetPostId`, `targetUrl` (required `http(s)://`), `targetExcerpt`, `discoveredAt` (ISO-8601 UTC), `actionType` (`reply` | `quote` | `repost` | `like` | `bookmark`), `angle`, `draftText`, `requiresApproval` (bool), `status` (`discovered` | `drafted` | `approved` | `sent` | `skipped`), `executedActionId` (**required when `status == "sent"`**, linking to `engagement/action-log.jsonl`).
 
 ### `engagement/action-log.jsonl` (one JSON object per line)
 Required keys (append-only, used for idempotency and daily rate-limit caps):

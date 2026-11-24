@@ -223,6 +223,31 @@ def validate_variant(
             if combined_len > max_total:
                 issues.append({'code': 'too_big', 'field': 'text', 'message': f'Combined text length {combined_len} exceeds max {max_total}'})
 
+    first_reply = options.get('firstReply')
+    if first_reply is not None and first_reply != '':
+        if not isinstance(first_reply, str):
+            issues.append({'code': 'invalid_option', 'field': 'firstReply', 'message': 'options.firstReply must be a string'})
+        else:
+            fr_text = first_reply.replace('\r\n', '\n').replace('\r', '\n').strip()
+            if not allow_placeholders:
+                m_fr_ph = PLACEHOLDER_RE.search(fr_text)
+                if m_fr_ph:
+                    issues.append({'code': 'unfinished_placeholder', 'field': 'firstReply', 'message': f'Unfinished placeholder "{m_fr_ph.group(0)}" in firstReply'})
+            fr_cap = max_total or max_body
+            if fr_cap is not None:
+                fr_len = weighted_length(fr_text, tco_len, platform)
+                if fr_len > fr_cap:
+                    issues.append({'code': 'too_big', 'field': 'firstReply', 'message': f'options.firstReply length {fr_len} exceeds max {fr_cap}'})
+
+    if platform == 'x-twitter' and not skip_x_280:
+        root_text = thread_parts[0] if thread_parts else norm_body
+        if URL_RE.search(root_text) and not str(first_reply or '').strip():
+            warnings.append({
+                'code': 'outbound_link_in_root',
+                'field': 'body',
+                'message': 'Root X post contains an external URL; consider moving links to options.firstReply to preserve For You reach.',
+            })
+
     for req_opt in req_options:
         if req_opt not in options or options[req_opt] in (None, ''):
             issues.append({'code': 'required', 'field': 'option', 'message': f'Required {eff_channel} option "{req_opt}" is missing'})

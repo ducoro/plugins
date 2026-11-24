@@ -88,6 +88,8 @@ def init_workspace(target_root: Path, timezone_name: str = 'UTC', force: bool = 
     )
     write_if_missing(ws / 'publish-log.jsonl', '', force=force)
     write_json_if_missing(ws / 'engagement' / 'inbox.json', {'version': 1, 'comments': []}, force=force)
+    write_json_if_missing(ws / 'engagement' / 'benchmark-accounts.json', {'version': 1, 'accounts': []}, force=force)
+    write_json_if_missing(ws / 'engagement' / 'outbound-queue.json', {'version': 1, 'items': []}, force=force)
     write_if_missing(ws / 'engagement' / 'action-log.jsonl', '', force=force)
     write_if_missing(ws / 'analytics' / 'snapshots.jsonl', '', force=force)
     write_if_missing(

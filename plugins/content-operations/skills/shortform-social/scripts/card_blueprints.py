@@ -351,6 +351,29 @@ def render_video_thumb(title: str = '3–5 个词定住第一眼', brand: str = 
     </section>'''
 
 
+def render_x_card(
+    frame_id: str,
+    layout: str,
+    idx: int,
+    total: int,
+    brand: str = '@BrandName',
+    deck_title: str = 'Sharp perspective card',
+) -> str:
+    """Render one 1200x675 (16:9) landscape card optimized for X (Twitter) single-image or multi-image grids."""
+    return render_carousel_frame(
+        frame_id,
+        layout,
+        idx,
+        total,
+        brand=brand,
+        deck_title=deck_title,
+        width=1200,
+        height=675,
+        frame_class='frame-x-card',
+        ratio_label='16:9',
+    )
+
+
 def pick_carousel_layouts(pages: int, custom: List[str] | None = None) -> List[str]:
     """Return a balanced list of 3:4 slide layouts matching the requested page count."""
     if custom:

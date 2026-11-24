@@ -36,6 +36,7 @@ KNOWN_FRAME_CLASS_DIMS = {
     'frame-3x4': ('1080', '1440'),
     'frame-4x5': ('1080', '1350'),
     'frame-16x9': ('1280', '720'),
+    'frame-x-card': ('1200', '675'),
     'frame-wechat-wide': ('900', '383'),
     'frame-wechat-sq': ('1080', '1080'),
 }
