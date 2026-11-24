@@ -1,0 +1,1168 @@
+<!doctype html>
+<html lang="zh-CN" data-style="paper-studio" data-theme="warm-linen">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>范例 2 · 纸感特写小红书旅行路线（4 页）</title>
+  <style id="card-studio-tokens">
+    /* ===== Style Typography & Structural Tokens ===== */
+    html[data-style="paper-studio"] {
+      --font-display: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", Georgia, "Times New Roman", serif;
+      --font-body: "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+      --display-weight: 700;
+      --display-tracking: -0.015em;
+      --radius-lg: 20px;
+      --radius-sm: 10px;
+      --rule-width: 1px;
+    }
+
+    html[data-style="grid-spec"] {
+      --font-display: "PingFang SC", "Helvetica Neue", "Inter", "Noto Sans CJK SC", -apple-system, sans-serif;
+      --font-body: "PingFang SC", "Helvetica Neue", "Noto Sans CJK SC", -apple-system, sans-serif;
+      --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+      --display-weight: 500;
+      --display-tracking: -0.03em;
+      --radius-lg: 4px;
+      --radius-sm: 2px;
+      --rule-width: 1.5px;
+    }
+
+    html[data-style="darkroom-frame"] {
+      --font-display: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", Georgia, serif;
+      --font-body: "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+      --display-weight: 600;
+      --display-tracking: -0.015em;
+      --radius-lg: 18px;
+      --radius-sm: 10px;
+      --rule-width: 1px;
+    }
+
+    /* ===== Preset Palettes (All WCAG 2.1 AA/AAA Verified) ===== */
+    html[data-theme="warm-linen"]     { --bg:#F6F2EA; --surface:#FFFDF8; --ink:#1B1917; --muted:#575149; --accent:#9E3B28; --accent-ink:#FFFFFF; --accent-soft:#F3E3DC; --border:#DDD4C6; --tint-rgb:27, 25, 23; }
+    html[data-theme="celadon-ink"]    { --bg:#EEF3F1; --surface:#F9FCFB; --ink:#132522; --muted:#425B56; --accent:#1F6357; --accent-ink:#FFFFFF; --accent-soft:#DCEBE7; --border:#C7D7D2; --tint-rgb:19, 37, 34; }
+    html[data-theme="slate-ivory"]    { --bg:#F2F4F7; --surface:#FFFFFF; --ink:#141B29; --muted:#4A5568; --accent:#274C8F; --accent-ink:#FFFFFF; --accent-soft:#E0E8F6; --border:#CFD8E3; --tint-rgb:20, 27, 41; }
+    html[data-theme="oat-umber"]      { --bg:#F2E9DC; --surface:#FAF4EB; --ink:#241911; --muted:#5B4737; --accent:#8A4519; --accent-ink:#FFFFFF; --accent-soft:#EAD9C5; --border:#D9C7B1; --tint-rgb:36, 25, 17; }
+    html[data-theme="cobalt-grid"]    { --bg:#F7F8FA; --surface:#FFFFFF; --ink:#0F172A; --muted:#475569; --accent:#1D4ED8; --accent-ink:#FFFFFF; --accent-soft:#E0E7FF; --border:#CBD5E1; --tint-rgb:15, 23, 42; }
+    html[data-theme="vermilion-spec"] { --bg:#F9F8F6; --surface:#FFFFFF; --ink:#18181B; --muted:#52525B; --accent:#C42E1B; --accent-ink:#FFFFFF; --accent-soft:#FCE5E1; --border:#D4D4D8; --tint-rgb:24, 24, 27; }
+    html[data-theme="emerald-lab"]    { --bg:#F5F8F6; --surface:#FFFFFF; --ink:#0F1F18; --muted:#3F594D; --accent:#0F764A; --accent-ink:#FFFFFF; --accent-soft:#DCF2E7; --border:#C5D8CE; --tint-rgb:15, 31, 24; }
+    html[data-theme="amber-signal"]   { --bg:#F8F7F4; --surface:#FFFFFF; --ink:#171512; --muted:#544D44; --accent:#A64B07; --accent-ink:#FFFFFF; --accent-soft:#FDEFD8; --border:#D9D2C7; --tint-rgb:23, 21, 18; }
+    html[data-theme="obsidian-gold"]  { --bg:#111214; --surface:#1A1C20; --ink:#F2ECE1; --muted:#A9A297; --accent:#E2B15B; --accent-ink:#14120E; --accent-soft:#2A2419; --border:#2E3138; --tint-rgb:17, 18, 20; }
+    html[data-theme="midnight-cyan"]  { --bg:#0D131A; --surface:#151E28; --ink:#E8F0F7; --muted:#98AAB9; --accent:#56CCF2; --accent-ink:#08131A; --accent-soft:#142B38; --border:#253545; --tint-rgb:13, 19, 26; }
+    html[data-theme="plum-velvet"]    { --bg:#161118; --surface:#211924; --ink:#F4ECF5; --muted:#B6A6BC; --accent:#E091B8; --accent-ink:#1B0E16; --accent-soft:#311F2D; --border:#382A3D; --tint-rgb:22, 17, 24; }
+
+    /* Optional Brand Theme Slot (paste `card_deck.py brand-theme` CSS below) */
+    /* <!-- BRAND_THEME_HERE --> */
+
+    /* ===== Reset & Workspace Chrome ===== */
+    *, *::before, *::after { box-sizing: border-box; }
+    figure, h1, h2, h3, h4, p, ul, ol, blockquote { margin: 0; }
+    ul, ol { padding: 0; list-style: none; }
+
+    body {
+      margin: 0;
+      padding: 32px 28px 64px;
+      background: #E6E3DC;
+      color: var(--ink);
+      font-family: var(--font-body);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 36px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    html[data-style="darkroom-frame"] body {
+      background: #090A0C;
+    }
+
+    .studio-bar {
+      width: 100%;
+      max-width: 1280px;
+      padding: 14px 20px;
+      background: var(--surface);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      font-size: 14px;
+    }
+
+    .studio-bar-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+    }
+
+    .studio-bar-meta strong {
+      color: var(--ink);
+      font-size: 15px;
+    }
+
+    .studio-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .studio-controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .studio-controls select {
+      background: var(--bg);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 13px;
+      font-family: var(--font-body);
+    }
+
+    .deck-canvas {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 44px;
+      width: 100%;
+    }
+
+    .pair-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 32px;
+    }
+
+    html[data-ducoro-render="shot"] body {
+      padding: 0;
+      gap: 0;
+      background: transparent;
+    }
+
+    html[data-ducoro-render="shot"] .studio-bar {
+      display: none !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+
+    /* ===== Export Frame Canvas & Atmospheric Layers ===== */
+    .card-frame {
+      position: relative;
+      overflow: hidden;
+      background-color: var(--bg);
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      border: var(--rule-width) solid var(--border);
+      isolation: isolate;
+      flex-shrink: 0;
+    }
+
+    html[data-ducoro-render="shot"] .card-frame {
+      border: none;
+    }
+
+    /* Paper Studio: ultra-subtle tactile grain + warm top wash */
+    html[data-style="paper-studio"] .card-frame::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.45;
+      background-image:
+        radial-gradient(120% 70% at 15% 0%, rgba(var(--tint-rgb), 0.045), transparent 65%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+    }
+
+    /* Grid Spec: architectural 48px hairline matrix */
+    html[data-style="grid-spec"] .card-frame::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(to right, rgba(var(--tint-rgb), 0.045) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(var(--tint-rgb), 0.045) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    /* Darkroom Frame: restrained studio vignette + corner rim glow */
+    html[data-style="darkroom-frame"] .card-frame::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(85% 60% at 88% 8%, rgba(255, 255, 255, 0.055), transparent 65%),
+        radial-gradient(90% 60% at 10% 95%, rgba(255, 255, 255, 0.03), transparent 60%);
+    }
+
+    .card-frame > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Exact Pixel Board Dimensions */
+    .frame-3x4          { width: 1080px; height: 1440px; padding: 68px 72px 60px; }
+    .frame-16x9         { width: 1280px; height: 720px;  padding: 54px 68px 48px; }
+    .frame-wechat-wide  { width: 900px;  height: 383px;  padding: 34px 44px 30px; }
+    .frame-wechat-sq    { width: 1080px; height: 1080px; padding: 72px 72px 60px; }
+
+    /* ===== Shared Header, Body, Footer Rhythm ===== */
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 22px;
+      margin-bottom: 34px;
+      border-bottom: var(--rule-width) solid var(--border);
+    }
+
+    .frame-wechat-wide .card-head {
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+    }
+
+    .card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      margin-bottom: 28px;
+      min-height: 0;
+    }
+
+    .frame-wechat-wide .card-body {
+      gap: 12px;
+      margin-bottom: 12px;
+      justify-content: center;
+    }
+
+    .card-foot {
+      margin-top: auto;
+      padding-top: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-top: var(--rule-width) solid var(--border);
+      font-size: 22px;
+      line-height: 1.3;
+      color: var(--muted);
+    }
+
+    .frame-wechat-wide .card-foot {
+      padding-top: 12px;
+      font-size: 16px;
+    }
+
+    .brand-mark {
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: 0.01em;
+    }
+
+    /* ===== Typography Scale ===== */
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .eyebrow-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 18px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      width: fit-content;
+    }
+
+    .eyebrow-solid {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 18px;
+      border-radius: var(--radius-sm);
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      width: fit-content;
+    }
+
+    .page-index {
+      font-family: var(--font-mono);
+      font-size: 22px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .title-hero {
+      font-family: var(--font-display);
+      font-size: 84px;
+      line-height: 1.18;
+      font-weight: var(--display-weight);
+      letter-spacing: var(--display-tracking);
+      color: var(--ink);
+    }
+
+    .title-slide {
+      font-family: var(--font-display);
+      font-size: 62px;
+      line-height: 1.24;
+      font-weight: var(--display-weight);
+      letter-spacing: var(--display-tracking);
+      color: var(--ink);
+    }
+
+    .title-wide {
+      font-family: var(--font-display);
+      font-size: 46px;
+      line-height: 1.24;
+      font-weight: var(--display-weight);
+      letter-spacing: var(--display-tracking);
+      color: var(--ink);
+    }
+
+    .title-square {
+      font-family: var(--font-display);
+      font-size: 112px;
+      line-height: 1.14;
+      font-weight: var(--display-weight);
+      letter-spacing: var(--display-tracking);
+      color: var(--ink);
+    }
+
+    .title-thumb {
+      font-family: var(--font-display);
+      font-size: 76px;
+      line-height: 1.18;
+      font-weight: var(--display-weight);
+      letter-spacing: var(--display-tracking);
+      color: var(--ink);
+    }
+
+    .lead-copy {
+      font-size: 32px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .body-copy {
+      font-size: 28px;
+      line-height: 1.55;
+      color: var(--ink);
+    }
+
+    .meta-caption {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      line-height: 1.4;
+      color: var(--muted);
+    }
+
+    .frame-wechat-wide .eyebrow,
+    .frame-wechat-wide .eyebrow-pill,
+    .frame-wechat-wide .eyebrow-solid,
+    .frame-wechat-wide .page-index {
+      font-size: 16px;
+      padding: 4px 12px;
+    }
+
+    .frame-wechat-wide .lead-copy {
+      font-size: 22px;
+      line-height: 1.42;
+    }
+
+    .accent-rule {
+      width: 72px;
+      height: 5px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    /* ===== 10 Semantic Layout Blueprints ===== */
+
+    /* 1. Cover Split (title block + generous visual frame) */
+    .media-well {
+      flex: 1;
+      min-height: 360px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .media-well img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 45%;
+      display: block;
+    }
+
+    .media-placeholder {
+      padding: 40px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 26px;
+      line-height: 1.5;
+    }
+
+    /* 2. Cover Bleed (full-bleed photo with quiet-zone typography) */
+    .layout-cover-bleed {
+      padding: 0;
+    }
+
+    .bleed-photo {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 40%;
+      z-index: 0;
+    }
+
+    .bleed-layer {
+      position: relative;
+      z-index: 2;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 68px 72px 60px;
+    }
+
+    .bleed-layer.zone-bottom { justify-content: flex-end; gap: 28px; }
+    .bleed-layer.zone-top    { justify-content: flex-start; gap: 28px; }
+
+    /* Optional localized image-toned scrim (never a uniform full-canvas black wall) */
+    .soft-scrim-bottom::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 46%;
+      z-index: 1;
+      pointer-events: none;
+      background: linear-gradient(to top, rgba(var(--tint-rgb), 0.72) 0%, rgba(var(--tint-rgb), 0.28) 58%, rgba(var(--tint-rgb), 0) 100%);
+    }
+
+    .soft-scrim-top::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 42%;
+      z-index: 1;
+      pointer-events: none;
+      background: linear-gradient(to bottom, rgba(var(--tint-rgb), 0.68) 0%, rgba(var(--tint-rgb), 0.24) 55%, rgba(var(--tint-rgb), 0) 100%);
+    }
+
+    /* 3. Thesis Statement */
+    .thesis-stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 36px;
+      padding: 20px 0;
+    }
+
+    .thesis-note {
+      padding: 28px 34px;
+      border-left: 5px solid var(--accent);
+      background: var(--surface);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 28px;
+      line-height: 1.55;
+      color: var(--ink);
+    }
+
+    /* 4. Metric Hero + Data Bars */
+    .metric-hero-box {
+      padding: 40px 44px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .metric-figure {
+      font-family: var(--font-display);
+      font-size: 132px;
+      line-height: 1;
+      font-weight: var(--display-weight);
+      letter-spacing: -0.04em;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-bars {
+      padding: 36px 40px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .bar-row {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .bar-track {
+      height: 22px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-soft);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: var(--radius-sm);
+    }
+
+    /* 5. Compare Two Columns */
+    .compare-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .compare-col {
+      padding: 34px 32px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .compare-col.is-highlight {
+      border-color: var(--accent);
+      border-width: 2px;
+    }
+
+    .compare-col h3 {
+      font-family: var(--font-display);
+      font-size: 38px;
+      line-height: 1.25;
+      color: var(--ink);
+    }
+
+    .compare-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+      font-size: 26px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .compare-list li {
+      padding-top: 18px;
+      border-top: var(--rule-width) solid var(--border);
+    }
+
+    .compare-list strong {
+      display: block;
+      font-size: 28px;
+      line-height: 1.35;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    /* 6. Numbered Checklist */
+    .item-stack {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 22px;
+    }
+
+    .item-row {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 78px 1fr;
+      gap: 24px;
+      align-items: start;
+      padding: 28px 32px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+    }
+
+    .item-num {
+      font-family: var(--font-mono);
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1.1;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .item-row strong {
+      display: block;
+      font-size: 34px;
+      line-height: 1.3;
+      margin-bottom: 8px;
+      color: var(--ink);
+    }
+
+    .item-row p {
+      font-size: 26px;
+      line-height: 1.48;
+      color: var(--muted);
+    }
+
+    /* 7. Step Flow */
+    .step-track {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+      position: relative;
+    }
+
+    .step-node {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 24px;
+      align-items: center;
+      padding: 24px 30px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+    }
+
+    .step-badge {
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    /* 8. Screenshot Stage (pure CSS backdrop + browser/phone chrome) */
+    .shot-stage {
+      flex: 1;
+      padding: 36px;
+      border-radius: var(--radius-lg);
+      background:
+        radial-gradient(circle at 18% 18%, var(--accent-soft), transparent 55%),
+        repeating-radial-gradient(circle at 0 0, rgba(var(--tint-rgb), 0.05) 0 1px, transparent 1px 18px),
+        var(--surface);
+      border: var(--rule-width) solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .device-browser {
+      width: 100%;
+      height: 100%;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      box-shadow: 0 22px 48px rgba(var(--tint-rgb), 0.14);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .browser-bar {
+      height: 44px;
+      padding: 0 18px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .browser-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      background: var(--border);
+    }
+
+    .browser-url {
+      margin-left: 12px;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: var(--muted);
+    }
+
+    .device-screen {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+    }
+
+    .device-screen img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+    }
+
+    .device-phone {
+      width: 440px;
+      height: 100%;
+      max-height: 760px;
+      border-radius: 40px;
+      padding: 16px;
+      background: var(--ink);
+      box-shadow: 0 24px 52px rgba(var(--tint-rgb), 0.22);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .device-phone .device-screen {
+      border-radius: 28px;
+    }
+
+    /* 9. Quote & Annotation */
+    .quote-block {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 32px;
+      padding: 44px 48px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+    }
+
+    .quote-mark {
+      font-family: var(--font-display);
+      font-size: 96px;
+      line-height: 0.7;
+      color: var(--accent);
+    }
+
+    .quote-text {
+      font-family: var(--font-display);
+      font-size: 48px;
+      line-height: 1.38;
+      color: var(--ink);
+    }
+
+    /* 10. Closing CTA + Summary Band */
+    .closing-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 52px 48px 46px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      gap: 32px;
+    }
+
+    .closing-main {
+      margin: auto 0;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .summary-chip {
+      padding: 20px 22px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-soft);
+      color: var(--ink);
+      font-size: 24px;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    /* 11. Spatial Map & Route Stops (offline vector or local static map tile + HTML pins) */
+    .map-canvas {
+      position: relative;
+      flex: 1;
+      min-height: 520px;
+      border-radius: var(--radius-lg);
+      background:
+        linear-gradient(to right, rgba(var(--tint-rgb), 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(var(--tint-rgb), 0.04) 1px, transparent 1px),
+        var(--surface);
+      background-size: 40px 40px;
+      border: var(--rule-width) solid var(--border);
+      overflow: hidden;
+    }
+
+    .map-canvas > img,
+    .map-canvas > svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .map-pin {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px 8px 10px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      box-shadow: 0 8px 20px rgba(var(--tint-rgb), 0.14);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--ink);
+      white-space: nowrap;
+      z-index: 2;
+    }
+
+    .map-pin-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .route-stops {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .route-stop {
+      padding: 18px 22px;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .route-stop strong {
+      font-size: 25px;
+      color: var(--ink);
+    }
+
+    .route-stop span {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    /* WeChat 1:1 Square Centerpiece */
+    .square-stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 32px;
+    }
+  </style>
+</head>
+<body>
+  <header class="studio-bar" data-mark-ignore>
+    <div class="studio-bar-meta">
+      <strong>Visual Card Studio</strong>
+      <span>Exact-pixel export frames for <code>ducoro-cli board check</code> &amp; <code>board shot</code></span>
+    </div>
+    <div class="studio-controls">
+      <label>
+        STYLE
+        <select id="style-select" aria-label="Preview visual style">
+          <option value="paper-studio">paper-studio</option>
+          <option value="grid-spec">grid-spec</option>
+          <option value="darkroom-frame">darkroom-frame</option>
+        </select>
+      </label>
+      <label>
+        THEME
+        <select id="theme-select" aria-label="Preview palette">
+          <option value="warm-linen">warm-linen</option>
+          <option value="celadon-ink">celadon-ink</option>
+          <option value="slate-ivory">slate-ivory</option>
+          <option value="oat-umber">oat-umber</option>
+          <option value="cobalt-grid">cobalt-grid</option>
+          <option value="vermilion-spec">vermilion-spec</option>
+          <option value="emerald-lab">emerald-lab</option>
+          <option value="amber-signal">amber-signal</option>
+          <option value="obsidian-gold">obsidian-gold</option>
+          <option value="midnight-cyan">midnight-cyan</option>
+          <option value="plum-velvet">plum-velvet</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <main class="deck-canvas">
+    <!-- FRAMES_START -->
+
+    <section id="card-01" class="card-frame frame-3x4 layout-cover-bleed" data-ducoro-export-frame="card-01" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Full-Bleed Travel Cover" data-card="card-01" data-card-title="Card 01 — 满铺安静区封面">
+      <!-- subject map (westlake-morning.svg):
+           quiet zone: top mist sky 0%..42% y (low detail, warm light tone, zero scrim needed)
+           focal subjects: layered hills 52%..76% y, stone arch bridge right-middle 68%..74% y, boat lower-left 79%..83% y
+           safe text placement: top band (zone-top) with dark ink on pale morning mist -->
+      <img class="bleed-photo" src="assets/westlake-morning.svg" style="object-position: center 50%" alt="清晨薄雾中的西湖西线远山与拱桥" />
+      <div class="bleed-layer zone-top">
+        <div class="card-head">
+          <span class="eyebrow-pill" data-mark-item="card-01-eyebrow" data-mark-label="Cover tag">CITY WALK · 杭州</span>
+          <span class="page-index">01 / 04</span>
+        </div>
+        <div class="accent-rule"></div>
+        <h1 class="title-hero" data-mark-item="card-01-title" data-mark-label="Cover headline">西湖西线清晨 4 小时<br />避开人潮的徒步路线</h1>
+        <p class="lead-copy" data-mark-item="card-01-lead" data-mark-label="Cover subtitle">06:30 从茅家埠出发，5.2 公里串联 4 处安静水岸，赶在旅行团进场前走完。</p>
+      </div>
+    </section>
+
+    <section id="card-02" class="card-frame frame-3x4 layout-map-route" data-ducoro-export-frame="card-02" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Travel Route Map" data-card="card-02" data-card-title="Card 02 — 4 站点路线图">
+      <div class="card-head"><span class="eyebrow">ROUTE MAP</span><span class="page-index">02 / 04</span></div>
+      <div class="card-body">
+        <h2 class="title-slide" data-mark-item="card-02-title" data-mark-label="Map title">一路向南不折返，水岸全程树荫</h2>
+        <p class="lead-copy" data-mark-item="card-02-lead" data-mark-label="Map summary">实测步行 5.2 公里含拍照停留约 4 小时，平路为主，普通跑鞋即可轻松走完。</p>
+        <figure class="map-canvas" data-mark-item="card-02-map" data-mark-label="Westlake west route map">
+          <svg viewBox="0 0 936 580" aria-hidden="true">
+            <path d="M 150 130 C 260 155, 290 270, 420 265 C 555 260, 585 385, 765 440" fill="none" stroke="var(--accent)" stroke-width="6" stroke-dasharray="12 10" stroke-linecap="round" />
+            <circle cx="150" cy="130" r="10" fill="var(--accent)" />
+            <circle cx="385" cy="262" r="10" fill="var(--accent)" />
+            <circle cx="585" cy="340" r="10" fill="var(--accent)" />
+            <circle cx="765" cy="440" r="10" fill="var(--accent)" />
+          </svg>
+          <div class="map-pin" style="left: 20%; top: 22%;"><span class="map-pin-num">1</span>茅家埠</div>
+          <div class="map-pin" style="left: 42%; top: 45%;"><span class="map-pin-num">2</span>乌龟潭</div>
+          <div class="map-pin" style="left: 63%; top: 59%;"><span class="map-pin-num">3</span>浴鹄湾</div>
+          <div class="map-pin" style="left: 79%; top: 76%;"><span class="map-pin-num">4</span>杨公堤南口</div>
+        </figure>
+        <div class="route-stops" data-mark-item="card-02-stops" data-mark-label="Stops timing">
+          <div class="route-stop"><strong>01 茅家埠木栈道</strong><span>06:30 · 0 km</span></div>
+          <div class="route-stop"><strong>02 乌龟潭观鸟桥</strong><span>07:45 · 1.9 km</span></div>
+          <div class="route-stop"><strong>03 浴鹄湾霁虹桥</strong><span>09:00 · 3.6 km</span></div>
+          <div class="route-stop"><strong>04 杨公堤咖啡收官</strong><span>10:15 · 5.2 km</span></div>
+        </div>
+      </div>
+      <footer class="card-foot"><span class="brand-mark">@SlowTrail</span><span>杭州西线实走路线</span></footer>
+    </section>
+
+    <section id="card-03" class="card-frame frame-3x4 layout-step-flow" data-ducoro-export-frame="card-03" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Time Schedule" data-card="card-03" data-card-title="Card 03 — 分时段节奏">
+      <div class="card-head"><span class="eyebrow">MORNING PACE</span><span class="page-index">03 / 04</span></div>
+      <div class="card-body">
+        <h2 class="title-slide" data-mark-item="card-03-title" data-mark-label="Schedule title">卡准这 4 个时间点，光线最好人最少</h2>
+        <ol class="step-track" data-mark-item="card-03-steps" data-mark-label="Morning stops">
+          <li class="step-node"><span class="step-badge">06:30</span><div><strong class="body-copy">茅家埠入场看湖面薄雾</strong><p class="meta-caption">打车定位“茅家埠公交站”，沿木栈道往南走 15 分钟几乎包场。</p></div></li>
+          <li class="step-node"><span class="step-badge">07:45</span><div><strong class="body-copy">乌龟潭静坐听水鸟</strong><p class="meta-caption">早起本地人为主，水杉倒影在 8 点前无风时最清晰。</p></div></li>
+          <li class="step-node"><span class="step-badge">09:00</span><div><strong class="body-copy">浴鹄湾廊桥拍顺光远山</strong><p class="meta-caption">霁虹桥长廊避开正面强光，长焦能把亭台与茶山收进同一画框。</p></div></li>
+          <li class="step-node"><span class="step-badge">10:15</span><div><strong class="body-copy">杨公堤南口吃早午餐收尾</strong><p class="meta-caption">正好在 10:30 旅游高峰前离场，顺路搭公交回市区不堵车。</p></div></li>
+        </ol>
+      </div>
+      <footer class="card-foot"><span class="brand-mark">@SlowTrail</span><span>春秋两季体验最佳</span></footer>
+    </section>
+
+    <section id="card-04" class="card-frame frame-3x4 layout-quote-note" data-ducoro-export-frame="card-04" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Field Note" data-card="card-04" data-card-title="Card 04 — 实走手记">
+      <div class="card-head"><span class="eyebrow">FIELD NOTE</span><span class="page-index">04 / 04</span></div>
+      <div class="card-body">
+        <blockquote class="quote-block" data-mark-item="card-04-quote" data-mark-label="Travel pull quote">
+          <div class="quote-mark">“</div>
+          <p class="quote-text">西湖最动人的不是正午挤满人的断桥，而是清晨七点钟只有风声和桨声的西线水湾。</p>
+          <p class="meta-caption">—— 实走备忘 · 茅家埠至浴鹄湾全程无门票</p>
+        </blockquote>
+        <div class="thesis-note" data-mark-item="card-04-tip" data-mark-label="Practical reminder">出行提醒：清晨水岸湿度高、体感偏凉，建议带一件轻薄防风外套与一瓶温水；沿途补给点 8:30 后才陆续开门。</div>
+      </div>
+      <footer class="card-foot"><span class="brand-mark">@SlowTrail</span><span>收藏下次去杭州直接照走</span></footer>
+    </section>
+
+    <!-- FRAMES_END -->
+  </main>
+
+  <script>
+    (function () {
+      var STYLE_THEMES = {
+        'paper-studio': ['warm-linen', 'celadon-ink', 'slate-ivory', 'oat-umber'],
+        'grid-spec': ['cobalt-grid', 'vermilion-spec', 'emerald-lab', 'amber-signal'],
+        'darkroom-frame': ['obsidian-gold', 'midnight-cyan', 'plum-velvet']
+      };
+      var root = document.documentElement;
+      var styleSel = document.getElementById('style-select');
+      var themeSel = document.getElementById('theme-select');
+      var isShot = root.getAttribute('data-ducoro-render') === 'shot';
+
+      function syncControls() {
+        if (!styleSel || !themeSel) return;
+        var st = root.getAttribute('data-style') || 'paper-studio';
+        var th = root.getAttribute('data-theme') || 'warm-linen';
+        styleSel.value = st;
+        if ([].some.call(themeSel.options, function (o) { return o.value === th; })) {
+          themeSel.value = th;
+        }
+      }
+
+      function applyPreview(style, theme) {
+        if (style && STYLE_THEMES[style]) {
+          root.setAttribute('data-style', style);
+          if (!theme || STYLE_THEMES[style].indexOf(theme) === -1) {
+            theme = STYLE_THEMES[style][0];
+          }
+        }
+        if (theme) {
+          root.setAttribute('data-theme', theme);
+        }
+        syncControls();
+      }
+
+      if (styleSel) {
+        styleSel.addEventListener('change', function () {
+          applyPreview(styleSel.value, null);
+        });
+      }
+      if (themeSel) {
+        themeSel.addEventListener('change', function () {
+          var th = themeSel.value;
+          var matchedStyle = Object.keys(STYLE_THEMES).find(function (s) {
+            return STYLE_THEMES[s].indexOf(th) !== -1;
+          });
+          applyPreview(matchedStyle || root.getAttribute('data-style'), th);
+        });
+      }
+      syncControls();
+
+      /* Progressive enhancement inside Ducoro Board sessions (standalone-safe when absent) */
+      var sdk = globalThis.ducoro;
+      if (!isShot && sdk && sdk.board && typeof sdk.board.commands === 'function') {
+        sdk.board.commands({
+          'focus-frame': {
+            describe: 'Scroll a specific export frame into view for visual review.',
+            params: { frame: { type: 'string', required: true, description: 'data-ducoro-export-frame id' } },
+            run: function (args) {
+              var id = args && args.frame;
+              var el = null;
+              if (id) {
+                var nodes = document.querySelectorAll('[data-ducoro-export-frame]');
+                for (var i = 0; i < nodes.length; i++) {
+                  if (nodes[i].getAttribute('data-ducoro-export-frame') === id) { el = nodes[i]; break; }
+                }
+              }
+              if (!el) throw new Error('Unknown frame: ' + id);
+              el.scrollIntoView({ behavior: 'auto', block: 'center' });
+              return { focused: id };
+            }
+          },
+          'preview-style': {
+            describe: 'Temporarily preview a visual style and preset theme without editing files.',
+            params: {
+              style: { type: 'string', required: false, description: 'paper-studio | grid-spec | darkroom-frame' },
+              theme: { type: 'string', required: false, description: 'Preset theme id' }
+            },
+            run: function (args) {
+              var st = args && args.style;
+              var th = args && args.theme;
+              if (st && !STYLE_THEMES[st]) throw new Error('Unknown style: ' + st);
+              applyPreview(st || null, th || null);
+              return { style: root.getAttribute('data-style'), theme: root.getAttribute('data-theme') };
+            }
+          }
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

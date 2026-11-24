@@ -3,26 +3,42 @@
   "displayName": "Bilibili",
   "authType": "oauth2",
   "contentLimits": {
-    "modes": ["video"],
+    "modes": ["video", "image_text"],
     "maxTitleLength": 79,
     "maxBodyLength": 249,
-    "maxImages": 0,
+    "maxImages": 9,
     "maxVideos": 1,
     "allowMixedMedia": false
   },
   "mediaRules": {
-    "imageFormats": ["jpg", "jpeg", "png"],
-    "videoFormats": ["mp4", "flv"],
+    "imageFormats": ["jpg", "jpeg", "png", "webp"],
+    "videoFormats": ["mp4", "flv", "mov"],
     "maxImageSizeBytes": 5242880,
     "maxVideoSizeBytes": 4294967296,
     "maxVideoDurationSec": 18000
+  },
+  "apiOverrides": {
+    "contentLimits": {
+      "modes": ["video"],
+      "maxImages": 0
+    },
+    "mediaRules": {
+      "imageFormats": ["jpg", "jpeg", "png"],
+      "videoFormats": ["mp4", "flv"]
+    },
+    "requiredOptions": ["tid", "copyright"]
   },
   "topic": {
     "supported": true,
     "nativeField": true,
     "maxTotalLength": 199
   },
-  "requiredOptions": ["tid", "copyright"],
+  "recommendations": {
+    "coverAspectRatio": {
+      "min": 1.5,
+      "max": 1.9
+    }
+  },
   "publishPolicy": {
     "completionStrategy": "polling",
     "scheduleByPlatform": false,

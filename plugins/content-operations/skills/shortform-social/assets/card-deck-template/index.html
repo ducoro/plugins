@@ -442,6 +442,11 @@
       display: block;
     }
 
+    .fit-contain {
+      object-fit: contain !important;
+      object-position: center center !important;
+    }
+
     .media-placeholder {
       padding: 40px;
       text-align: center;
@@ -782,8 +787,8 @@
     .device-screen img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      object-position: center top;
+      object-fit: contain;
+      object-position: center center;
       display: block;
     }
 
@@ -864,6 +869,92 @@
       font-size: 24px;
       font-weight: 600;
       line-height: 1.35;
+    }
+
+    /* 11. Spatial Map & Route Stops (offline vector or local static map tile + HTML pins) */
+    .map-canvas {
+      position: relative;
+      flex: 1;
+      min-height: 520px;
+      border-radius: var(--radius-lg);
+      background:
+        linear-gradient(to right, rgba(var(--tint-rgb), 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(var(--tint-rgb), 0.04) 1px, transparent 1px),
+        var(--surface);
+      background-size: 40px 40px;
+      border: var(--rule-width) solid var(--border);
+      overflow: hidden;
+    }
+
+    .map-canvas > img,
+    .map-canvas > svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .map-pin {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px 8px 10px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      box-shadow: 0 8px 20px rgba(var(--tint-rgb), 0.14);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--ink);
+      white-space: nowrap;
+      z-index: 2;
+    }
+
+    .map-pin-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .route-stops {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .route-stop {
+      padding: 18px 22px;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .route-stop strong {
+      font-size: 25px;
+      color: var(--ink);
+    }
+
+    .route-stop span {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      color: var(--accent);
+      white-space: nowrap;
     }
 
     /* WeChat 1:1 Square Centerpiece */

@@ -13,6 +13,30 @@ Follow every rule below when adding, editing, or removing a plugin.
 - **Public repository hygiene**: Never include internal product architecture, private repository paths, or internal operational details in plugin instructions, docs, or commit messages.
 - **Exact Ducoro CLI binary name**: When plugin instructions invoke the Ducoro CLI, always use `ducoro-cli` (for example, `ducoro-cli board ...`, `ducoro-cli feedback send ...`, `ducoro-cli media upload ...`)—never bare `ducoro <subcommand>`.
 
+## Design Principles
+
+- **Neutral domain & platform expert**: Every plugin and skill is a neutral advisor oriented toward a domain, workflow, or official platform—not one user's personal aesthetic. Present official constraints, real audience patterns, and starter examples, while leaving style choice and creative freedom to the user and the model.
+- **Text teaches domain specifics; code enforces objective invariants**: Keep `SKILL.md` and `references/` focused on specialized knowledge the model does not inherently know (platform mechanics, audience psychology, starter blueprints) rather than micromanaging generic taste or structure. Use deterministic scripts for repeatable production pipelines and objective hard checks (dimensions, byte/char limits, file existence, provenance URLs, tamper-proof hashes, readable contrast floors)—never turn subjective style preferences into hard blocking errors.
+
+## Interactive Board UI Standard (shadcn/ui)
+
+Whenever a plugin ships or instructs an agent to build an interactive **Board** (dashboards, kanban pipelines, calendars, ledgers, inboxes, retrospective views, or monitoring panels), the Board MUST follow the **`shadcn/ui` design paradigm and semantic token system**—never ad-hoc per-page CSS or rainbow status pills:
+
+- **Single shared stylesheet per plugin**: Place shared tokens and component primitives in `assets/boards/shared/board-ui.css` (assembled into each board's `runtime/board-ui.css`) so every board stays zero-dependency, offline-runnable, and visually coherent.
+- **Canonical shadcn/ui semantic tokens** (both light `:root` and dark `.dark` / `prefers-color-scheme: dark`):
+  - Surfaces & text: `--background`, `--foreground`, `--card`, `--card-foreground`, `--popover`, `--popover-foreground`, `--muted`, `--muted-foreground`
+  - Actions & chrome: `--primary`, `--primary-foreground`, `--secondary`, `--secondary-foreground`, `--accent`, `--accent-foreground`, `--destructive`, `--destructive-foreground`, `--border`, `--input`, `--ring`, `--radius` (`0.625rem`)
+  - Charts: `--chart-1` through `--chart-5`
+- **Calm by default, semantic color only for exceptions**:
+  - Neutral white/near-black canvas with `1px solid var(--border)` hairline framing; avoid nested double-bordered cards or decorative shadows/gradients.
+  - Normal/rest states (`active`, `published`, `healthy`, `general`) stay neutral (`--foreground` / `--muted-foreground` / `--secondary`). Reserve `warning` (amber) and `destructive` (red) strictly for items requiring human attention, approval, or error recovery, and `--primary` for the primary action or active state.
+- **Uniform control heights (one tier per chrome row)**:
+  - Toolbar controls (`select`, segmented `tabs`, toolbar `button`, toggle chips) share a single **`32px`** height (`2rem`) with aligned radius (`calc(var(--radius) - 2px)`).
+  - Card-level and table-row actions use quiet `ghost` or `outline` buttons at `28px` / `24px` height so repeated rows never form a loud wall of solid buttons.
+- **Scan-first tables & numeric alignment**:
+  - Tables live inside a clean `1px` bordered card wrapper with `11px` uppercase muted column headers (`letter-spacing: 0.04em`), subtle row dividers, row hover tint, and `font-variant-numeric: tabular-nums` for counts, dates, and KPIs.
+- **Scope boundary**: This standard governs interactive application Boards. External social-media visual export canvases (carousel slides, covers, posters) remain free to use expressive editorial or brand-specific art direction.
+
 ## Required Files for Every Plugin
 
 Use `plugins/starter-template/` as the reference blueprint. Every plugin directory `plugins/<plugin-name>/` must contain:

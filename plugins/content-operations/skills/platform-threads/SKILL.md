@@ -1,32 +1,28 @@
 ---
 name: platform-threads
-description: "Run Threads end-to-end operations: conversational topic discovery, crisp 500-char posts with single native topic tags, Threads API two-step container publishing, reply management, and conversation-depth retrospectives."
+description: "Neutral Threads platform advisor covering conversational public-reply discovery, Instagram social-graph crossover, 500-char posts and linked chains, single topic-tag mechanics, browser/API delivery, and engagement guardrails."
 ---
 
-# Threads Operations Playbook
+# Threads Platform Expert Guide
 
-Threads favors natural, human, low-jargon conversation. Replies and sustained back-and-forth threads drive far more distribution than polished announcements.
+Threads is Meta's **conversational text-first social stream** tightly linked to the Instagram social graph, favoring approachable dialogue, quick visual shares, and lively reply threads.
 
-## 1. Topic Discovery (Platform-Native)
-- **Conversational signals**: relatable practitioner observations, candid "what I learned today" notes, quick polls/questions, and behind-the-scenes snapshots.
-- **Avoid**: recycled press-release language or heavy hashtag lists (Threads natively supports **1** `topic_tag` per post).
+## 1. Audience, Mindset & Distribution Mechanics
+- **Culture & tone**: Warmer, more casual and community-driven than hyper-newsy feeds; readers respond strongly to open questions, relatable everyday observations, visual photo carousels, and genuine back-and-forth replies.
+- **Distribution levers**: **Reply velocity & conversation length** are the dominant algorithmic signals, alongside **repost/quote** cascades and cross-surfacing inside Instagram's feed.
+- **Topic tag (`1` native tag)**: Threads supports a **single native topic tag** per post (not hashtag blocks)—use one clean, specific topic tag that matches an active community conversation.
 
-## 2. Native Content & Format Rules
-- **Text (`<= 500` chars combined)**: conversational opening, concrete opinion or story, optional open-ended question to invite replies.
-- **Media**: `text`, `image_text` (up to 10 `jpg`/`png` images, `<= 8 MB` each), or `video` (`mp4`/`mov`, `<= 1 GB`, `<= 300s`).
-- **Topic tag**: native `topic_tag` field—max **1** clean topic tag (no `#` prefix required when passed via API `topic_tag`).
+## 2. Formats & Content Spectrum
+- **Specs (`references/specs.json`)**: `<= 500` chars per post; chain sequential replies with `\n---\n` or `meta.threads[]`; up to **10 images** (`jpg/jpeg/png`, `<= 8MB` each) or 1 video (`<= 5 min`, `<= 1GB`); max **1** native topic tag.
+- **Style spectrum**: Open-ended discussion prompts, casual behind-the-scenes snapshots, short photo carousels, quick visual tips (`../shortform-social/scripts/card_deck.py`), humorous observations, and bite-sized multi-post stories.
 
-## 3. Publishing & Verification (`references/protocol.md`)
-1. Validate against `references/specs.json` via `check_media_specs.py`.
-2. **Default zero-config path (Official Threads Web App)**: open `https://www.threads.net/` in the user's browser session (pause for login/2FA if prompted), click **New Thread**, attach local images/video directly from `drafts/<id>/assets/`, add the single topic tag, save draft (`draft_saved`) or pause before **Post** until Gate 2 confirmation, then record the live permalink.
-3. **Optional official Threads API path** (requires `THREADS_ACCESS_TOKEN` & `THREADS_USER_ID`):
-   - For image/video containers, upload local assets right before publishing via `ducoro-cli media upload <local-file> --json` to get a 5-hour temporary `publicUrl` (on non-Ducoro hosts, use your own HTTPS storage/CDN).
-   - Use `scripts/client.py [--dry-run] <cmd>`: `create-container` (or child items + `create-carousel`), poll `container-status` until `FINISHED`, `publish`, `get-post`, and `insights`.
-4. Record the verified permalink in `publish-log.jsonl`.
+## 3. Delivery & Verification (`references/protocol.md`)
+- Follow the shared browser / OpenAPI / Gate 2 workflow in `../content-ops-loop/references/channel-access-matrix.md` and `approval-gates.md`.
+- **Platform specifics**: Validate via `check_media_specs.py`. Default path: `https://www.threads.net/` (supports drafts, polls, scheduling, multi-post chains). Optional OpenAPI: `scripts/client.py` (`THREADS_ACCESS_TOKEN`, `THREADS_USER_ID`; media URLs via `ducoro-cli media upload <path> --json`). Verify Gate 2 (`validate_workspace.py --verify-slot <slotId>`) before publishing.
 
-## 4. Engagement & Risk Guardrails
-- `scripts/client.py` supports `list-replies --post-id <id>`, replying (`create-container --reply-to <id> ...` + `publish`), and hiding/unhiding (`manage-reply --reply-id <id> --hide true|false`).
-- Keep engagement under 60 actions/day and respond authentically within the first 2 hours.
+## 4. Platform Red Lines & Engagement
+- **Compliance**: Avoid rage-bait spam, mass automated replies, or cross-posting unadapted link dumps without conversational context.
+- **Rate cap**: Enforce `<= 12/hour`, `<= 60/day` (30–60s spacing) via `../engagement-and-analytics/scripts/engagement_guard.py`.
 
 ## 5. North-Star Metrics (`platformMetrics`)
-Track `replyToViewRatio`, `quoteCount`, `repostCount`, and `views`.
+Track `replyToViewRatio`, `conversationDepth`, `repostQuoteCount`, and `followerConversionRate`.

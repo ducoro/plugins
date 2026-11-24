@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="zh-CN" data-style="paper-studio" data-theme="warm-linen">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>范例 4 · Live Photo 透明叠层母版与拼图规格（单视频 / 三连横条 / 四宫格）</title>
+  <style id="card-studio-tokens">
+    html[data-style="paper-studio"] {
+      --font-display: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", Georgia, serif;
+      --font-body: "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+      --display-weight: 600;
+      --radius-lg: 18px;
+      --radius-sm: 8px;
+      --rule-width: 1px;
+    }
+    html[data-theme="warm-linen"] {
+      --bg: #F6F2EA;
+      --surface: #FFFDF8;
+      --ink: #1B1917;
+      --muted: #575149;
+      --accent: #9E3B28;
+      --accent-ink: #FFFFFF;
+      --accent-soft: #F3E3DC;
+      --border: #DDD4C6;
+      --tint-rgb: 27, 25, 23;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    figure, h1, h2, h3, p, ul, ol { margin: 0; }
+
+    body {
+      margin: 0;
+      padding: 36px 28px 72px;
+      background: #E6E3DC;
+      color: var(--ink);
+      font-family: var(--font-body);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 36px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    html[data-ducoro-render="shot"] body { padding: 0; gap: 0; background: transparent; }
+    html[data-ducoro-render="shot"] .studio-bar,
+    html[data-ducoro-render="shot"] .delivery-guide { display: none !important; }
+
+    .studio-bar, .delivery-guide {
+      width: 100%;
+      max-width: 1080px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 26px;
+    }
+
+    .studio-bar h1 {
+      font-family: var(--font-display);
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .studio-bar p {
+      font-size: 15px;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+
+    .deck-canvas {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 44px;
+      width: 100%;
+    }
+
+    /* Exportable 1080x1440 Live Photo Overlay & Layout Spec Frames */
+    .card-frame {
+      position: relative;
+      width: 1080px;
+      height: 1440px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: var(--rule-width) solid var(--border);
+      flex-shrink: 0;
+    }
+
+    html[data-ducoro-render="shot"] .card-frame { border: none; }
+
+    /* Frame 1: Real transparent typography overlay (for `live_photo.py compose --overlay`) */
+    .overlay-canvas {
+      background:
+        linear-gradient(180deg, rgba(168, 200, 232, 0.28) 0%, rgba(246, 242, 234, 0.14) 45%, rgba(27, 25, 23, 0.08) 100%),
+        repeating-conic-gradient(rgba(var(--tint-rgb), 0.04) 0% 25%, transparent 0% 50%) 0 0 / 32px 32px;
+      padding: 116px 84px 72px;
+      justify-content: space-between;
+    }
+
+    html[data-ducoro-render="shot"] .overlay-canvas {
+      background: transparent;
+    }
+
+    .overlay-headline {
+      font-family: var(--font-display);
+      font-size: 84px;
+      line-height: 1.22;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--ink);
+    }
+
+    .overlay-sub {
+      margin-top: 24px;
+      font-size: 30px;
+      line-height: 1.5;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+    }
+
+    .quiet-guide {
+      margin-top: auto;
+      padding: 24px 28px;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 253, 248, 0.72);
+      color: var(--muted);
+      font-size: 24px;
+      line-height: 1.55;
+    }
+
+    html[data-ducoro-render="shot"] .quiet-guide {
+      display: none;
+    }
+
+    /* Frame 2: Stack-3 Horizontal Strip Geometry Reference (1080x1440) */
+    .spec-canvas {
+      background: var(--bg);
+      padding: 64px 68px 56px;
+      gap: 24px;
+    }
+
+    .spec-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 22px;
+      color: var(--muted);
+    }
+
+    .spec-head strong { color: var(--accent); }
+
+    .spec-title {
+      font-family: var(--font-display);
+      font-size: 56px;
+      line-height: 1.22;
+      color: var(--ink);
+    }
+
+    .stack3-grid {
+      flex: 1;
+      display: grid;
+      grid-template-rows: repeat(3, 1fr);
+      gap: 10px;
+      padding: 10px;
+      border-radius: var(--radius-lg);
+      background: var(--ink);
+    }
+
+    .quad-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 10px;
+      padding: 10px;
+      border-radius: var(--radius-lg);
+      background: var(--ink);
+    }
+
+    .video-slot {
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 28px 34px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .video-slot span {
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .video-slot strong {
+      font-size: 32px;
+      color: var(--ink);
+    }
+
+    .video-slot p {
+      font-size: 24px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .card-foot {
+      margin-top: auto;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 22px;
+      color: var(--muted);
+    }
+
+    .delivery-guide h2 { font-size: 20px; margin-bottom: 10px; }
+    .delivery-guide pre {
+      margin: 10px 0 0;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #14171F;
+      color: #E2E8F0;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.55;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <header class="studio-bar" data-mark-ignore>
+    <h1>范例 4 · Live Photo 透明叠层母版与拼图规格（仅配合真实视频素材使用）</h1>
+    <p>
+      <strong>铁律：Live Photo 的底层必须是真实实拍视频或真实产品录屏，绝不用静态简笔画放大充数。</strong>
+      HTML 在这里只做一件事：导出<strong>透明背景的静止排印叠层</strong>（第 1 帧，用 <code>--overlay</code> 叠到真实视频的安静区上，让文字稳稳不动、底下真实视频流畅播放 3s / 5s）。
+      多视频拼图（第 2 帧 <code>stack-3</code> 三连横条、第 3 帧 <code>grid-4</code> 四宫格）默认<strong>零文字叠加</strong>，让真实画面自己说话。
+    </p>
+  </header>
+
+  <main class="deck-canvas">
+    <!-- FRAMES_START -->
+
+    <!-- Frame 1: Exportable Transparent Typography Overlay for Single-Video Live Photo -->
+    <section
+      id="live-overlay-top"
+      class="card-frame overlay-canvas"
+      data-ducoro-export-frame="live-overlay-top"
+      data-ducoro-export-width="1080"
+      data-ducoro-export-height="1440"
+      data-ducoro-export-label="Live Photo Transparent Top Overlay"
+      data-card="live-overlay-top"
+      data-card-title="透明叠层母版 — 单视频顶部安静区标题"
+    >
+      <div>
+        <h1 class="overlay-headline" data-mark-item="live-overlay-top-title" data-mark-label="Quiet-zone headline">把出发交给风，<br />把远方留给时间</h1>
+        <p class="overlay-sub" data-mark-item="live-overlay-top-sub" data-mark-label="Quiet-zone subtitle">清晨启程 · 沿着水路慢慢向前</p>
+      </div>
+      <div class="quiet-guide">
+        <strong>真实视频主体区（导出透明 PNG 时自动隐藏本提示框）：</strong>
+        底部 60% 留给真实流动视频主体；无全屏黑遮罩、无假 LIVE 角标、无多余装饰线。配合 <code>live_photo.py compose --layout single --crop-x 0.16 --overlay overlay.png</code> 合成，标题纹丝不动、底层视频自然流动 5 秒。
+      </div>
+    </section>
+
+    <!-- Frame 2: Stack-3 Horizontal Strip Blueprint (Best for 16:9 Footage & Screen Recordings) -->
+    <section
+      id="live-spec-stack3"
+      class="card-frame spec-canvas"
+      data-ducoro-export-frame="live-spec-stack3"
+      data-ducoro-export-width="1080"
+      data-ducoro-export-height="1440"
+      data-ducoro-export-label="Live Photo Stack-3 Blueprint"
+      data-card="live-spec-stack3"
+      data-card-title="三连横条规格 — stack-3（宽屏素材首选）"
+    >
+      <div class="spec-head"><strong>LAYOUT · STACK-3</strong><span>1080 × 1440 · 8px GUTTER</span></div>
+      <h2 class="spec-title" data-mark-item="live-spec-stack3-title" data-mark-label="Stack-3 heading">三段宽屏实拍上下堆叠，零变形保完整构图</h2>
+      <div class="stack3-grid" data-mark-item="live-spec-stack3-grid" data-mark-label="Three horizontal video slots">
+        <div class="video-slot"><span>SLOT 01 · 1080 × 474</span><strong>镜头一：开场 / 远景 / 初始态</strong><p>天然承接 16:9 实拍或桌面录屏，无须把宽画面硬挤成细竖条。</p></div>
+        <div class="video-slot"><span>SLOT 02 · 1080 × 474</span><strong>镜头二：过程 / 动作 / 对比态</strong><p>三条画面同步播放 5s（小红书）或 3s（公众号），适合并列展示。</p></div>
+        <div class="video-slot"><span>SLOT 03 · 1080 × 476</span><strong>镜头三：结果 / 细节 / 收尾态</strong><p>默认不叠加杂乱装饰文字，保留纯视频胶片三连画质感。</p></div>
+      </div>
+      <footer class="card-foot"><span>live_photo.py compose clip1 clip2 clip3 --layout stack-3</span><span>素材优先 · 零文字干扰</span></footer>
+    </section>
+
+    <!-- Frame 3: Four-Grid Material-First Puzzle Blueprint -->
+    <section
+      id="live-spec-quad"
+      class="card-frame spec-canvas"
+      data-ducoro-export-frame="live-spec-quad"
+      data-ducoro-export-width="1080"
+      data-ducoro-export-height="1440"
+      data-ducoro-export-label="Live Photo Four-Grid Blueprint"
+      data-card="live-spec-quad"
+      data-card-title="四宫格规格 — grid-4（纯素材拼图）"
+    >
+      <div class="spec-head"><strong>LAYOUT · GRID-4</strong><span>4 × (536 × 716) · 3:4 WELLS</span></div>
+      <h2 class="spec-title" data-mark-item="live-spec-quad-title" data-mark-label="Quad heading">四格同步流动，用 --crop-x 保护每格主体</h2>
+      <div class="quad-grid" data-mark-item="live-spec-quad-grid" data-mark-label="Four 3:4 video slots">
+        <div class="video-slot"><span>WELL 01</span><strong>左上方格</strong><p>通过 <code>--crop-x</code> 独立指定水平裁切重心（0.0 左 ~ 1.0 右）。</p></div>
+        <div class="video-slot"><span>WELL 02</span><strong>右上方格</strong><p>先抽 <code>contact-sheet</code> 看主体位置，再定裁切值。</p></div>
+        <div class="video-slot"><span>WELL 03</span><strong>左下方格</strong><p>适合旅行四景、食物制作、空间细节等高画质实拍。</p></div>
+        <div class="video-slot"><span>WELL 04</span><strong>右下方格</strong><p>默认零文字叠加，直接导出 <code>.pvt</code> AirDrop 到 iPhone 发布。</p></div>
+      </div>
+      <footer class="card-foot"><span>live_photo.py compose c1 c2 c3 c4 --layout grid-4 --crop-x 0.15,0.2,0.7,0.2</span><span>四宫格实况拼图</span></footer>
+    </section>
+
+    <!-- FRAMES_END -->
+  </main>
+
+  <section class="delivery-guide" data-mark-ignore>
+    <h2>真实视频合成命令（单视频 + 静止透明叠层 / 三连横条 / 四宫格）</h2>
+    <pre># 1. 单视频 5s + 顶部静止透明标题层（文字不动，底下真实视频流畅流动）
+python3 scripts/live_photo.py compose clip.mp4 -o drafts/&lt;id&gt;/assets/live-01.mov \
+  --platform xiaohongshu --layout single --duration 5.0 --crop-x 0.16 \
+  --overlay drafts/&lt;id&gt;/assets/overlay-top.png \
+  --key-jpg drafts/&lt;id&gt;/assets/live-01.jpg --fallback-mp4 drafts/&lt;id&gt;/assets/live-01.mp4 --json
+
+# 2. 三连横条 5s（16:9 横屏实拍/录屏首选，不裁坏主体）
+python3 scripts/live_photo.py compose c1.mp4 c2.mp4 c3.mp4 -o drafts/&lt;id&gt;/assets/stack3.mov \
+  --platform xiaohongshu --layout stack-3 --duration 5.0 --gap 8 \
+  --key-jpg drafts/&lt;id&gt;/assets/stack3.jpg --fallback-mp4 drafts/&lt;id&gt;/assets/stack3.mp4 --json
+
+# 3. 四宫格无字实况拼图 + macOS 原生打 .pvt 包并验收
+python3 scripts/live_photo.py compose c1.mp4 c2.mp4 c3.mp4 c4.mp4 -o drafts/&lt;id&gt;/assets/quad.mov \
+  --platform xiaohongshu --layout grid-4 --duration 5.0 --crop-x 0.12,0.16,0.72,0.18 --gap 8 \
+  --key-jpg drafts/&lt;id&gt;/assets/quad.jpg --fallback-mp4 drafts/&lt;id&gt;/assets/quad.mp4 --json
+python3 scripts/live_photo.py package-pvt drafts/&lt;id&gt;/assets/quad.jpg drafts/&lt;id&gt;/assets/quad.mov -o drafts/&lt;id&gt;/assets/quad.pvt --json
+python3 scripts/live_photo.py validate drafts/&lt;id&gt;/assets/quad.pvt --platform xiaohongshu --json</pre>
+  </section>
+</body>
+</html>

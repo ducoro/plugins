@@ -284,14 +284,14 @@ def oklch_to_gamut_hex(L: float, C: float, H: float) -> str:
 
 
 def evaluate_palette_contrast(palette: Dict[str, str]) -> Dict[str, object]:
-    """Check WCAG 2.1 contrast thresholds for a complete theme token set."""
+    """Check objective WCAG 2.1 AA contrast thresholds (4.5:1 text, 3.0:1 large accent/UI)."""
     checks = {
-        'ink_on_bg': (contrast_ratio(palette['ink'], palette['bg']), 7.0),
-        'ink_on_surface': (contrast_ratio(palette['ink'], palette['surface']), 7.0),
+        'ink_on_bg': (contrast_ratio(palette['ink'], palette['bg']), 4.5),
+        'ink_on_surface': (contrast_ratio(palette['ink'], palette['surface']), 4.5),
         'muted_on_bg': (contrast_ratio(palette['muted'], palette['bg']), 4.5),
         'muted_on_surface': (contrast_ratio(palette['muted'], palette['surface']), 4.5),
-        'accent_on_bg': (contrast_ratio(palette['accent'], palette['bg']), 4.5),
-        'accent_on_surface': (contrast_ratio(palette['accent'], palette['surface']), 4.5),
+        'accent_on_bg': (contrast_ratio(palette['accent'], palette['bg']), 3.0),
+        'accent_on_surface': (contrast_ratio(palette['accent'], palette['surface']), 3.0),
         'accentInk_on_accent': (contrast_ratio(palette['accentInk'], palette['accent']), 4.5),
     }
     failures = [
@@ -307,7 +307,7 @@ def evaluate_palette_contrast(palette: Dict[str, str]) -> Dict[str, object]:
 
 
 def build_brand_theme(hex_color: str, style: str, theme_id: str = 'brand') -> Dict[str, object]:
-    """Derive a WCAG-safe brand theme for the chosen style while preserving hue."""
+    """Derive a WCAG 2.1 AA-safe brand theme while preserving original hue and chroma as closely as possible."""
     if style not in STYLES:
         raise ValueError(f'Unknown style {style!r}; expected one of: {", ".join(STYLES)}')
     if not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', theme_id):
@@ -318,13 +318,10 @@ def build_brand_theme(hex_color: str, style: str, theme_id: str = 'brand') -> Di
     base_name = str(STYLES[style]['defaultTheme'])
     base = dict(THEMES[base_name])
     mode = str(STYLES[style]['mode'])
-    bounds = STYLES[style]['brandBounds']
-    l_lo, l_hi = bounds['L']  # type: ignore[index]
-    c_lo, c_hi = bounds['C']  # type: ignore[index]
 
-    # Achromatic inputs (black/white/grey) stay neutral; chromatic inputs stay expressive.
-    target_C = orig_C if orig_C < 0.025 else clamp(orig_C, c_lo, c_hi)
-    target_L = clamp(orig_L, l_lo, l_hi)
+    # Keep the user's original chroma/vividness; adjust lightness only when objective WCAG AA fails.
+    target_C = orig_C
+    target_L = orig_L
 
     def _pick_accent_ink(acc_hex: str) -> str:
         c_white = contrast_ratio('#FFFFFF', acc_hex)
@@ -334,18 +331,17 @@ def build_brand_theme(hex_color: str, style: str, theme_id: str = 'brand') -> Di
     def _is_valid_accent(acc_hex: str) -> bool:
         ink_c = _pick_accent_ink(acc_hex)
         return (
-            contrast_ratio(acc_hex, base['bg']) >= 4.5
-            and contrast_ratio(acc_hex, base['surface']) >= 4.5
+            contrast_ratio(acc_hex, base['bg']) >= 3.0
+            and contrast_ratio(acc_hex, base['surface']) >= 3.0
             and contrast_ratio(ink_c, acc_hex) >= 4.5
         )
 
-    accent_hex = oklch_to_gamut_hex(target_L, target_C, orig_H)
+    accent_hex = to_hex(rgb)
     if not _is_valid_accent(accent_hex):
-        # Search outward along lightness in the style's contrast direction.
         step = -0.015 if mode == 'light' else 0.015
         candidate_L = target_L
         found = None
-        for _ in range(45):
+        for _ in range(55):
             candidate_L = clamp(candidate_L + step, 0.14, 0.94)
             cand = oklch_to_gamut_hex(candidate_L, target_C, orig_H)
             if _is_valid_accent(cand):
@@ -353,11 +349,10 @@ def build_brand_theme(hex_color: str, style: str, theme_id: str = 'brand') -> Di
                 target_L = candidate_L
                 break
         if found is None:
-            # Final fallback: moderate chroma slightly while keeping hue.
             for scale in (0.75, 0.55, 0.35):
                 c_try = target_C * scale
-                l_try = 0.36 if mode == 'light' else 0.80
-                for _ in range(30):
+                l_try = 0.42 if mode == 'light' else 0.78
+                for _ in range(35):
                     cand = oklch_to_gamut_hex(l_try, c_try, orig_H)
                     if _is_valid_accent(cand):
                         found = cand
@@ -368,7 +363,7 @@ def build_brand_theme(hex_color: str, style: str, theme_id: str = 'brand') -> Di
                 if found is not None:
                     break
         if found is None:
-            raise ValueError(f'Unable to satisfy WCAG 4.5:1 contrast for {hex_color} in style {style}')
+            raise ValueError(f'Unable to satisfy WCAG AA contrast for {hex_color} in style {style}')
         accent_hex = found
 
     accent_ink = _pick_accent_ink(accent_hex)

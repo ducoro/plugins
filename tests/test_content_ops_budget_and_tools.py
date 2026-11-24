@@ -100,11 +100,28 @@ class ContentOpsBudgetAndToolsTest(unittest.TestCase):
             )
             s2 = json.loads(ok2.stdout)['id']
 
-            # Valid grounded claims pass
+            # Supports non-web verified provenance (local_file / first_hand_test / publication_or_interview)
+            ok_local = subprocess.run(
+                [sys.executable, str(MEDIA_SCRIPTS / 'source_ledger.py'), 'add',
+                 '--ledger', str(ledger), '--title', 'Internal Benchmark PDF', '--claim', 'p95 latency 120ms',
+                 '--source-type', 'local_file', '--locator', 'reports/q1-bench.pdf#p4', '--status', 'verified'],
+                capture_output=True, text=True, check=True,
+            )
+            s3 = json.loads(ok_local.stdout)['id']
+            bad_local = subprocess.run(
+                [sys.executable, str(MEDIA_SCRIPTS / 'source_ledger.py'), 'add',
+                 '--ledger', str(ledger), '--title', 'No Locator', '--claim', 'Unanchored',
+                 '--source-type', 'first_hand_test', '--status', 'verified'],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(bad_local.returncode, 2)
+
+            # Valid grounded claims pass (web_url + local_file + user_provided + opinion)
             claims.write_text(json.dumps({
                 'version': 1,
                 'claims': [
                     {'id': 'C1', 'text': 'Supports 18 themes', 'type': 'fact', 'sourceIds': [s1], 'status': 'supported'},
+                    {'id': 'C1b', 'text': 'p95 latency 120ms', 'type': 'fact', 'sourceIds': [s3], 'status': 'supported'},
                     {'id': 'C2', 'text': 'We migrated 3 accounts', 'type': 'user_experience', 'sourceIds': [s2], 'status': 'supported'},
                     {'id': 'C3', 'text': 'Consistent loops beat one-offs', 'type': 'opinion', 'sourceIds': [], 'status': 'supported'},
                 ],
@@ -182,10 +199,22 @@ class ContentOpsBudgetAndToolsTest(unittest.TestCase):
             self.assertFalse(frep['publishable'])
             self.assertEqual(len(frep['failureReasons']), 2)
 
-            # Rejects passNumber=3 (max 2 editorial passes)
+            # Allows passNumber >= 1 (no arbitrary 2-pass cap) and rejects passNumber=0
             assess.write_text(json.dumps({
                 'decision': 'pass',
                 'passNumber': 3,
+                'dimensions': {'accuracy': 5, 'viewpoint': 5, 'usefulness': 5, 'voice': 5, 'readability': 5},
+            }), encoding='utf-8')
+            ok_pass3 = subprocess.run(
+                [sys.executable, str(MEDIA_SCRIPTS / 'content_eval.py'),
+                 '--draft', str(draft), '--final', str(final), '--assessment', str(assess), '--strict'],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(ok_pass3.returncode, 0, ok_pass3.stderr)
+
+            assess.write_text(json.dumps({
+                'decision': 'pass',
+                'passNumber': 0,
                 'dimensions': {'accuracy': 5, 'viewpoint': 5, 'usefulness': 5, 'voice': 5, 'readability': 5},
             }), encoding='utf-8')
             bad_pass = subprocess.run(

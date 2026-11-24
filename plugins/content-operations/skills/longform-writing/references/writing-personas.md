@@ -1,29 +1,29 @@
 # Writing Personas & Claim Discipline
 
-Choose one persona in `brand-profile.md` (for example `writingPersona: "industry-observer"`) or override per draft.
+Voice belongs entirely to the creator or publication (`brand-profile.md` / `style/style-profile.json`). The presets below are **optional starting points**, not a closed list—adapt, blend, or define any custom voice freely.
 
-> **Hard boundary**: Personas control voice, pacing, and evidence presentation only. They **never** override factual accuracy or personal-experience boundaries. **Never fabricate first-person anecdotes, "my friend told me" stories, or unverified experiences.** Only experiences explicitly supplied by the user in the current brief or `brand-profile.md` may be written as first-hand experience.
+> **Hard boundary**: Voice never overrides factual honesty. Never fabricate first-person anecdotes, "a friend told me" stories, or unverified metrics. Only experiences supplied by the operator may be written as first-hand experience.
 
-## Claim & Evidence Stratification (Before Drafting)
+## Claim & Evidence Stratification
 
-Separate every substantive statement in `master.md` into four buckets before writing prose:
-1. **Verified Fact**: directly backed by a date, number, document, or URL source.
-2. **Inference**: logical deduction explicitly signaled as reasoning, not stated as confirmed fact.
-3. **Opinion / Judgment**: clear stance paired with counter-arguments and boundary conditions ("when this does not apply").
-4. **User-Supplied Experience**: real anecdote explicitly provided by the human operator—never invented.
+Keep four buckets distinct whenever a piece mixes reporting and commentary:
+1. **Verified Fact**: directly backed by a URL, document, book/interview citation, or logged first-hand test.
+2. **Inference**: logical deduction signaled as reasoning rather than confirmed fact.
+3. **Opinion / Judgment**: explicit stance, ideally noting where it does or does not apply.
+4. **User-Supplied Experience**: real anecdote provided by the human operator.
 
-## Built-In Personas (7 Presets)
+## Optional Starter Voice Presets
 
-| Persona ID | Best Fit | Voice, Pacing & Evidence Style | Guardrail |
-| --- | --- | --- | --- |
-| `midnight-friend` | Personal essays, founder diaries, reflective notes | Conversational, candid, comfortable with self-doubt and nuance; short reflective paragraphs | When no personal story is provided, open with a concrete observation or reader question—never invent a fake anecdote |
-| `warm-editor` | Lifestyle, culture, human-centered stories | Warm narrative arc, facts woven naturally inside lived scenes, gentle transitions | Avoid melodramatic cliches and empty inspirational closings |
-| `industry-observer` | Industry analysis, SaaS/AI deep dives, WeChat Official | Measured, evidence-first, sharp underlying judgment, explicit tradeoffs and counter-examples | Back every trend claim with named sources, timeframes, or concrete examples |
-| `sharp-journalist` | Breaking news commentary, product teardowns | Crisp, zero-preamble leads, data-driven contrast, clear point of view | Separate reported facts from editorial commentary cleanly |
-| `cold-analyst` | Finance, strategy, investment/operator memos | Restrained, explicit causal chains, quantified assumptions, prominent risk & failure modes | State scope limits and downside scenarios alongside upside |
-| `humor-storyteller` | Tech-culture commentary, sharp takes | Playful rhythm, absurd contrast, tight punchlines with a real practical takeaway underneath | Keep jokes grounded in real facts; never mock private individuals |
-| `tech-coder` | Engineering tutorials, architecture notes, changelogs | Code/command-first, explicit version numbers, failure modes and reproducible verification steps | Never omit prerequisites, exact versions, or breaking caveats |
+| Preset ID | Example Fit | Tone & Pacing |
+| --- | --- | --- |
+| `midnight-friend` | Personal essays, reflective letters | Candid, conversational, comfortable with nuance |
+| `warm-editor` | Culture, lifestyle, human stories | Grounded narrative arc, lived details, unhurried flow |
+| `industry-observer` | Market analysis, company teardowns | Measured, causal, balances upside with trade-offs |
+| `sharp-journalist` | News commentary, investigations | Crisp lead, clean fact-vs-commentary separation |
+| `cold-analyst` | Finance, strategy, operator memos | Restrained, quantified assumptions, explicit downside risks |
+| `humor-storyteller` | Cultural essays, sharp takes | Playful contrast, tight punchlines, grounded premise |
+| `tech-coder` | Engineering tutorials, postmortems | Command/code-first, exact versions, failure modes |
 
-## Voice Evolution (`style/style-playbook.md`)
+## Learning From Real Human Edits
 
-When the user edits AI drafts before publishing, record pairs with `scripts/learn_edits.py record`. Only patterns that recur (`occurrences >= 2`) or are explicitly promoted by the user become standing rules in `style/style-playbook.md`—single one-off edits stay advisory so one unusual article never distorts future voice.
+When an operator revises an AI draft, log pairs with `scripts/learn_edits.py record`. Patterns only graduate to `style/style-playbook.md` after recurring (`occurrences >= 2`) within the same narrow scope, so one unusual piece never distorts future drafts.

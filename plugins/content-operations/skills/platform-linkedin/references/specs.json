@@ -3,23 +3,29 @@
   "displayName": "LinkedIn",
   "authType": "oauth2",
   "contentLimits": {
-    "modes": ["text", "image_text", "video"],
+    "modes": ["text", "image_text", "video", "document"],
     "maxTitleLength": 200,
     "maxBodyLength": 3000,
     "maxImages": 9,
     "maxVideos": 1,
+    "maxDocuments": 1,
     "allowMixedMedia": false
   },
   "mediaRules": {
     "imageFormats": ["jpg", "jpeg", "png", "gif"],
     "videoFormats": ["mp4"],
+    "documentFormats": ["pdf"],
     "maxImageSizeBytes": 10485760,
     "maxVideoSizeBytes": 209715200,
+    "maxDocumentSizeBytes": 104857600,
     "maxVideoDurationSec": 600
   },
   "topic": {
-    "supported": false,
+    "supported": true,
     "nativeField": false
+  },
+  "recommendations": {
+    "maxTopicCount": 5
   },
   "publishPolicy": {
     "completionStrategy": "sync",

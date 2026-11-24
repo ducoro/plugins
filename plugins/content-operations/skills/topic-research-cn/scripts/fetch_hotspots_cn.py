@@ -25,6 +25,7 @@ ENDPOINTS = {
     'toutiao': 'https://www.toutiao.com/hot-event/hot-board/?origin=toutiao_pc',
     'baidu': 'https://top.baidu.com/api/board?platform=wise&tab=realtime',
     'gnews_cn': 'https://news.google.com/rss/search',
+    'gnews_cn_top': 'https://news.google.com/rss?hl=zh-CN&gl=CN&ceid=CN:zh-Hans',
 }
 
 
@@ -140,15 +141,19 @@ def fetch_baidu(query: str = '', window_days: int = 7, limit: int = 15) -> list[
 
 
 def fetch_gnews_cn(query: str = '', window_days: int = 7, limit: int = 12) -> list[dict]:
-    q = query.strip() or '人工智能 OR 科技'
-    q_term = f'"{q}"' if (' ' in q and ' OR ' not in q and '"' not in q) else q
-    params = urllib.parse.urlencode({
-        'q': f'{q_term} when:{max(1, min(window_days, 90))}d',
-        'hl': 'zh-CN',
-        'gl': 'CN',
-        'ceid': 'CN:zh-Hans',
-    })
-    root = ET.fromstring(fetch_text(f"{ENDPOINTS['gnews_cn']}?{params}"))
+    q = query.strip()
+    if q:
+        q_term = f'"{q}"' if (' ' in q and ' OR ' not in q and '"' not in q) else q
+        params = urllib.parse.urlencode({
+            'q': f'{q_term} when:{max(1, min(window_days, 90))}d',
+            'hl': 'zh-CN',
+            'gl': 'CN',
+            'ceid': 'CN:zh-Hans',
+        })
+        url = f"{ENDPOINTS['gnews_cn']}?{params}"
+    else:
+        url = ENDPOINTS['gnews_cn_top']
+    root = ET.fromstring(fetch_text(url))
     items: list[dict] = []
     for rank, entry in enumerate(root.findall('.//item')[:limit]):
         title = ' '.join((entry.findtext('title') or '').split())

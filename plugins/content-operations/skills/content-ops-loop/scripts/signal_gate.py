@@ -189,8 +189,8 @@ def cmd_ingest(args: argparse.Namespace) -> int:
         return 2
 
     regions = {doc['region'] for _, doc in envelopes}
-    if len(regions) > 1:
-        _emit({'schema': POOL_SCHEMA, 'ok': False, 'errors': [f'mixed regions in single ingest batch: {sorted(regions)} (keep cn and global isolated)']})
+    if len(regions) > 1 and not args.allow_mixed_regions:
+        _emit({'schema': POOL_SCHEMA, 'ok': False, 'errors': [f'mixed regions in single ingest batch: {sorted(regions)} (keep cn and global isolated or pass --allow-mixed-regions)']})
         return 2
 
     dropped_reasons: dict[str, int] = {}
@@ -283,9 +283,10 @@ def cmd_ingest(args: argparse.Namespace) -> int:
             seen_map[canon] = stamp
         _save_seen(ws, seen_map, now)
 
+    region_out = 'mixed' if len(regions) > 1 else (next(iter(regions)) if regions else 'global')
     _emit({
         'schema': POOL_SCHEMA, 'ok': True, 'generatedAt': iso_utc(now),
-        'region': next(iter(regions)) if regions else 'global', 'windowDays': args.window_days,
+        'region': region_out, 'windowDays': args.window_days,
         'stats': {
             'envelopesRead': len(envelopes), 'rawItems': raw_count, 'accepted': accepted_count,
             'deduped': len(by_url), 'skippedSeen': skipped_seen, 'deltaCount': len(items),
@@ -296,12 +297,12 @@ def cmd_ingest(args: argparse.Namespace) -> int:
     return 0
 
 
-def _has_strong_engagement(items: list[dict], score_floor: float) -> bool:
+def _has_strong_engagement(items: list[dict], score_floor: float, min_likes: float = 100.0, min_comments: float = 40.0, min_score: float = 150.0, min_volume: float = 50000.0) -> bool:
     for item in items:
         eng = item.get('engagement') or {}
-        if (float(item.get('hotNormalized') or 0) >= score_floor or float(eng.get('likes') or 0) >= 100
-                or float(eng.get('comments') or 0) >= 40 or float(eng.get('score') or 0) >= 150
-                or float(eng.get('volume24hr') or 0) >= 50000):
+        if (float(item.get('hotNormalized') or 0) >= score_floor or float(eng.get('likes') or 0) >= min_likes
+                or float(eng.get('comments') or 0) >= min_comments or float(eng.get('score') or 0) >= min_score
+                or float(eng.get('volume24hr') or 0) >= min_volume):
             return True
     return False
 
@@ -338,7 +339,8 @@ def cmd_gate(args: argparse.Namespace) -> int:
         seed_sources = {s for mi in matched for s in (mi.get('seedSources') or [])}
         max_norm = max((float(mi.get('hotNormalized') or 0.0) for mi in matched), default=0.0)
         primary = bool(cand.get('isPrimarySource', False)) or any(mi.get('isPrimarySource') for mi in matched)
-        junk_shape, strong_eng = bool(cand.get('junkShape', False)), _has_strong_engagement(matched, args.single_source_floor)
+        junk_shape = bool(cand.get('junkShape', False))
+        strong_eng = _has_strong_engagement(matched, args.single_source_floor, args.min_likes, args.min_comments, args.min_score, args.min_volume)
         if not reasons:
             if junk_shape:
                 if len(seed_sources) < 2:
@@ -447,6 +449,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_ing.add_argument('--keep-stale', action='store_true', help='Keep items older than --window-days.')
     p_ing.add_argument('--include-seen', action='store_true', help='Include URLs already in inbox/seen-signals.json.')
     p_ing.add_argument('--mark-seen', action='store_true', help='Persist accepted URLs into inbox/seen-signals.json.')
+    p_ing.add_argument('--allow-mixed-regions', action='store_true', help='Allow combining cn and global envelopes for cross-border creators.')
     p_ing.add_argument('--output', help='Optional output JSON path for signal pool.')
     p_ing.set_defaults(func=cmd_ingest)
 
@@ -454,6 +457,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_gate.add_argument('--pool', required=True, help='Signal pool JSON produced by `ingest`.')
     p_gate.add_argument('--candidates', required=True, help='Model-curated candidates JSON.')
     p_gate.add_argument('--single-source-floor', type=float, default=80.0, help='Min hotNormalized for single-source pass (default 80).')
+    p_gate.add_argument('--min-likes', type=float, default=100.0, help='Strong-engagement likes threshold (default 100).')
+    p_gate.add_argument('--min-comments', type=float, default=40.0, help='Strong-engagement comments threshold (default 40).')
+    p_gate.add_argument('--min-score', type=float, default=150.0, help='Strong-engagement score threshold (default 150).')
+    p_gate.add_argument('--min-volume', type=float, default=50000.0, help='Strong-engagement 24h volume threshold (default 50000).')
     p_gate.add_argument('--strict', action='store_true', help='Exit 2 if any candidate cites an ungrounded URL.')
     p_gate.add_argument('--output', help='Optional output JSON path for gate report.')
     p_gate.set_defaults(func=cmd_gate)

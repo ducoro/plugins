@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1440" width="1080" height="1440">
+  <defs>
+    <linearGradient id="skyMist" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ECE7DC"/>
+      <stop offset="38%" stop-color="#E5E1D5"/>
+      <stop offset="68%" stop-color="#CBD5CF"/>
+      <stop offset="100%" stop-color="#536863"/>
+    </linearGradient>
+    <linearGradient id="waterMist" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9EB0A9" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#273835" stop-opacity="0.96"/>
+    </linearGradient>
+    <radialGradient id="morningSun" cx="78%" cy="44%" r="22%">
+      <stop offset="0%" stop-color="#FFFDF5" stop-opacity="0.95"/>
+      <stop offset="45%" stop-color="#F7EBD3" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#E5E1D5" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Quiet sky top zone (0..40% y) intentionally calm & low-contrast for editorial headline -->
+  <rect width="1080" height="1440" fill="url(#skyMist)"/>
+  <rect width="1080" height="1440" fill="url(#morningSun)"/>
+
+  <!-- Distant layered mountains (52%..76% y) -->
+  <path d="M 0 820 Q 210 690, 440 760 T 910 710 Q 1000 720, 1080 760 L 1080 1440 L 0 1440 Z" fill="#9BB0A8" opacity="0.58"/>
+  <path d="M 0 885 Q 190 770, 390 835 T 820 800 Q 980 815, 1080 845 L 1080 1440 L 0 1440 Z" fill="#6F8982" opacity="0.76"/>
+  <path d="M 0 960 Q 240 880, 520 935 T 1080 905 L 1080 1440 L 0 1440 Z" fill="#46605A" opacity="0.88"/>
+
+  <!-- Calm lake surface -->
+  <rect x="0" y="960" width="1080" height="480" fill="url(#waterMist)"/>
+
+  <!-- Stone arched bridge silhouette on right-middle focal band -->
+  <path d="M 520 1015 Q 690 950, 860 1015 L 1080 1015 L 1080 1052 L 820 1052 Q 690 998, 560 1052 L 420 1052 L 420 1015 Z" fill="#2A3B38"/>
+  <path d="M 560 1052 Q 690 1098, 820 1052" fill="none" stroke="#1E2B29" stroke-width="5" opacity="0.45"/>
+
+  <!-- Soft water reflections -->
+  <line x1="600" y1="1125" x2="780" y2="1125" stroke="#DCE5DF" stroke-width="3" opacity="0.28"/>
+  <line x1="630" y1="1162" x2="755" y2="1162" stroke="#DCE5DF" stroke-width="2" opacity="0.22"/>
+  <line x1="160" y1="1210" x2="360" y2="1210" stroke="#DCE5DF" stroke-width="2" opacity="0.16"/>
+
+  <!-- Minimal rowing boat silhouette in lower-left foreground -->
+  <path d="M 190 1170 Q 255 1192, 325 1170 L 310 1185 Q 255 1198, 205 1185 Z" fill="#192624"/>
+  <line x1="278" y1="1142" x2="296" y2="1178" stroke="#192624" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="276" cy="1136" r="6" fill="#192624"/>
+</svg>

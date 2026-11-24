@@ -25,7 +25,7 @@ BRAND_PROFILE_TEMPLATE = """# Brand Profile
 - **Core Angle**: What distinct point of view separates your content from generic advice.
 
 ## Voice & Non-Negotiable Facts
-- **Tone**: Clear, concrete, evidence-first; avoid hype and unverified claims.
+- **Tone**: Describe your desired voice (e.g. conversational, analytical, storytelling, humorous, minimalist).
 - **Do Not Claim**: List prohibited promises, unshipped features, or restricted topics.
 - **Canonical Links**: Primary website, docs, or landing URLs.
 
@@ -50,7 +50,7 @@ def write_json_if_missing(path: Path, payload: object, force: bool = False) -> b
 
 def assemble_board(board_name: str, dest_dir: Path, force: bool = False) -> None:
     src_board = BOARDS_SRC / board_name
-    shared_bridge = BOARDS_SRC / 'shared' / 'board-sdk-bridge.js'
+    shared_dir = BOARDS_SRC / 'shared'
     if not src_board.is_dir():
         raise FileNotFoundError(f'Missing board template directory: {src_board}')
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -62,9 +62,11 @@ def assemble_board(board_name: str, dest_dir: Path, force: bool = False) -> None
         if force or not target.exists():
             shutil.copyfile(src_board / rel, target)
 
-    bridge_target = dest_dir / 'runtime' / 'board-sdk-bridge.js'
-    if shared_bridge.is_file() and (force or not bridge_target.exists()):
-        shutil.copyfile(shared_bridge, bridge_target)
+    for shared_name in ('board-sdk-bridge.js', 'board-ui.css'):
+        src_shared = shared_dir / shared_name
+        dst_shared = dest_dir / 'runtime' / shared_name
+        if src_shared.is_file() and (force or not dst_shared.exists()):
+            shutil.copyfile(src_shared, dst_shared)
 
 
 def init_workspace(target_root: Path, timezone_name: str = 'UTC', force: bool = False) -> Path:

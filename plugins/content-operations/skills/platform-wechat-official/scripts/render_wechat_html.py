@@ -33,6 +33,10 @@ MONO_STACK = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation
 CJK_PUNCT = '，。！？：；、）》」』】〉》'
 CJK_LATIN_A = re.compile(r'([\u4e00-\u9fff\u3400-\u4dbf])([A-Za-z0-9])')
 CJK_LATIN_B = re.compile(r'([A-Za-z0-9])([\u4e00-\u9fff\u3400-\u4dbf])')
+PROTECTED_COMPOUNDS = re.compile(
+    r'(`[^`\n]+`|https?://[^\s)\]]+|\[[^\]]+\]\([^)]+\)'
+    r'|\b(?:[ABCGHJKQUXabchqux][站股端盘恤版歌光]|[3456]G[\u4e00-\u9fff]{1,2}|第\d+[章节期步条个次天年]|[0-9]{2}后))'
+)
 
 
 def _load_theme_dir(directory: Path, target: dict) -> None:
@@ -70,8 +74,8 @@ def strip_variant_header(text: str) -> tuple[dict, str]:
 
 
 def fix_cjk_spacing(text: str) -> str:
-    """Insert a space between CJK and Latin/digit boundaries outside inline code & URLs."""
-    tokens = re.split(r'(`[^`\n]+`|https?://[^\s)\]]+|\[[^\]]+\]\([^)]+\))', text)
+    """Insert a space between CJK and Latin/digit boundaries outside code, URLs, and fixed compounds."""
+    tokens = PROTECTED_COMPOUNDS.split(text)
     out = []
     for idx, tok in enumerate(tokens):
         if idx % 2 == 1:
@@ -82,20 +86,15 @@ def fix_cjk_spacing(text: str) -> str:
 
 
 class WeChatRenderer:
-    def __init__(self, theme: dict, section_numbering: bool | None = None, aigc_footer: bool = False):
-        self.theme = theme
-        self.c = theme['colors']
-        self.dm = theme['darkmode']
+    def __init__(self, theme: dict, section_numbering: bool | None = None, aigc_footer: bool = False, cjk_spacing: bool = True):
+        self.theme, self.c, self.dm = theme, theme['colors'], theme['darkmode']
         self.ts = resolve_theme_style(theme)
         self.section_numbering = theme.get('sectionNumbering', False) if section_numbering is None else section_numbering
-        self.aigc_footer = aigc_footer
-        self.footnotes: list[tuple[str, str]] = []
-        self.images: list[str] = []
-        self.h2_index = 0
-        self.table_warnings: list[str] = []
+        self.aigc_footer, self.cjk_spacing = aigc_footer, cjk_spacing
+        self.footnotes, self.images, self.h2_index, self.table_warnings = [], [], 0, []
 
     def render_inline(self, raw: str) -> str:
-        text = fix_cjk_spacing(raw)
+        text = fix_cjk_spacing(raw) if self.cjk_spacing else raw
         placeholders: list[str] = []
 
         def stash(fragment: str) -> str:
@@ -244,7 +243,7 @@ class WeChatRenderer:
                 )
                 continue
 
-            cm = re.match(r'^:::(callout|steps|timeline|pullquote|label|quote|dialogue|highlight|summary)(?:[ \t]+(\w+))?\s*$', stripped)
+            cm = re.match(r'^:::(callout|steps|timeline|pullquote|label|quote|dialogue|highlight|summary)(?:[ \t]+(.+?))?\s*$', stripped)
             if cm:
                 kind, arg = cm.group(1), cm.group(2) or ''
                 i += 1
@@ -318,7 +317,7 @@ class WeChatRenderer:
                     marker = f'{idx_num}.' if ordered else '•'
                     body_txt = m_li.group(2) if ordered else m_li.group(1)
                     items.append(
-                        f'<section style="display: flex; align-items: flex-start; margin: 8px 0; font-size: 16px; line-height: 1.8; color: {self.c["text"]};"'
+                        f'<section style="display: flex; align-items: flex-start; margin: 8px 0; font-size: {self.ts["fontSize"]}px; line-height: {self.ts["lineHeight"]}; color: {self.c["text"]};"'
                         f'{dm_attr(self.dm["text"])}>'
                         f'<span style="flex-shrink: 0; width: 22px; color: {self.c["primary"]}; font-weight: 700;"'
                         f'{dm_attr(self.dm["primary"])}>{marker}</span>'
@@ -400,6 +399,7 @@ def main(argv=None) -> int:
     ap.add_argument('--mode', choices=['api', 'preview'], default='api', help='Output pure WeChat body HTML or standalone browser preview.')
     ap.add_argument('--aigc-footer', action='store_true', help='Append optional AIGC disclosure footer (off by default).')
     ap.add_argument('--section-numbering', action='store_true', help='Force numbered H2 headings regardless of theme default.')
+    ap.add_argument('--no-cjk-spacing', action='store_true', help='Disable automatic CJK-Latin spacing.')
     ap.add_argument('--validate-only', action='store_true', help='Validate an existing HTML file against WeChat rules.')
     ap.add_argument('--list-themes', action='store_true', help='List all built-in WeChat themes.')
     ap.add_argument('--gallery', help='Render a side-by-side HTML gallery of all available themes to this output path.')
@@ -451,7 +451,7 @@ def main(argv=None) -> int:
         return 1
 
     theme = themes[args.theme]
-    renderer = WeChatRenderer(theme, section_numbering=True if args.section_numbering else None, aigc_footer=args.aigc_footer)
+    renderer = WeChatRenderer(theme, True if args.section_numbering else None, args.aigc_footer, not args.no_cjk_spacing)
     result = renderer.convert(in_path.read_text(encoding='utf-8'))
     issues = validate_wechat_html(result['html'])
     errors = sum(1 for item in issues if item['level'] == 'ERROR')

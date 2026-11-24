@@ -24,6 +24,12 @@
     "supported": false,
     "nativeField": false
   },
+  "recommendations": {
+    "coverAspectRatio": {
+      "min": 0.95,
+      "max": 2.45
+    }
+  },
   "publishPolicy": {
     "completionStrategy": "polling",
     "scheduleByPlatform": false,

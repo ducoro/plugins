@@ -25,7 +25,8 @@ ENDPOINTS = {
     'polymarket': 'https://gamma-api.polymarket.com/markets',
     'devto': 'https://dev.to/api/articles',
     'arxiv': 'https://export.arxiv.org/api/query',
-    'gnews': 'https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en-US&gl=US&ceid=US:en',
+    'gnews': 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en',
+    'gnews_topic': 'https://news.google.com/rss/headlines/section/topic/{topic}?hl=en-US&gl=US&ceid=US:en',
     'gnews_search': 'https://news.google.com/rss/search',
 }
 HN_ITEM_TMPL = 'https://hacker-news.firebaseio.com/v0/item/{id}.json'
@@ -288,12 +289,14 @@ def fetch_devto(limit: int = 12, query: str = '', window_days: int = 30) -> list
     return items
 
 
-def fetch_arxiv(limit: int = 10, query: str = '', window_days: int = 30) -> list[dict]:
+def fetch_arxiv(limit: int = 10, query: str = '', window_days: int = 30, category: str = '') -> list[dict]:
     q = query.strip()
     if q:
         search_q = f'all:"{q}"' if (' ' in q and '"' not in q) else f'all:{q}'
+    elif category.strip():
+        search_q = f'cat:{category.strip()}'
     else:
-        search_q = 'cat:cs.AI'
+        search_q = 'cat:cs.* OR cat:econ.* OR cat:q-bio.* OR cat:physics.*'
     params = urllib.parse.urlencode({
         'search_query': search_q,
         'sortBy': 'submittedDate',
@@ -328,7 +331,7 @@ def fetch_arxiv(limit: int = 10, query: str = '', window_days: int = 30) -> list
     return items
 
 
-def fetch_gnews(limit: int = 12, query: str = '', window_days: int = 30) -> list[dict]:
+def fetch_gnews(limit: int = 12, query: str = '', window_days: int = 30, topic: str = '') -> list[dict]:
     q = query.strip()
     if q:
         q_term = f'"{q}"' if (' ' in q and '"' not in q) else q
@@ -339,6 +342,8 @@ def fetch_gnews(limit: int = 12, query: str = '', window_days: int = 30) -> list
             'ceid': 'US:en',
         })
         url = f"{ENDPOINTS['gnews_search']}?{params}"
+    elif topic.strip():
+        url = ENDPOINTS['gnews_topic'].format(topic=urllib.parse.quote(topic.strip().upper()))
     else:
         url = ENDPOINTS['gnews']
     xml_text = fetch_text(url)
@@ -408,6 +413,8 @@ def main(argv=None) -> int:
         help='Comma-separated sources to query (default: all 7 verified keyless sources).',
     )
     ap.add_argument('--query', default='', help='Optional topic/entity keyword query.')
+    ap.add_argument('--gnews-topic', default='', help='Optional Google News section topic (e.g. WORLD, BUSINESS, TECHNOLOGY, SCIENCE, HEALTH).')
+    ap.add_argument('--arxiv-cat', default='', help='Optional arXiv category filter when --query is empty (e.g. cs.AI, econ.GN, q-bio.NC).')
     ap.add_argument('--window-days', type=int, default=30, help='Lookback window in days (default 30).')
     ap.add_argument('--limit', type=int, default=20, help='Maximum merged items to return (default 20).')
     ap.add_argument('--envelope', action='store_true', help='Emit content-ops-signal-envelope/1 JSON for signal_gate.py ingest.')
@@ -434,7 +441,14 @@ def main(argv=None) -> int:
     ok_sources: list[str] = []
     failed_sources: dict[str, str] = {}
     with ThreadPoolExecutor(max_workers=len(selected)) as pool:
-        futs = {pool.submit(fn, per_source_limit, args.query, args.window_days): name for name, fn in selected}
+        futs = {}
+        for name, fn in selected:
+            if name == 'gnews':
+                futs[pool.submit(fn, per_source_limit, args.query, args.window_days, args.gnews_topic)] = name
+            elif name == 'arxiv':
+                futs[pool.submit(fn, per_source_limit, args.query, args.window_days, args.arxiv_cat)] = name
+            else:
+                futs[pool.submit(fn, per_source_limit, args.query, args.window_days)] = name
         for fut in as_completed(futs):
             name = futs[fut]
             try:

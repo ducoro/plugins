@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 560" width="920" height="560">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EEF2FF"/>
+      <stop offset="100%" stop-color="#F8FAFC"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#CBD5E1" stroke-width="0.7" opacity="0.5"/>
+    </pattern>
+  </defs>
+  <rect width="920" height="560" fill="url(#bgGrad)"/>
+  <rect width="920" height="560" fill="url(#grid)"/>
+
+  <!-- Left: Manual chaos -->
+  <rect x="52" y="64" width="350" height="432" rx="14" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>
+  <rect x="80" y="96" width="136" height="32" rx="6" fill="#F1F5F9"/>
+  <text x="148" y="118" text-anchor="middle" font-family="PingFang SC, sans-serif" font-size="16" font-weight="700" fill="#475569">传统手工拼周报</text>
+  <rect x="80" y="152" width="294" height="62" rx="8" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <text x="102" y="189" font-family="PingFang SC, sans-serif" font-size="18" fill="#334155">翻 6 个群聊找本周进度</text>
+  <rect x="80" y="232" width="294" height="62" rx="8" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <text x="102" y="269" font-family="PingFang SC, sans-serif" font-size="18" fill="#334155">手工复制表格核对数据</text>
+  <rect x="80" y="312" width="294" height="62" rx="8" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <text x="102" y="349" font-family="PingFang SC, sans-serif" font-size="18" fill="#334155">反复改格式对齐字号</text>
+  <text x="80" y="446" font-family="SF Mono, monospace" font-size="40" font-weight="700" fill="#64748B">185 min</text>
+  <text x="275" y="446" font-family="PingFang SC, sans-serif" font-size="18" fill="#64748B">/ 每周</text>
+
+  <!-- Center arrow -->
+  <path d="M 424 280 L 494 280" stroke="#1D4ED8" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 476 264 L 496 280 L 476 296" fill="none" stroke="#1D4ED8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Right: Automated pipeline -->
+  <rect x="518" y="64" width="350" height="432" rx="14" fill="#FFFFFF" stroke="#1D4ED8" stroke-width="2.5"/>
+  <rect x="546" y="96" width="154" height="32" rx="6" fill="#1D4ED8"/>
+  <text x="623" y="118" text-anchor="middle" font-family="PingFang SC, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF">结构化自动流水线</text>
+  <rect x="546" y="152" width="294" height="62" rx="8" fill="#EFF6FF" stroke="#BFDBFE"/>
+  <text x="568" y="189" font-family="PingFang SC, sans-serif" font-size="18" font-weight="600" fill="#0F172A">01 每日自动沉淀事实日志</text>
+  <rect x="546" y="232" width="294" height="62" rx="8" fill="#EFF6FF" stroke="#BFDBFE"/>
+  <text x="568" y="269" font-family="PingFang SC, sans-serif" font-size="18" font-weight="600" fill="#0F172A">02 脚本汇总指标与异常项</text>
+  <rect x="546" y="312" width="294" height="62" rx="8" fill="#EFF6FF" stroke="#BFDBFE"/>
+  <text x="568" y="349" font-family="PingFang SC, sans-serif" font-size="18" font-weight="600" fill="#0F172A">03 人工仅拍板下周优先级</text>
+  <text x="546" y="446" font-family="SF Mono, monospace" font-size="44" font-weight="700" fill="#1D4ED8">35 min</text>
+  <text x="725" y="446" font-family="PingFang SC, sans-serif" font-size="18" font-weight="600" fill="#1D4ED8">省 81%</text>
+</svg>

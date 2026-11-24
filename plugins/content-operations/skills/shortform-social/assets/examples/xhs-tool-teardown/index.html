@@ -1,0 +1,1203 @@
+<!doctype html>
+<html lang="zh-CN" data-style="grid-spec" data-theme="cobalt-grid">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>范例 1 · 理性网格小红书效率测评（5 页）</title>
+  <style id="card-studio-tokens">
+    /* ===== Style Typography & Structural Tokens ===== */
+    html[data-style="paper-studio"] {
+      --font-display: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", Georgia, "Times New Roman", serif;
+      --font-body: "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+      --display-weight: 700;
+      --display-tracking: -0.015em;
+      --radius-lg: 20px;
+      --radius-sm: 10px;
+      --rule-width: 1px;
+    }
+
+    html[data-style="grid-spec"] {
+      --font-display: "PingFang SC", "Helvetica Neue", "Inter", "Noto Sans CJK SC", -apple-system, sans-serif;
+      --font-body: "PingFang SC", "Helvetica Neue", "Noto Sans CJK SC", -apple-system, sans-serif;
+      --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+      --display-weight: 500;
+      --display-tracking: -0.03em;
+      --radius-lg: 4px;
+      --radius-sm: 2px;
+      --rule-width: 1.5px;
+    }
+
+    html[data-style="darkroom-frame"] {
+      --font-display: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", Georgia, serif;
+      --font-body: "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+      --display-weight: 600;
+      --display-tracking: -0.015em;
+      --radius-lg: 18px;
+      --radius-sm: 10px;
+      --rule-width: 1px;
+    }
+
+    /* ===== Preset Palettes (All WCAG 2.1 AA/AAA Verified) ===== */
+    html[data-theme="warm-linen"]     { --bg:#F6F2EA; --surface:#FFFDF8; --ink:#1B1917; --muted:#575149; --accent:#9E3B28; --accent-ink:#FFFFFF; --accent-soft:#F3E3DC; --border:#DDD4C6; --tint-rgb:27, 25, 23; }
+    html[data-theme="celadon-ink"]    { --bg:#EEF3F1; --surface:#F9FCFB; --ink:#132522; --muted:#425B56; --accent:#1F6357; --accent-ink:#FFFFFF; --accent-soft:#DCEBE7; --border:#C7D7D2; --tint-rgb:19, 37, 34; }
+    html[data-theme="slate-ivory"]    { --bg:#F2F4F7; --surface:#FFFFFF; --ink:#141B29; --muted:#4A5568; --accent:#274C8F; --accent-ink:#FFFFFF; --accent-soft:#E0E8F6; --border:#CFD8E3; --tint-rgb:20, 27, 41; }
+    html[data-theme="oat-umber"]      { --bg:#F2E9DC; --surface:#FAF4EB; --ink:#241911; --muted:#5B4737; --accent:#8A4519; --accent-ink:#FFFFFF; --accent-soft:#EAD9C5; --border:#D9C7B1; --tint-rgb:36, 25, 17; }
+    html[data-theme="cobalt-grid"]    { --bg:#F7F8FA; --surface:#FFFFFF; --ink:#0F172A; --muted:#475569; --accent:#1D4ED8; --accent-ink:#FFFFFF; --accent-soft:#E0E7FF; --border:#CBD5E1; --tint-rgb:15, 23, 42; }
+    html[data-theme="vermilion-spec"] { --bg:#F9F8F6; --surface:#FFFFFF; --ink:#18181B; --muted:#52525B; --accent:#C42E1B; --accent-ink:#FFFFFF; --accent-soft:#FCE5E1; --border:#D4D4D8; --tint-rgb:24, 24, 27; }
+    html[data-theme="emerald-lab"]    { --bg:#F5F8F6; --surface:#FFFFFF; --ink:#0F1F18; --muted:#3F594D; --accent:#0F764A; --accent-ink:#FFFFFF; --accent-soft:#DCF2E7; --border:#C5D8CE; --tint-rgb:15, 31, 24; }
+    html[data-theme="amber-signal"]   { --bg:#F8F7F4; --surface:#FFFFFF; --ink:#171512; --muted:#544D44; --accent:#A64B07; --accent-ink:#FFFFFF; --accent-soft:#FDEFD8; --border:#D9D2C7; --tint-rgb:23, 21, 18; }
+    html[data-theme="obsidian-gold"]  { --bg:#111214; --surface:#1A1C20; --ink:#F2ECE1; --muted:#A9A297; --accent:#E2B15B; --accent-ink:#14120E; --accent-soft:#2A2419; --border:#2E3138; --tint-rgb:17, 18, 20; }
+    html[data-theme="midnight-cyan"]  { --bg:#0D131A; --surface:#151E28; --ink:#E8F0F7; --muted:#98AAB9; --accent:#56CCF2; --accent-ink:#08131A; --accent-soft:#142B38; --border:#253545; --tint-rgb:13, 19, 26; }
+    html[data-theme="plum-velvet"]    { --bg:#161118; --surface:#211924; --ink:#F4ECF5; --muted:#B6A6BC; --accent:#E091B8; --accent-ink:#1B0E16; --accent-soft:#311F2D; --border:#382A3D; --tint-rgb:22, 17, 24; }
+
+    /* Optional Brand Theme Slot (paste `card_deck.py brand-theme` CSS below) */
+    /* <!-- BRAND_THEME_HERE --> */
+
+    /* ===== Reset & Workspace Chrome ===== */
+    *, *::before, *::after { box-sizing: border-box; }
+    figure, h1, h2, h3, h4, p, ul, ol, blockquote { margin: 0; }
+    ul, ol { padding: 0; list-style: none; }
+
+    body {
+      margin: 0;
+      padding: 32px 28px 64px;
+      background: #E6E3DC;
+      color: var(--ink);
+      font-family: var(--font-body);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 36px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    html[data-style="darkroom-frame"] body {
+      background: #090A0C;
+    }
+
+    .studio-bar {
+      width: 100%;
+      max-width: 1280px;
+      padding: 14px 20px;
+      background: var(--surface);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      font-size: 14px;
+    }
+
+    .studio-bar-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+    }
+
+    .studio-bar-meta strong {
+      color: var(--ink);
+      font-size: 15px;
+    }
+
+    .studio-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .studio-controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .studio-controls select {
+      background: var(--bg);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 13px;
+      font-family: var(--font-body);
+    }
+
+    .deck-canvas {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 44px;
+      width: 100%;
+    }
+
+    .pair-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 32px;
+    }
+
+    html[data-ducoro-render="shot"] body {
+      padding: 0;
+      gap: 0;
+      background: transparent;
+    }
+
+    html[data-ducoro-render="shot"] .studio-bar {
+      display: none !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+
+    /* ===== Export Frame Canvas & Atmospheric Layers ===== */
+    .card-frame {
+      position: relative;
+      overflow: hidden;
+      background-color: var(--bg);
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      border: var(--rule-width) solid var(--border);
+      isolation: isolate;
+      flex-shrink: 0;
+    }
+
+    html[data-ducoro-render="shot"] .card-frame {
+      border: none;
+    }
+
+    /* Paper Studio: ultra-subtle tactile grain + warm top wash */
+    html[data-style="paper-studio"] .card-frame::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.45;
+      background-image:
+        radial-gradient(120% 70% at 15% 0%, rgba(var(--tint-rgb), 0.045), transparent 65%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+    }
+
+    /* Grid Spec: architectural 48px hairline matrix */
+    html[data-style="grid-spec"] .card-frame::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(to right, rgba(var(--tint-rgb), 0.045) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(var(--tint-rgb), 0.045) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    /* Darkroom Frame: restrained studio vignette + corner rim glow */
+    html[data-style="darkroom-frame"] .card-frame::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(85% 60% at 88% 8%, rgba(255, 255, 255, 0.055), transparent 65%),
+        radial-gradient(90% 60% at 10% 95%, rgba(255, 255, 255, 0.03), transparent 60%);
+    }
+
+    .card-frame > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Exact Pixel Board Dimensions */
+    .frame-3x4          { width: 1080px; height: 1440px; padding: 68px 72px 60px; }
+    .frame-16x9         { width: 1280px; height: 720px;  padding: 54px 68px 48px; }
+    .frame-wechat-wide  { width: 900px;  height: 383px;  padding: 34px 44px 30px; }
+    .frame-wechat-sq    { width: 1080px; height: 1080px; padding: 72px 72px 60px; }
+
+    /* ===== Shared Header, Body, Footer Rhythm ===== */
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 22px;
+      margin-bottom: 34px;
+      border-bottom: var(--rule-width) solid var(--border);
+    }
+
+    .frame-wechat-wide .card-head {
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+    }
+
+    .card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      margin-bottom: 28px;
+      min-height: 0;
+    }
+
+    .frame-wechat-wide .card-body {
+      gap: 12px;
+      margin-bottom: 12px;
+      justify-content: center;
+    }
+
+    .card-foot {
+      margin-top: auto;
+      padding-top: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-top: var(--rule-width) solid var(--border);
+      font-size: 22px;
+      line-height: 1.3;
+      color: var(--muted);
+    }
+
+    .frame-wechat-wide .card-foot {
+      padding-top: 12px;
+      font-size: 16px;
+    }
+
+    .brand-mark {
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: 0.01em;
+    }
+
+    /* ===== Typography Scale ===== */
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .eyebrow-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 18px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      width: fit-content;
+    }
+
+    .eyebrow-solid {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 18px;
+      border-radius: var(--radius-sm);
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      width: fit-content;
+    }
+
+    .page-index {
+      font-family: var(--font-mono);
+      font-size: 22px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .title-hero {
+      font-family: var(--font-display);
+      font-size: 84px;
+      line-height: 1.18;
+      font-weight: var(--display-weight);
+      letter-spacing: var(--display-tracking);
+      color: var(--ink);
+    }
+
+    .title-slide {
+      font-family: var(--font-display);
+      font-size: 62px;
+      line-height: 1.24;
+      font-weight: var(--display-weight);
+      letter-spacing: var(--display-tracking);
+      color: var(--ink);
+    }
+
+    .title-wide {
+      font-family: var(--font-display);
+      font-size: 46px;
+      line-height: 1.24;
+      font-weight: var(--display-weight);
+      letter-spacing: var(--display-tracking);
+      color: var(--ink);
+    }
+
+    .title-square {
+      font-family: var(--font-display);
+      font-size: 112px;
+      line-height: 1.14;
+      font-weight: var(--display-weight);
+      letter-spacing: var(--display-tracking);
+      color: var(--ink);
+    }
+
+    .title-thumb {
+      font-family: var(--font-display);
+      font-size: 76px;
+      line-height: 1.18;
+      font-weight: var(--display-weight);
+      letter-spacing: var(--display-tracking);
+      color: var(--ink);
+    }
+
+    .lead-copy {
+      font-size: 32px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .body-copy {
+      font-size: 28px;
+      line-height: 1.55;
+      color: var(--ink);
+    }
+
+    .meta-caption {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      line-height: 1.4;
+      color: var(--muted);
+    }
+
+    .frame-wechat-wide .eyebrow,
+    .frame-wechat-wide .eyebrow-pill,
+    .frame-wechat-wide .eyebrow-solid,
+    .frame-wechat-wide .page-index {
+      font-size: 16px;
+      padding: 4px 12px;
+    }
+
+    .frame-wechat-wide .lead-copy {
+      font-size: 22px;
+      line-height: 1.42;
+    }
+
+    .accent-rule {
+      width: 72px;
+      height: 5px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    /* ===== 10 Semantic Layout Blueprints ===== */
+
+    /* 1. Cover Split (title block + generous visual frame) */
+    .media-well {
+      flex: 1;
+      min-height: 360px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .media-well img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 45%;
+      display: block;
+    }
+
+    .fit-contain {
+      object-fit: contain !important;
+      object-position: center center !important;
+    }
+
+    .media-placeholder {
+      padding: 40px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 26px;
+      line-height: 1.5;
+    }
+
+    /* 2. Cover Bleed (full-bleed photo with quiet-zone typography) */
+    .layout-cover-bleed {
+      padding: 0;
+    }
+
+    .bleed-photo {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 40%;
+      z-index: 0;
+    }
+
+    .bleed-layer {
+      position: relative;
+      z-index: 2;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 68px 72px 60px;
+    }
+
+    .bleed-layer.zone-bottom { justify-content: flex-end; gap: 28px; }
+    .bleed-layer.zone-top    { justify-content: flex-start; gap: 28px; }
+
+    /* Optional localized image-toned scrim (never a uniform full-canvas black wall) */
+    .soft-scrim-bottom::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 46%;
+      z-index: 1;
+      pointer-events: none;
+      background: linear-gradient(to top, rgba(var(--tint-rgb), 0.72) 0%, rgba(var(--tint-rgb), 0.28) 58%, rgba(var(--tint-rgb), 0) 100%);
+    }
+
+    .soft-scrim-top::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 42%;
+      z-index: 1;
+      pointer-events: none;
+      background: linear-gradient(to bottom, rgba(var(--tint-rgb), 0.68) 0%, rgba(var(--tint-rgb), 0.24) 55%, rgba(var(--tint-rgb), 0) 100%);
+    }
+
+    /* 3. Thesis Statement */
+    .thesis-stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 36px;
+      padding: 20px 0;
+    }
+
+    .thesis-note {
+      padding: 28px 34px;
+      border-left: 5px solid var(--accent);
+      background: var(--surface);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 28px;
+      line-height: 1.55;
+      color: var(--ink);
+    }
+
+    /* 4. Metric Hero + Data Bars */
+    .metric-hero-box {
+      padding: 40px 44px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .metric-figure {
+      font-family: var(--font-display);
+      font-size: 132px;
+      line-height: 1;
+      font-weight: var(--display-weight);
+      letter-spacing: -0.04em;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-bars {
+      padding: 36px 40px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .bar-row {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .bar-track {
+      height: 22px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-soft);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: var(--radius-sm);
+    }
+
+    /* 5. Compare Two Columns */
+    .compare-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .compare-col {
+      padding: 34px 32px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .compare-col.is-highlight {
+      border-color: var(--accent);
+      border-width: 2px;
+    }
+
+    .compare-col h3 {
+      font-family: var(--font-display);
+      font-size: 38px;
+      line-height: 1.25;
+      color: var(--ink);
+    }
+
+    .compare-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+      font-size: 26px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .compare-list li {
+      padding-top: 18px;
+      border-top: var(--rule-width) solid var(--border);
+    }
+
+    .compare-list strong {
+      display: block;
+      font-size: 28px;
+      line-height: 1.35;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    /* 6. Numbered Checklist */
+    .item-stack {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 22px;
+    }
+
+    .item-row {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 78px 1fr;
+      gap: 24px;
+      align-items: start;
+      padding: 28px 32px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+    }
+
+    .item-num {
+      font-family: var(--font-mono);
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1.1;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .item-row strong {
+      display: block;
+      font-size: 34px;
+      line-height: 1.3;
+      margin-bottom: 8px;
+      color: var(--ink);
+    }
+
+    .item-row p {
+      font-size: 26px;
+      line-height: 1.48;
+      color: var(--muted);
+    }
+
+    /* 7. Step Flow */
+    .step-track {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+      position: relative;
+    }
+
+    .step-node {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 24px;
+      align-items: center;
+      padding: 24px 30px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+    }
+
+    .step-badge {
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    /* 8. Screenshot Stage (pure CSS backdrop + browser/phone chrome) */
+    .shot-stage {
+      flex: 1;
+      padding: 36px;
+      border-radius: var(--radius-lg);
+      background:
+        radial-gradient(circle at 18% 18%, var(--accent-soft), transparent 55%),
+        repeating-radial-gradient(circle at 0 0, rgba(var(--tint-rgb), 0.05) 0 1px, transparent 1px 18px),
+        var(--surface);
+      border: var(--rule-width) solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .device-browser {
+      width: 100%;
+      height: 100%;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      box-shadow: 0 22px 48px rgba(var(--tint-rgb), 0.14);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .browser-bar {
+      height: 44px;
+      padding: 0 18px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .browser-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      background: var(--border);
+    }
+
+    .browser-url {
+      margin-left: 12px;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: var(--muted);
+    }
+
+    .device-screen {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+    }
+
+    .device-screen img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center center;
+      display: block;
+    }
+
+    .device-phone {
+      width: 440px;
+      height: 100%;
+      max-height: 760px;
+      border-radius: 40px;
+      padding: 16px;
+      background: var(--ink);
+      box-shadow: 0 24px 52px rgba(var(--tint-rgb), 0.22);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .device-phone .device-screen {
+      border-radius: 28px;
+    }
+
+    /* 9. Quote & Annotation */
+    .quote-block {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 32px;
+      padding: 44px 48px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+    }
+
+    .quote-mark {
+      font-family: var(--font-display);
+      font-size: 96px;
+      line-height: 0.7;
+      color: var(--accent);
+    }
+
+    .quote-text {
+      font-family: var(--font-display);
+      font-size: 48px;
+      line-height: 1.38;
+      color: var(--ink);
+    }
+
+    /* 10. Closing CTA + Summary Band */
+    .closing-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 52px 48px 46px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      gap: 32px;
+    }
+
+    .closing-main {
+      margin: auto 0;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .summary-chip {
+      padding: 20px 22px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-soft);
+      color: var(--ink);
+      font-size: 24px;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    /* 11. Spatial Map & Route Stops (offline vector or local static map tile + HTML pins) */
+    .map-canvas {
+      position: relative;
+      flex: 1;
+      min-height: 520px;
+      border-radius: var(--radius-lg);
+      background:
+        linear-gradient(to right, rgba(var(--tint-rgb), 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(var(--tint-rgb), 0.04) 1px, transparent 1px),
+        var(--surface);
+      background-size: 40px 40px;
+      border: var(--rule-width) solid var(--border);
+      overflow: hidden;
+    }
+
+    .map-canvas > img,
+    .map-canvas > svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .map-pin {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px 8px 10px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      box-shadow: 0 8px 20px rgba(var(--tint-rgb), 0.14);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--ink);
+      white-space: nowrap;
+      z-index: 2;
+    }
+
+    .map-pin-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .route-stops {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .route-stop {
+      padding: 18px 22px;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      border: var(--rule-width) solid var(--border);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .route-stop strong {
+      font-size: 25px;
+      color: var(--ink);
+    }
+
+    .route-stop span {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    /* WeChat 1:1 Square Centerpiece */
+    .square-stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 32px;
+    }
+  </style>
+</head>
+<body>
+  <header class="studio-bar" data-mark-ignore>
+    <div class="studio-bar-meta">
+      <strong>Visual Card Studio</strong>
+      <span>Exact-pixel export frames for <code>ducoro-cli board check</code> &amp; <code>board shot</code></span>
+    </div>
+    <div class="studio-controls">
+      <label>
+        STYLE
+        <select id="style-select" aria-label="Preview visual style">
+          <option value="paper-studio">paper-studio</option>
+          <option value="grid-spec">grid-spec</option>
+          <option value="darkroom-frame">darkroom-frame</option>
+        </select>
+      </label>
+      <label>
+        THEME
+        <select id="theme-select" aria-label="Preview palette">
+          <option value="warm-linen">warm-linen</option>
+          <option value="celadon-ink">celadon-ink</option>
+          <option value="slate-ivory">slate-ivory</option>
+          <option value="oat-umber">oat-umber</option>
+          <option value="cobalt-grid">cobalt-grid</option>
+          <option value="vermilion-spec">vermilion-spec</option>
+          <option value="emerald-lab">emerald-lab</option>
+          <option value="amber-signal">amber-signal</option>
+          <option value="obsidian-gold">obsidian-gold</option>
+          <option value="midnight-cyan">midnight-cyan</option>
+          <option value="plum-velvet">plum-velvet</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <main class="deck-canvas">
+    <!-- FRAMES_START -->
+
+    <section id="card-01" class="card-frame frame-3x4 layout-cover-split" data-ducoro-export-frame="card-01" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Split Cover" data-card="card-01" data-card-title="Card 01 — 实测封面">
+      <div class="card-head">
+        <span class="eyebrow-pill" data-mark-item="card-01-eyebrow" data-mark-label="Cover tag">WORKFLOW BENCHMARK</span>
+        <span class="page-index">01 / 05</span>
+      </div>
+      <div class="card-body">
+        <div class="accent-rule"></div>
+        <h1 class="title-hero" data-mark-item="card-01-title" data-mark-label="Cover headline">实测 3 种周报流：<br />每周省下 2.5 小时</h1>
+        <p class="lead-copy" data-mark-item="card-01-lead" data-mark-label="Cover subtitle">连续记录 8 周团队真实耗时，把翻群、对数、改排版彻底交给脚本与日志。</p>
+        <figure class="media-well" data-mark-item="card-01-visual" data-mark-label="Workflow comparison diagram">
+          <img class="fit-contain" src="assets/hero-workflow.svg" alt="手工拼周报与结构化自动流水线耗时对比图" />
+        </figure>
+      </div>
+      <footer class="card-foot"><span class="brand-mark">@OpsCraft</span><span>向右滑动看 8 周实测数据 →</span></footer>
+    </section>
+
+    <section id="card-02" class="card-frame frame-3x4 layout-metric-hero" data-ducoro-export-frame="card-02" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Metric Evidence" data-card="card-02" data-card-title="Card 02 — 8 周耗时对比">
+      <div class="card-head"><span class="eyebrow">8-WEEK MEASUREMENT</span><span class="page-index">02 / 05</span></div>
+      <div class="card-body">
+        <h2 class="title-slide" data-mark-item="card-02-title" data-mark-label="Metric slide title">耗时从 185 分钟压到 35 分钟</h2>
+        <div class="metric-hero-box" data-mark-item="card-02-hero" data-mark-label="Primary time saved">
+          <div><div class="metric-figure">-81%</div><p class="meta-caption">样本：12 人产品研发团队 · 连续 8 个自然周</p></div>
+          <p class="lead-copy">每周净省 2.5 小时机械整理时间</p>
+        </div>
+        <div class="metric-bars" data-mark-item="card-02-bars" data-mark-label="Method duration bars">
+          <div class="bar-row"><div class="bar-label"><span>方案 1 · 翻群 + 手工汇总文档</span><span>185 min</span></div><div class="bar-track"><div class="bar-fill" style="width: 100%"></div></div></div>
+          <div class="bar-row"><div class="bar-label"><span>方案 2 · 固定表单收集 + 人工润色</span><span>104 min</span></div><div class="bar-track"><div class="bar-fill" style="width: 56%"></div></div></div>
+          <div class="bar-row"><div class="bar-label"><span>方案 3 · 事实日志 + 脚本汇总 + 人工拍板</span><span>35 min</span></div><div class="bar-track"><div class="bar-fill" style="width: 19%"></div></div></div>
+        </div>
+        <div class="thesis-note" data-mark-item="card-02-note" data-mark-label="Measurement takeaway">核心差距不在“写得更快”，而在平时就按结构落盘，周五不再靠记忆翻聊天记录。</div>
+      </div>
+      <footer class="card-foot"><span class="brand-mark">@OpsCraft</span><span>含审校与同步时间</span></footer>
+    </section>
+
+    <section id="card-03" class="card-frame frame-3x4 layout-compare-two" data-ducoro-export-frame="card-03" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Side-by-Side Comparison" data-card="card-03" data-card-title="Card 03 — 做法拆解对比">
+      <div class="card-head"><span class="eyebrow">BEFORE / AFTER</span><span class="page-index">03 / 05</span></div>
+      <div class="card-body">
+        <h2 class="title-slide" data-mark-item="card-03-title" data-mark-label="Comparison title">为什么以前越写周报越烦？</h2>
+        <div class="compare-grid" data-mark-item="card-03-grid" data-mark-label="Before after grid">
+          <div class="compare-col">
+            <span class="eyebrow">旧做法</span>
+            <h3>周五临时回忆</h3>
+            <ul class="compare-list">
+              <li><strong>素材散在 6 个渠道</strong>聊天、工单、文档到处翻，漏掉关键变更</li>
+              <li><strong>数字口径靠手算</strong>同一项指标每周算法不一致，难以横向对照</li>
+              <li><strong>80% 精力花在排版</strong>挑字号、调颜色，真正思考下周策略只剩 10 分钟</li>
+            </ul>
+          </div>
+          <div class="compare-col is-highlight">
+            <span class="eyebrow-solid">新做法</span>
+            <h3>日常沉淀 + 一键汇流</h3>
+            <ul class="compare-list">
+              <li><strong>事实随手进同一日志</strong>完成一项记一条带链接的短事实，零事后补录</li>
+              <li><strong>脚本自动算指标与风险</strong>异常波动标黄上浮，避免报喜不报忧</li>
+              <li><strong>人只负责判断与拍板</strong>35 分钟全花在删冗余、定下周优先级</li>
+            </ul>
+          </div>
+        </div>
+        <div class="thesis-note" data-mark-item="card-03-summary" data-mark-label="Comparison verdict">周报不是“工作证明”，而是让团队周一早上 5 分钟对齐方向的操作面板。</div>
+      </div>
+      <footer class="card-foot"><span class="brand-mark">@OpsCraft</span><span>实测前后对比</span></footer>
+    </section>
+
+    <section id="card-04" class="card-frame frame-3x4 layout-shot-stage" data-ducoro-export-frame="card-04" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Dashboard Screenshot" data-card="card-04" data-card-title="Card 04 — 自动看板实拍">
+      <div class="card-head"><span class="eyebrow">LIVE ARTIFACT</span><span class="page-index">04 / 05</span></div>
+      <div class="card-body">
+        <h2 class="title-slide" data-mark-item="card-04-title" data-mark-label="Screenshot title">每周五自动生成的可审校看板</h2>
+        <p class="lead-copy" data-mark-item="card-04-lead" data-mark-label="Screenshot caption">已核验的 14 条事实源自动按 SHIP / RISK / NEXT 分栏，人工只需勾选 3 项待拍板决策。</p>
+        <figure class="shot-stage" data-mark-item="card-04-stage" data-mark-label="Dashboard browser screenshot">
+          <div class="device-browser">
+            <div class="browser-bar">
+              <span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span>
+              <span class="browser-url">workspace.local / weekly-digest-w47</span>
+            </div>
+            <div class="device-screen">
+              <img src="assets/dashboard-shot.svg" alt="自动周报看板界面展示" />
+            </div>
+          </div>
+        </figure>
+      </div>
+      <footer class="card-foot"><span class="brand-mark">@OpsCraft</span><span>看板自动生成样张</span></footer>
+    </section>
+
+    <section id="card-05" class="card-frame frame-3x4 layout-closing-cta" data-ducoro-export-frame="card-05" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Closing Takeaway" data-card="card-05" data-card-title="Card 05 — 三步落地带走">
+      <div class="card-head"><span class="eyebrow-solid">ACTION PLAN</span><span class="page-index">05 / 05</span></div>
+      <div class="card-body">
+        <div class="closing-box" data-mark-item="card-05-box" data-mark-label="Closing box">
+          <div class="closing-main">
+            <div class="accent-rule"></div>
+            <h2 class="title-hero" data-mark-item="card-05-title" data-mark-label="Closing headline">下周起只做这 3 步<br />告别周五加班</h2>
+            <p class="lead-copy" data-mark-item="card-05-lead" data-mark-label="Closing prompt">先建一张共享事实日志，把机械汇总交给脚本，把宝贵的判断力留给自己。</p>
+          </div>
+          <div class="summary-strip" data-mark-item="card-05-chips" data-mark-label="Action chips">
+            <div class="summary-chip">01 日常记事实</div>
+            <div class="summary-chip">02 周五跑脚本</div>
+            <div class="summary-chip">03 人工只拍板</div>
+          </div>
+        </div>
+      </div>
+      <footer class="card-foot"><span class="brand-mark">@OpsCraft</span><span>收藏备用 · 评论区聊你的卡点</span></footer>
+    </section>
+
+    <!-- FRAMES_END -->
+  </main>
+
+  <script>
+    (function () {
+      var STYLE_THEMES = {
+        'paper-studio': ['warm-linen', 'celadon-ink', 'slate-ivory', 'oat-umber'],
+        'grid-spec': ['cobalt-grid', 'vermilion-spec', 'emerald-lab', 'amber-signal'],
+        'darkroom-frame': ['obsidian-gold', 'midnight-cyan', 'plum-velvet']
+      };
+      var root = document.documentElement;
+      var styleSel = document.getElementById('style-select');
+      var themeSel = document.getElementById('theme-select');
+      var isShot = root.getAttribute('data-ducoro-render') === 'shot';
+
+      function syncControls() {
+        if (!styleSel || !themeSel) return;
+        var st = root.getAttribute('data-style') || 'paper-studio';
+        var th = root.getAttribute('data-theme') || 'warm-linen';
+        styleSel.value = st;
+        if ([].some.call(themeSel.options, function (o) { return o.value === th; })) {
+          themeSel.value = th;
+        }
+      }
+
+      function applyPreview(style, theme) {
+        if (style && STYLE_THEMES[style]) {
+          root.setAttribute('data-style', style);
+          if (!theme || STYLE_THEMES[style].indexOf(theme) === -1) {
+            theme = STYLE_THEMES[style][0];
+          }
+        }
+        if (theme) {
+          root.setAttribute('data-theme', theme);
+        }
+        syncControls();
+      }
+
+      if (styleSel) {
+        styleSel.addEventListener('change', function () {
+          applyPreview(styleSel.value, null);
+        });
+      }
+      if (themeSel) {
+        themeSel.addEventListener('change', function () {
+          var th = themeSel.value;
+          var matchedStyle = Object.keys(STYLE_THEMES).find(function (s) {
+            return STYLE_THEMES[s].indexOf(th) !== -1;
+          });
+          applyPreview(matchedStyle || root.getAttribute('data-style'), th);
+        });
+      }
+      syncControls();
+
+      /* Progressive enhancement inside Ducoro Board sessions (standalone-safe when absent) */
+      var sdk = globalThis.ducoro;
+      if (!isShot && sdk && sdk.board && typeof sdk.board.commands === 'function') {
+        sdk.board.commands({
+          'focus-frame': {
+            describe: 'Scroll a specific export frame into view for visual review.',
+            params: { frame: { type: 'string', required: true, description: 'data-ducoro-export-frame id' } },
+            run: function (args) {
+              var id = args && args.frame;
+              var el = null;
+              if (id) {
+                var nodes = document.querySelectorAll('[data-ducoro-export-frame]');
+                for (var i = 0; i < nodes.length; i++) {
+                  if (nodes[i].getAttribute('data-ducoro-export-frame') === id) { el = nodes[i]; break; }
+                }
+              }
+              if (!el) throw new Error('Unknown frame: ' + id);
+              el.scrollIntoView({ behavior: 'auto', block: 'center' });
+              return { focused: id };
+            }
+          },
+          'preview-style': {
+            describe: 'Temporarily preview a visual style and preset theme without editing files.',
+            params: {
+              style: { type: 'string', required: false, description: 'paper-studio | grid-spec | darkroom-frame' },
+              theme: { type: 'string', required: false, description: 'Preset theme id' }
+            },
+            run: function (args) {
+              var st = args && args.style;
+              var th = args && args.theme;
+              if (st && !STYLE_THEMES[st]) throw new Error('Unknown style: ' + st);
+              applyPreview(st || null, th || null);
+              return { style: root.getAttribute('data-style'), theme: root.getAttribute('data-theme') };
+            }
+          }
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

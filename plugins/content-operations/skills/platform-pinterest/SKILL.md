@@ -1,34 +1,28 @@
 ---
 name: platform-pinterest
-description: "Run Pinterest end-to-end visual search operations: evergreen search-keyword Pin planning, 2:3 vertical Pin and destination-link packaging, Pinterest API v5 board/Pin publishing and updates, and outbound-click plus save retrospectives."
+description: "Neutral Pinterest platform advisor covering visual search-engine compounding (weeks to months), 2:3 vertical Pin design, keyword-rich board/title/description SEO, outbound click intent, browser vs API (board_id) delivery, and long-horizon analytics."
 ---
 
-# Pinterest Operations Playbook
+# Pinterest Platform Expert Guide
 
-Pinterest is a long-tail visual search engine, not a real-time social feed. A single well-indexed `2:3` Pin with clear keyword placement and a matching landing URL can compound saves and outbound clicks for months.
+Pinterest is a **visual discovery and planning search engine**, not a real-time social feed. Users arrive with future-oriented intent (designing, shopping, cooking, traveling, learning, building) and actively save Pins to themed Boards for later action.
 
-## 1. Topic Discovery (Platform-Native)
-- **Visual search signals**: Pinterest Trends, search bar keyword completions, seasonal planning spikes (Pinterest users search 30–60 days ahead of holidays), and evergreen how-to checklists.
-- **Winning angles**: clean infographics, step-by-step visual guides, product/workspace inspiration, templates, and high-contrast comparison charts that link to a genuinely matching landing page.
+## 1. Audience, Mindset & Distribution Mechanics
+- **Compounding time horizon**: Unlike ephemeral feeds that peak in 24 hours, a well-indexed Pin often gains momentum over **2–12 weeks** and keeps driving outbound clicks for months or years—always track **T+30d** snapshots.
+- **Visual + keyword indexing**: Pinterest ranks Pins by matching **Board context**, **Pin title & description keywords**, **image visual recognition (Pinterest Lens)**, and **save-to-impression rate + outbound click rate**.
+- **Fresh Pin principle**: New visual assets (`2:3` layouts, fresh photography, updated infographics) consistently earn fresh distribution, whereas endlessly re-pinning identical images stalls.
 
-## 2. Native Content & Packaging Structure
-- **Visual ratio**: `2:3` vertical (`1000x1500`) optimal; supports `jpg`/`jpeg`/`png`/`webp`/`bmp`/`tiff` (`<= 20 MB`, 1 image per Pin) or `mp4`/`mov`/`m4v` video (`<= 300s`).
-- **Title (`<= 100` chars)**: front-load the exact visual search phrase.
-- **Description (`<= 800` chars)**: natural keyword-rich summary explaining what the reader gets on click; no hashtag spam (no native topic field).
-- **Required destination**: always attach a valid `board_id` (from `GET /v5/boards`) and matching HTTPS `link` when driving traffic.
+## 2. Formats & Content Spectrum
+- **Specs (`references/specs.json`)**: Title `<= 100` chars; description `<= 800` chars; 1 primary image (`<= 20MB`, **`2:3` `1000x1500`** recommended; `recommendations.coverAspectRatio: 0.5–1.0`) or 1 vertical video (`<= 5 min`); no native hashtag field (weave natural search terms into title + description instead).
+- **Style spectrum**: High-craft photography (interior, fashion, food, travel, DIY), step-by-step infographics & visual checklists (`../shortform-social/scripts/card_deck.py`), moodboards, product lookbooks, and short visual how-to clips. Keep overlay text concise and legible at masonry-grid width.
 
-## 3. Publishing & Verification (`references/protocol.md`)
-1. Validate against `references/specs.json` via `check_media_specs.py` (enforces `options.board_id` for API mode).
-2. **Default zero-config path (Official Pin Creation Tool)**: open `https://www.pinterest.com/pin-creation-tool/` in the user's browser session (pause for login/2FA if prompted), upload the local `2:3` image or video directly from `drafts/<id>/assets/`, fill title, description, destination link, alt text, and board, save draft (`draft_saved`) or pause before **Publish** until Gate 2 confirmation, then record the live Pin URL.
-3. **Optional official API v5 path** (requires `PINTEREST_ACCESS_TOKEN`):
-   - Query boards via `scripts/client.py list-boards` to get `board_id`.
-   - Just before publishing, upload the local image via `ducoro-cli media upload <local-file> --json` to get a 5-hour temporary `publicUrl` (on non-Ducoro hosts, use your own HTTPS storage/CDN).
-   - Use `scripts/client.py`: `create-pin`, `get-pin`, `update-pin`, and `pin-analytics` (video Pins follow `references/protocol.md`).
-4. Record verified `https://www.pinterest.com/pin/<pinId>` in `publish-log.jsonl`.
+## 3. Delivery & Verification (`references/protocol.md`)
+- Follow the shared browser / OpenAPI / Gate 2 workflow in `../content-ops-loop/references/channel-access-matrix.md` and `approval-gates.md`.
+- **Platform specifics**: Validate via `check_media_specs.py` (pass `--channel api` for OpenAPI, which enforces `apiOverrides.requiredOptions: ["board_id"]`; browser mode lets you pick a Board interactively). Default path: `https://www.pinterest.com/pin-creation-tool/`. Optional OpenAPI: `scripts/client.py` (`PINTEREST_ACCESS_TOKEN`; public HTTPS image URL via `ducoro-cli media upload <path> --json`). Verify Gate 2 (`validate_workspace.py --verify-slot <slotId>`) before publishing.
 
-## 4. Engagement & Risk Guardrails
-- Never point multiple spammy duplicate Pins at broken or mismatched URLs—Pinterest penalizes low-trust domains.
-- Keep Pin frequency steady (e.g., 1–5 fresh Pins/day) rather than dumping 50 in one hour.
+## 4. Platform Red Lines & Engagement
+- **Compliance**: Destination links must load cleanly and match the Pin's promise (broken redirects, cloaked affiliate links, or misleading clickbait get domain-throttled); respect copyright and creator attribution.
+- **Rate cap**: Enforce `<= 10/hour`, `<= 50/day` (45–90s spacing) via `../engagement-and-analytics/scripts/engagement_guard.py`.
 
 ## 5. North-Star Metrics (`platformMetrics`)
-Track `outboundClickRate`, `saveRate`, `pinClicks`, and `30DayCompoundingImpressions`.
+Track `saveRate`, `outboundClickRate`, `pinClickRate`, and `30dCompoundingImpressions`.

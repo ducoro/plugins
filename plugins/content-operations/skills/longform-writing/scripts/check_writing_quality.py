@@ -9,12 +9,11 @@ import re
 import sys
 
 CLICHE_PHRASES_ZH = [
-    '首先', '其次', '再者', '最后', '总之', '综上所述', '总而言之',
-    '此外', '另外', '与此同时', '不仅如此', '更重要的是', '在此基础上',
-    '值得注意的是', '需要指出的是', '不可否认', '毋庸置疑', '众所周知',
-    '显而易见', '从某种意义上说', '至关重要', '不言而喻', '具有重要意义',
-    '发挥着重要作用', '意义深远', '影响深远', '引发了广泛关注', '引起了热烈讨论',
-    '总的来说', '综合来看', '由此可见', '不难发现', '通过以上分析', '正如我们所看到的',
+    '综上所述', '总而言之', '值得注意的是', '需要指出的是', '不可否认',
+    '毋庸置疑', '众所周知', '显而易见', '从某种意义上说', '至关重要',
+    '不言而喻', '具有重要意义', '发挥着重要作用', '意义深远', '影响深远',
+    '引发了广泛关注', '引起了热烈讨论', '由此可见', '不难发现',
+    '通过以上分析', '正如我们所看到的',
 ]
 
 CLICHE_PHRASES_EN = [
@@ -24,7 +23,7 @@ CLICHE_PHRASES_EN = [
     'navigating the landscape', 'ever-evolving landscape', 'it goes without saying',
 ]
 
-HEDGE_ADVERBS = ['非常', '极其', '极大地', '深刻地', '显著地', '全面地', '有效地', '真正地', 'literally', 'fundamentally', 'seamlessly']
+HEDGE_ADVERBS = ['极其', '极大地', '深刻地', '显著地', '全面地', '有效地', '真正地', 'literally', 'fundamentally', 'seamlessly']
 
 EVIDENCE_PATTERNS = [
     re.compile(r'https?://\S+'),
@@ -116,12 +115,11 @@ def score_text(raw_text: str) -> dict:
             'message': f'Detected {repeated_openers} run(s) of 3+ consecutive sentences with identical openings',
         })
     if len(sentences) >= 8 and fragment_ratio > 0.35:
-        penalty += 12
         findings.append({
             'rule': 'choppy_fragments',
-            'level': 'WARN',
+            'level': 'INFO',
             'count': len(short_fragments),
-            'message': f'Short fragment ratio is {fragment_ratio:.0%} ({len(short_fragments)}/{len(sentences)}); vary rhythm',
+            'message': f'Short fragment ratio is {fragment_ratio:.0%} ({len(short_fragments)}/{len(sentences)}); normal for punchy/narrative style, inspect if unintentional',
         })
     if adverb_count >= 5:
         penalty += min(12, adverb_count * 2)
@@ -129,15 +127,14 @@ def score_text(raw_text: str) -> dict:
             'rule': 'filler_adverbs',
             'level': 'WARN',
             'count': adverb_count,
-            'message': f'Found {adverb_count} abstract intensifier adverbs; replace with concrete numbers or observations',
+            'message': f'Found {adverb_count} abstract intensifier adverbs; consider concrete observations where appropriate',
         })
     if plain_chars >= 400 and evidence_hits == 0:
-        penalty += 15
         findings.append({
             'rule': 'weak_evidence_anchors',
-            'level': 'WARN',
+            'level': 'INFO',
             'count': 0,
-            'message': 'No dates, numbers, percentages, or named source citations found in a >=400-char piece',
+            'message': 'No dates, numbers, percentages, or URLs detected (fine for essays/stories; add anchors if reporting facts)',
         })
 
     score = max(0, 100 - penalty)
@@ -154,7 +151,7 @@ def score_text(raw_text: str) -> dict:
             'evidenceAnchors': evidence_hits,
         },
         'findings': findings,
-        'disclaimer': 'Mechanical style-risk check only; does not verify factual truth or prove authorship.',
+        'disclaimer': 'Advisory descriptive diagnostics only; does not judge genre fit, verify facts, or prove authorship.',
     }
 
 

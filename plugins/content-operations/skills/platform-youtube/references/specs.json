@@ -3,12 +3,15 @@
   "displayName": "YouTube",
   "authType": "oauth2",
   "contentLimits": {
-    "modes": ["video"],
+    "modes": ["video", "shorts"],
     "maxTitleLength": 100,
     "maxBodyLength": 5000,
     "maxImages": 0,
     "maxVideos": 1,
-    "allowMixedMedia": false
+    "allowMixedMedia": false,
+    "shortsLimits": {
+      "maxVideoDurationSec": 180
+    }
   },
   "mediaRules": {
     "imageFormats": ["jpg", "jpeg", "png"],
@@ -21,6 +24,12 @@
     "supported": true,
     "nativeField": true,
     "maxTotalLength": 500
+  },
+  "recommendations": {
+    "coverAspectRatio": {
+      "min": 1.6,
+      "max": 1.9
+    }
   },
   "publishPolicy": {
     "completionStrategy": "sync",

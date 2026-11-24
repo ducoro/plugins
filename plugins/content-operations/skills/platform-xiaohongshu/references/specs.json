@@ -6,7 +6,7 @@
     "modes": ["image_text", "video"],
     "maxTitleLength": 20,
     "maxBodyLength": 1000,
-    "maxImages": 9,
+    "maxImages": 18,
     "maxVideos": 1,
     "allowMixedMedia": false
   },
@@ -19,8 +19,14 @@
   },
   "topic": {
     "supported": true,
-    "nativeField": true,
-    "maxCount": 5
+    "nativeField": true
+  },
+  "recommendations": {
+    "maxTopicCount": 5,
+    "coverAspectRatio": {
+      "min": 0.56,
+      "max": 1.34
+    }
   },
   "publishPolicy": {
     "completionStrategy": "browser_draft_human_confirm",

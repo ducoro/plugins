@@ -1,73 +1,48 @@
-# Editorial Brief, Claim Grounding, 5-Dimension Rubric & Style Onboarding
+# Editorial Brief, Channel Mechanics & Optional Rubric
 
-Keep every long-form draft traceable from reader problem to verified sources to publishability gate.
+Neutral domain knowledge for long-form publishing. Use the JSON schemas and evaluation tools when a piece is high-stakes or fact-heavy; skip unnecessary ceremony for short essays or opinion columns.
 
-## 1. Pre-Draft `brief.json` & `claims.json`
+## 1. Long-Form Channel Mechanics (Where Platforms Actually Differ)
 
-Before writing `master.md` for a substantive piece, save `sources.json` (via `scripts/source_ledger.py`), `brief.json`, and `claims.json` in `drafts/<draft-id>/`:
+| Channel | Entry & Discovery | Reading Environment | Practical Adaptation |
+| --- | --- | --- | --- |
+| **WeChat Official Account** | Private subscriber push + Moments shares + Recommendation feed + WeChat Search | Mobile vertical scroll; dark mode common; external hyperlinks stripped for unverified accounts | Short mobile paragraphs (2–4 lines), clear scannable subheads, inline styles (`<section>`), external links converted to footnotes, 2.35:1 + 1:1 covers |
+| **Email Newsletter** | Direct inbox (subject line + preview text determine open rate) | Mobile + desktop mail clients; high personal trust | Single clear promise in subject/preheader, conversational opening, links inline, easy skim-to-deep pacing |
+| **Blog / Docs (SEO)** | Organic search intent + AI citation + referral links | Desktop + mobile web; readers arrive mid-task | Direct answer near the top, semantic `H2`/`H3` matching real queries, canonical URLs, durable evergreen examples |
+| **LinkedIn / X Articles** | Social feed preview card + author authority + reposts/bookmarks | Fast social feed transitioning into long read | Sharp thesis in the opening 3 lines visible in feed preview, clean visual breaks, invite thoughtful disagreement in comments |
+
+## 2. Optional Pre-Draft `brief.json` & `claims.json`
+
+Useful for multi-source reporting, teardowns, or multi-agent handoffs:
 
 ```json
 {
   "version": 1,
-  "audience": { "who": "Target reader", "context": "Reading situation", "question": "Problem to solve" },
-  "goal": { "takeaway": "One repeatable conclusion", "action": "Concrete decision or next step" },
-  "thesis": { "statement": "Core judgment", "novelty": "What is genuinely added", "boundary": "Where it holds", "counterpoint": "Strongest alternative view" },
+  "audience": { "who": "Target reader", "context": "Reading situation", "question": "Problem or curiosity" },
+  "thesis": { "statement": "Core angle", "boundary": "Where it holds", "counterpoint": "Strongest alternative view" },
   "personalMaterials": { "available": false, "items": [] },
-  "framework": "opinion",
-  "constraints": { "desiredLength": "1200-2500 chars", "mustInclude": [], "mustAvoid": [] }
+  "constraints": { "mustInclude": [], "mustAvoid": [] }
 }
 ```
 
-```json
-{
-  "version": 1,
-  "claims": [
-    { "id": "C1", "text": "Specific claim", "type": "fact", "sourceIds": ["S1"], "status": "supported", "boundary": "Scope or date" }
-  ]
-}
-```
+- When verifying claims via `scripts/source_ledger.py verify-claims`:
+  - `fact` links to a `verified` source (either `web_url` with `http(s)://` URL, or `local_file` / `first_hand_test` / `publication_or_interview` with `--locator`).
+  - `user_experience` links to a `user_provided` source supplied in the current task. Never invent composite friends or fake first-hand scenes.
 
-- Run `python3 scripts/source_ledger.py verify-claims --ledger sources.json --claims claims.json --json`:
-  - Every `fact` requires at least one `verified` source with an `http(s)://` URL (never mark model memory as `verified`).
-  - Every `user_experience` requires a `user_provided` source explicitly supplied in the current task. When `personalMaterials.available` is `false`, never invent anecdotes, friends, dialogues, or sensory scenes—open with an observation, question, or core judgment instead.
+## 3. Starter Structural Patterns (Examples, Not Mandates)
 
-## 2. Seven Writing Frameworks (Quick Reference)
+Authors and strong models are free to invent any structure that serves the material. Common starting shapes include:
+- **Problem -> Cause -> Trade-off -> Action** (tutorials, operational guides)
+- **Scene / Event -> Choice -> Consequence -> Reflection** (profiles, retrospectives, essays)
+- **Claim -> Evidence -> Counter-evidence -> Boundary** (opinion, industry analysis)
+- **Criteria -> Side-by-Side Comparison -> Fit by Persona** (tool/product evaluations)
 
-| Framework | Best For | Progression |
-| --- | --- | --- |
-| `pain-point` | Reader faces a clear bottleneck | Scene -> Root cause -> Solution -> Boundary |
-| `story` | People and turning points carry the lesson | Conflict -> Choice -> Outcome -> Meaning |
-| `checklist` | Reader needs fast action | Goal -> Steps -> How to apply -> Pitfalls |
-| `comparison` | Reader must choose between options | Criteria -> Evidence A/B -> Fit -> Recommendation |
-| `trend-brief` | Fast-moving event or release | What happened -> Why it matters -> Impact -> Watchpoints |
-| `opinion` | Judgment is the main value | Claim -> Evidence -> Counterpoint -> Boundary |
-| `retro` | Transferable execution lessons | Goal -> Execution -> Variance -> Reusable takeaway |
+Never enforce artificial quotas (fixed section counts, forced hooks every N paragraphs, mandatory images every 400 chars, or forced CTAs).
 
-Narrow the claim instead of padding sections when evidence is thin.
+## 4. Optional 5-Dimension Evaluation Log (`scripts/content_eval.py`)
 
-### Safe Content Enhancement (No "Plausible Reconstruction")
-- **Opinion / Trend-Brief**: list consensus, split, and overlooked boundary conditions; add an evidence-backed causal angle rather than contrarianism for its own sake.
-- **Pain-Point / Checklist**: fill actionable steps, prerequisites, costs, and failure signals (every tool/version/price must be verified).
-- **Story / Retro**: use only user-supplied or verbatim-verifiable dates, quotes, and scenes; **never fabricate "plausible reconstructions," composite friends, or invented sensory details**.
-- **Comparison**: establish shared criteria first, compare evidence + total cost + limits, and conclude who should choose what.
+When running structured editorial review, score 1–5 across `accuracy`, `viewpoint`, `usefulness`, `voice`, and `readability` (customizable thresholds via `--min-avg` and `--min-dim`, no arbitrary cap on revision passes). Hard editorial blockers: fabricated personal story, unsupported core fact, or conclusion exceeding evidence.
 
-## 3. Five-Dimension Editorial Gate (`scripts/content_eval.py`)
+## 5. Style Onboarding (First-Time Setup)
 
-Score each dimension from **1 to 5**:
-1. **accuracy**: facts traced to direct sources; facts, inferences, and opinions cleanly separated.
-2. **viewpoint**: clear thesis with added value, explicit boundary, and strongest counterpoint.
-3. **usefulness**: directly answers the reader's problem with actionable steps or a reusable decision model.
-4. **voice**: matches the publication voice without fabricating experiences or mimicking exemplar claims.
-5. **readability**: opens fast, each section advances a claim, direct prose without filler or repetition.
-
-Hard blockers (any one blocks publish): fabricated personal story, unsupported core fact, conclusion exceeding evidence, or missing reader takeaway.
-- `publishable = true` only when `decision == "pass"`, `blockers == []`, minimum score `>= 3`, and average `>= 4.0`.
-- Cap editorial revision at **2 passes**; if still failing on pass 2, drop unsupported claims and narrow the scope rather than faking a pass.
-- **Anti-over-engineering guardrails**: never enforce mechanical quotas (such as forced hooks every N paragraphs, mandatory images every 400–500 chars, fixed section counts, or forced CTAs). Treat `check_writing_quality.py score` strictly as a diagnostic signal—never inject artificial choppy fragments or fake emotion just to game a score.
-
-## 4. Style Onboarding (First-Time Voice Setup)
-
-When `<workspace>/style/style-profile.json` does not exist, ask **1–2 conversational questions per turn** (never dump a long form):
-- Required: publication/brand name + domain, core topics, desired tone.
-- Optional (smart defaults): target audience, taboo words (`blacklist`), default WeChat theme (preview all 18 via `render_wechat_html.py --gallery`), and persona (auto-mapped from tone via `build_playbook.py init-style`).
-- If the user has 5–30 historical articles, place `.md`/`.txt` files into `<workspace>/style/corpus/` and run `python3 scripts/build_playbook.py analyze --workspace <workspace> --json` to bootstrap `style/style-playbook.md`.
+When `<workspace>/style/style-profile.json` does not exist, ask **1–2 conversational questions per turn** (domain, audience, preferred voice—never dump a long questionnaire). If historical articles exist in `style/corpus/`, run `scripts/build_playbook.py analyze` to extract real voice patterns instead of guessing.

@@ -2,26 +2,38 @@
 from __future__ import annotations
 
 import html as html_lib
+from html.parser import HTMLParser
 import re
 
-WECHAT_HTML_RULES = [
-    ('style_tag', re.compile(r'<style[\s>]', re.I), 'ERROR', '<style> tags are stripped by WeChat; inline all styles'),
-    ('script_tag', re.compile(r'<script[\s>]', re.I), 'ERROR', '<script> tags are forbidden in WeChat articles'),
-    ('link_tag', re.compile(r'<link[\s>]', re.I), 'ERROR', 'External <link> stylesheets/fonts are stripped by WeChat'),
-    ('div_tag', re.compile(r'</?div[\s>]', re.I), 'ERROR', '<div> is rewritten by WeChat editor; use <section>'),
-    ('class_attr', re.compile(r'<[^>]+\sclass\s*=', re.I), 'ERROR', 'class attributes are stripped; use inline style'),
-    ('id_attr', re.compile(r'<[^>]+\sid\s*=', re.I), 'ERROR', 'id attributes are stripped by WeChat'),
-    ('position_unsupported', re.compile(r'position\s*:\s*(?:fixed|absolute|sticky)', re.I), 'ERROR', 'position: fixed/absolute/sticky is unsupported in WeChat'),
-    ('float_css', re.compile(r'float\s*:\s*(?:left|right)', re.I), 'ERROR', 'CSS float is unreliable in WeChat; use flex'),
+WECHAT_STYLE_RULES = [
+    ('position_unsupported', re.compile(r'\bposition\s*:\s*(?:fixed|absolute|sticky)\b', re.I), 'ERROR', 'position: fixed/absolute/sticky is unsupported in WeChat'),
+    ('keyframes', re.compile(r'@keyframes|\banimation\s*:', re.I), 'ERROR', 'CSS animations are unsupported in WeChat'),
     ('media_query', re.compile(r'@media\b', re.I), 'ERROR', '@media queries are unsupported; use data-darkmode-*'),
-    ('keyframes', re.compile(r'@keyframes|animation\s*:', re.I), 'ERROR', 'CSS animations are unsupported in WeChat'),
     ('import_css', re.compile(r'@import\b', re.I), 'ERROR', '@import is unsupported in WeChat'),
-    ('display_grid', re.compile(r'display\s*:\s*grid\b', re.I), 'ERROR', 'display: grid is unsupported; use flex'),
-    ('css_var', re.compile(r'var\s*\(\s*--', re.I), 'ERROR', 'CSS variables var(--*) are unsupported; resolve to hex colors'),
+    ('css_var', re.compile(r'\bvar\s*\(\s*--', re.I), 'ERROR', 'CSS variables var(--*) are unsupported; resolve to hex colors'),
     ('external_font', re.compile(r"url\s*\(['\"]?https?://[^)]*\.(?:woff2?|ttf|otf|eot)", re.I), 'ERROR', 'External web fonts do not load in WeChat'),
-    ('iframe_tag', re.compile(r'<iframe[\s>]', re.I), 'WARN', '<iframe> only works for allowlisted sources (e.g. Tencent Video)'),
-    ('external_link', re.compile(r'<a[^>]+href\s*=\s*["\']https?://(?!mp\.weixin\.qq\.com)', re.I), 'WARN', 'External links are blocked for unverified accounts; convert to footnotes'),
+    ('float_css', re.compile(r'\bfloat\s*:\s*(?:left|right)\b', re.I), 'WARN', 'CSS float is unreliable in WeChat; flex is safer'),
+    ('display_grid', re.compile(r'\bdisplay\s*:\s*grid\b', re.I), 'WARN', 'display: grid has partial support in older WeChat clients; flex is safer'),
 ]
+
+WECHAT_TAG_RULES = {
+    'style': ('style_tag', 'ERROR', '<style> tags are stripped by WeChat; inline all styles'),
+    'script': ('script_tag', 'ERROR', '<script> tags are forbidden in WeChat articles'),
+    'link': ('link_tag', 'ERROR', 'External <link> stylesheets/fonts are stripped by WeChat'),
+    'div': ('div_tag', 'WARN', '<div> may be normalized to <section> by WeChat editor'),
+    'iframe': ('iframe_tag', 'WARN', '<iframe> only works for allowlisted sources (e.g. Tencent Video)'),
+}
+
+WECHAT_ATTR_RULES = {
+    'class': ('class_attr', 'WARN', 'class attributes are stripped by WeChat; rely on inline style'),
+    'id': ('id_attr', 'WARN', 'id attributes are stripped by WeChat'),
+}
+
+WECHAT_HTML_RULES = WECHAT_STYLE_RULES  # Backward-compatible export name
+
+
+def _has_cjk(text: str) -> bool:
+    return bool(re.search(r'[\u4e00-\u9fff]', text))
 
 
 def truncate_utf8_bytes(text: str, max_bytes: int = 120) -> str:
@@ -52,8 +64,51 @@ def html_to_plaintext(markup: str) -> str:
     return text.strip()
 
 
+class _WeChatHTMLAuditor(HTMLParser):
+    """Inspect only real HTML tags, attributes, and inline style values (ignoring prose & <code> text)."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.counts: dict[str, int] = {}
+        self.meta: dict[str, tuple[str, str]] = {}
+        self.samples: dict[str, str] = {}
+        self.img_count = 0
+
+    def _hit(self, rule: str, level: str, message: str, sample: str) -> None:
+        self.counts[rule] = self.counts.get(rule, 0) + 1
+        if rule not in self.meta:
+            self.meta[rule] = (level, message)
+            self.samples[rule] = sample[:80]
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        t = tag.lower()
+        if t == 'img':
+            self.img_count += 1
+        if t in WECHAT_TAG_RULES:
+            rule, level, msg = WECHAT_TAG_RULES[t]
+            self._hit(rule, level, msg, f'<{t}>')
+        for k, v in attrs:
+            kl = k.lower()
+            val = v or ''
+            if kl in WECHAT_ATTR_RULES:
+                rule, level, msg = WECHAT_ATTR_RULES[kl]
+                self._hit(rule, level, msg, f'<{t} {kl}="{val[:40]}">')
+            elif kl == 'style' and val:
+                for rule, rx, level, msg in WECHAT_STYLE_RULES:
+                    matches = rx.findall(val)
+                    for _ in matches:
+                        self._hit(rule, level, msg, val)
+            elif t == 'a' and kl == 'href' and re.match(r'^https?://(?!mp\.weixin\.qq\.com)', val, re.I):
+                self._hit(
+                    'external_link',
+                    'WARN',
+                    'External links are blocked for unverified accounts; convert to footnotes',
+                    f'<a href="{val[:50]}">',
+                )
+
+
 def validate_wechat_html(markup: str) -> list[dict]:
-    """Validate HTML body against 16 WeChat compatibility rules + image count ceiling."""
+    """Validate HTML tags, attributes, and inline styles against WeChat compatibility rules."""
     body = markup
     marker = re.search(r'<!--\s*WECHAT_BODY_START\s*-->(.*?)<!--\s*WECHAT_BODY_END\s*-->', markup, re.S)
     if marker:
@@ -63,21 +118,21 @@ def validate_wechat_html(markup: str) -> list[dict]:
         if body_match:
             body = body_match.group(1)
 
-    issues = []
-    for name, rx, level, msg in WECHAT_HTML_RULES:
-        hits = rx.findall(body)
-        if hits:
-            m = rx.search(body)
-            sample = body[max(0, m.start() - 18):m.end() + 26].replace('\n', ' ')[:80] if m else ''
-            issues.append({'rule': name, 'level': level, 'message': msg, 'count': len(hits), 'sample': sample})
+    auditor = _WeChatHTMLAuditor()
+    auditor.feed(body)
+    auditor.close()
 
-    img_count = len(re.findall(r'<img[\s>]', body, re.I))
-    if img_count > 10:
+    issues = []
+    for rule, count in auditor.counts.items():
+        level, msg = auditor.meta[rule]
+        issues.append({'rule': rule, 'level': level, 'message': msg, 'count': count, 'sample': auditor.samples[rule]})
+
+    if auditor.img_count > 10:
         issues.append({
             'rule': 'too_many_images',
             'level': 'WARN',
-            'message': f'Article contains {img_count} inline images; WeChat recommends <= 10 for stable delivery',
-            'count': img_count,
+            'message': f'Article contains {auditor.img_count} inline images; WeChat recommends <= 10 for stable delivery',
+            'count': auditor.img_count,
             'sample': '',
         })
     return issues
@@ -96,25 +151,31 @@ def render_container_block(kind: str, arg: str, body: str, c: dict, dm: dict, re
     """Render one of the 9 WeChat-safe :::container blocks using inline-styled <section> tags."""
     p = c['primary']
     lines = [ln.strip() for ln in body.strip().splitlines() if ln.strip()]
+    is_cn = _has_cjk(body + ' ' + arg)
     if kind == 'callout':
-        # Choose dark-surface or light-surface callout colors based on theme canvas brightness
         bg_hex = c.get('bg', '#ffffff').lstrip('#')
         is_dark_canvas = len(bg_hex) == 6 and (int(bg_hex[0:2], 16) * 0.299 + int(bg_hex[2:4], 16) * 0.587 + int(bg_hex[4:6], 16) * 0.114) < 128
+        parts = arg.strip().split(None, 1)
+        variant = parts[0].lower() if parts else 'info'
+        custom_title = parts[1].strip() if len(parts) > 1 else ''
         if is_dark_canvas:
             palette = {
-                'tip': ('#34d399', '#064e3b', '#ecfdf5', 'TIP'),
-                'warning': ('#fbbf24', '#451a03', '#fffbeb', 'WARNING'),
-                'info': ('#60a5fa', '#1e3a8a', '#eff6ff', 'INFO'),
-                'danger': ('#f87171', '#450a0a', '#fef2f2', 'DANGER'),
+                'tip': ('#34d399', '#064e3b', '#ecfdf5', '提示' if is_cn else 'TIP'),
+                'warning': ('#fbbf24', '#451a03', '#fffbeb', '注意' if is_cn else 'WARNING'),
+                'info': ('#60a5fa', '#1e3a8a', '#eff6ff', '说明' if is_cn else 'INFO'),
+                'danger': ('#f87171', '#450a0a', '#fef2f2', '警示' if is_cn else 'DANGER'),
             }
         else:
             palette = {
-                'tip': ('#059669', '#ecfdf5', '#1f2937', 'TIP'),
-                'warning': ('#d97706', '#fffbeb', '#1f2937', 'WARNING'),
-                'info': ('#2563eb', '#eff6ff', '#1f2937', 'INFO'),
-                'danger': ('#dc2626', '#fef2f2', '#1f2937', 'DANGER'),
+                'tip': ('#059669', '#ecfdf5', '#1f2937', '提示' if is_cn else 'TIP'),
+                'warning': ('#d97706', '#fffbeb', '#1f2937', '注意' if is_cn else 'WARNING'),
+                'info': ('#2563eb', '#eff6ff', '#1f2937', '说明' if is_cn else 'INFO'),
+                'danger': ('#dc2626', '#fef2f2', '#1f2937', '警示' if is_cn else 'DANGER'),
             }
-        accent, bg, txt, title = palette.get(arg.lower(), palette['info'])
+        if variant not in palette and arg.strip():
+            custom_title = arg.strip()
+        accent, bg, txt, default_title = palette.get(variant, palette['info'])
+        title = html_lib.escape(custom_title) if custom_title else default_title
         content = '<br />'.join(render_inline(ln) for ln in lines)
         return (
             f'<section style="background-color: {bg}; border-left: 4px solid {accent}; '
@@ -199,6 +260,7 @@ def render_container_block(kind: str, arg: str, body: str, c: dict, dm: dict, re
             f'{dm_attr(dm["text"], dm["quoteBg"])}>{content}</section>'
         )
     if kind == 'summary':
+        heading = html_lib.escape(arg.strip()) if arg.strip() else ('核心要点' if is_cn else 'KEY TAKEAWAYS')
         items = ''.join(
             f'<section style="margin: 6px 0; font-size: 15px; line-height: 1.75; color: {c["text"]};"'
             f'{dm_attr(dm["text"])}>• {render_inline(ln.lstrip("-*• "))}</section>'
@@ -208,7 +270,7 @@ def render_container_block(kind: str, arg: str, body: str, c: dict, dm: dict, re
             f'<section style="margin: 24px 0; padding: 16px 18px; background-color: {c["surface"]}; '
             f'border-top: 3px solid {p}; border-radius: 6px;"'
             f'{dm_attr(dm["text"], dm["quoteBg"])}>'
-            f'<section style="font-size: 14px; font-weight: 700; color: {p}; margin-bottom: 8px; letter-spacing: 1px;">KEY TAKEAWAYS</section>'
+            f'<section style="font-size: 14px; font-weight: 700; color: {p}; margin-bottom: 8px; letter-spacing: 1px;">{heading}</section>'
             f'{items}</section>'
         )
     content = '<br />'.join(render_inline(ln) for ln in lines)

@@ -10,7 +10,7 @@ In Ducoro, keep canonical operational files in your registered global Local Fold
    ```sh
    ducoro-cli board new --space <space-id> --title "<Board Title>" --json
    ```
-2. Assemble the template (`index.html`, `README.md`, `runtime/board-sdk-bridge.js` from `assets/boards/shared/board-sdk-bridge.js`) and project data from the Local Folder into `assets/data.json` in one command:
+2. Assemble the template (`index.html`, `README.md`, `runtime/board-sdk-bridge.js`, and shared `shadcn/ui` stylesheet `runtime/board-ui.css` from `assets/boards/shared/`) and project data from the Local Folder into `assets/data.json` in one command:
    ```sh
    python3 scripts/build_boards.py <local-folder-path> --board <board-name> --board-dir <space-work-root>/boards/<board-id> --overwrite-templates
    ```
@@ -20,6 +20,13 @@ In Ducoro, keep canonical operational files in your registered global Local Fold
    ducoro-cli board check --space <space-id> --board boards/<board-id> --json
    ducoro-cli board shot --space <space-id> --board boards/<board-id> --json
    ```
+
+## UI Design System (`shared/board-ui.css` — `shadcn/ui` Paradigm)
+
+All 5 boards share `runtime/board-ui.css` implementing the `shadcn/ui` semantic token and component system with zero external CDN or build dependencies:
+- **Semantic tokens**: `--background`, `--foreground`, `--card`, `--primary`, `--secondary`, `--muted`, `--muted-foreground`, `--accent`, `--destructive`, `--border`, `--input`, `--radius` (`0.625rem`), `--chart-1..5` across light (`:root`) and dark (`.dark` / `prefers-color-scheme: dark`).
+- **Calm by default**: neutral surfaces and `1px` borders; normal/completed states stay neutral while `warning` and `destructive` tones flag only exceptions, pending approvals, or failures.
+- **Uniform control heights**: `32px` toolbar controls (`.ui-select`, `.ui-tabs`, `.ui-btn`, `.ui-check-pill`), quiet `24px–28px` row/card actions, and scan-first `.ui-table` with `11px` uppercase headers and `tabular-nums`.
 
 ## Built-In SDK Contract (Implemented by `shared/board-sdk-bridge.js`)
 

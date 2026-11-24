@@ -94,7 +94,7 @@ def scaffold_deck(
     if overwrite or not readme_path.exists():
         readme_path.write_text(readme_src, encoding='utf-8')
 
-    audit = ca.audit_deck(target_dir)
+    audit = ca.audit_deck(target_dir, allow_placeholders=True)
     return {
         'dir': str(target_dir),
         'index': str(index_path),
@@ -137,6 +137,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_audit = sub.add_parser('audit', help='Run deterministic offline structural and contrast checks on a card deck.')
     p_audit.add_argument('target', type=Path)
     p_audit.add_argument('--allow-remote-img', action='store_true')
+    p_audit.add_argument('--allow-custom-size', action='store_true')
+    p_audit.add_argument('--allow-placeholders', action='store_true')
     p_audit.add_argument('--json', action='store_true', dest='as_json')
 
     args = parser.parse_args(argv)
@@ -178,7 +180,12 @@ def main(argv: Optional[List[str]] = None) -> int:
             return 0 if res['auditPassed'] else 1
 
         if args.cmd == 'audit':
-            res = ca.audit_deck(args.target, allow_remote_img=args.allow_remote_img)
+            res = ca.audit_deck(
+                args.target,
+                allow_remote_img=args.allow_remote_img,
+                allow_custom_size=args.allow_custom_size,
+                allow_placeholders=args.allow_placeholders,
+            )
             if args.as_json:
                 print(json.dumps(res, ensure_ascii=False, indent=2))
             else:

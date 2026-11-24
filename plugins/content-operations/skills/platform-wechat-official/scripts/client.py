@@ -120,6 +120,7 @@ def run_stage_draft(args, token: str) -> dict:
             themes[args.theme],
             section_numbering=True if args.section_numbering else None,
             aigc_footer=args.aigc_footer,
+            cjk_spacing=not args.no_cjk_spacing,
         )
         rendered = renderer.convert(raw_text)
         html = rendered['html']
@@ -178,7 +179,7 @@ def run_stage_draft(args, token: str) -> dict:
             'thumb_media_id': thumb_media_id,
             'need_open_comment': args.open_comment,
             'only_fans_can_comment': args.only_fans_comment,
-            'show_cover_pic': 0,
+            'show_cover_pic': args.show_cover_pic,
         }]
     }
     draft_res = api_post('/cgi-bin/draft/add', token, body, dry_run=args.dry_run)
@@ -354,6 +355,7 @@ def main(argv=None) -> int:
     p_draft.add_argument('--source-url', default='')
     p_draft.add_argument('--open-comment', type=int, choices=[0, 1], default=1)
     p_draft.add_argument('--only-fans-comment', type=int, choices=[0, 1], default=0)
+    p_draft.add_argument('--show-cover-pic', type=int, choices=[0, 1], default=0)
 
     p_stage = sub.add_parser('stage-draft', help='Render/validate Markdown or HTML, upload local inline images + cover, and create draft.')
     p_stage.add_argument('--content-file', required=True, help='Path to Markdown (.md) or WeChat-compatible HTML file.')
@@ -363,11 +365,13 @@ def main(argv=None) -> int:
     p_stage.add_argument('--workspace', default='', help='Optional content-ops workspace to load custom learned themes.')
     p_stage.add_argument('--aigc-footer', action='store_true', help='Append optional AIGC disclosure footer (off by default).')
     p_stage.add_argument('--section-numbering', action='store_true', help='Number H2 headings sequentially.')
+    p_stage.add_argument('--no-cjk-spacing', action='store_true', help='Disable automatic CJK-Latin spacing.')
     p_stage.add_argument('--author', default='')
     p_stage.add_argument('--digest', default='')
     p_stage.add_argument('--source-url', default='')
     p_stage.add_argument('--open-comment', type=int, choices=[0, 1], default=1)
     p_stage.add_argument('--only-fans-comment', type=int, choices=[0, 1], default=0)
+    p_stage.add_argument('--show-cover-pic', type=int, choices=[0, 1], default=0)
 
     p_pic = sub.add_parser('add-image-post', help='Create a WeChat image carousel post (newspic / 小绿书) draft.')
     p_pic.add_argument('--title', required=True, help='Post title (1–32 chars).')
@@ -435,6 +439,7 @@ def main(argv=None) -> int:
                         'thumb_media_id': args.thumb_media_id,
                         'need_open_comment': args.open_comment,
                         'only_fans_can_comment': args.only_fans_comment,
+                        'show_cover_pic': args.show_cover_pic,
                     }]
                 }
                 res = api_post('/cgi-bin/draft/add', token, body, dry_run=args.dry_run)

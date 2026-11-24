@@ -112,7 +112,7 @@ class ContentOpsMediaScriptsTest(unittest.TestCase):
             (draft / 'assets').mkdir(parents=True)
             (draft / 'variants').mkdir(parents=True)
 
-            # Fake JPEG: actual PNG renamed .jpg -> Instagram must REJECT
+            # Fake JPEG: actual PNG renamed .jpg -> passes default browser channel (PNG allowed), REJECTED on --channel api (JPEG only)
             fake_jpg = draft / 'assets' / 'fake.jpg'
             make_png(fake_jpg, 1080, 1350)
             (draft / 'variants' / 'instagram.md').write_text(
@@ -143,12 +143,61 @@ class ContentOpsMediaScriptsTest(unittest.TestCase):
             res = run_script(SPEC_PY, str(draft))
             self.assertNotEqual(res.returncode, 0)
             by_plat = {r['platform']: r for r in json.loads(res.stdout)['results']}
-            self.assertEqual(by_plat['instagram']['specStatus'], 'fail')
-            self.assertTrue(any(i['code'] == 'unsupported_format' for i in by_plat['instagram']['issues']))
+            self.assertEqual(by_plat['instagram']['specStatus'], 'pass')
             self.assertEqual(by_plat['x-twitter']['specStatus'], 'fail')
             self.assertEqual(by_plat['youtube']['specStatus'], 'fail')
             self.assertEqual(by_plat['bilibili']['specStatus'], 'fail')
             self.assertTrue(any('source' in i['message'] for i in by_plat['bilibili']['issues']))
+
+            # Under --channel api, Instagram Graph API enforces JPEG-only and rejects PNG disguised as .jpg
+            res_api = run_script(SPEC_PY, str(draft), '--channel', 'api')
+            self.assertNotEqual(res_api.returncode, 0)
+            by_api = {r['platform']: r for r in json.loads(res_api.stdout)['results']}
+            self.assertEqual(by_api['instagram']['specStatus'], 'fail')
+            self.assertTrue(any(i['code'] == 'unsupported_format' for i in by_api['instagram']['issues']))
+
+            # Verify mode-specific hard limits (WeChat newspic, YouTube shorts 180s, LinkedIn PDF document, XHS 18 imgs, placeholders)
+            draft_modes = Path(tmp) / 'd-modes'
+            (draft_modes / 'assets').mkdir(parents=True)
+            (draft_modes / 'variants').mkdir(parents=True)
+            make_png(draft_modes / 'assets' / 'p1.png', 1080, 1440)
+            (draft_modes / 'assets' / 'deck.pdf').write_bytes(b'%PDF-1.4\n%%EOF\n')
+            (draft_modes / 'assets' / 'short.mp4').write_bytes(b'\x00' * 64)
+            # WeChat newspic: title > 32 chars and 0 images -> MUST FAIL
+            (draft_modes / 'variants' / 'wechat-official.md').write_text(
+                '```json\n' + json.dumps({'platform': 'wechat-official', 'mode': 'newspic', 'title': '超长小绿书标题' * 6, 'media': []}) + '\n```\n\nBody',
+                encoding='utf-8',
+            )
+            # YouTube shorts > 180s -> MUST FAIL
+            (draft_modes / 'variants' / 'youtube.md').write_text(
+                '```json\n' + json.dumps({'platform': 'youtube', 'mode': 'shorts', 'title': 'Short', 'media': [{'type': 'video', 'path': 'assets/short.mp4', 'durationSec': 190}]}) + '\n```\n\nDesc',
+                encoding='utf-8',
+            )
+            # LinkedIn PDF document carousel -> MUST PASS
+            (draft_modes / 'variants' / 'linkedin.md').write_text(
+                '```json\n' + json.dumps({'platform': 'linkedin', 'mode': 'document', 'title': 'Framework', 'topics': ['design', 'ops'], 'media': [{'type': 'document', 'path': 'assets/deck.pdf'}]}) + '\n```\n\nSummary.',
+                encoding='utf-8',
+            )
+            # Xiaohongshu 12 images (<= 18) + 6 topics -> PASS with topic recommendation warning
+            (draft_modes / 'variants' / 'xiaohongshu.md').write_text(
+                '```json\n' + json.dumps({'platform': 'xiaohongshu', 'mode': 'image_text', 'title': '杭州漫步攻略', 'topics': ['a', 'b', 'c', 'd', 'e', 'f'], 'media': [{'type': 'image', 'path': 'assets/p1.png'}] * 12}) + '\n```\n\n真实分享。',
+                encoding='utf-8',
+            )
+            # X Premium long post with TODO placeholder -> fails on unfinished_placeholder, passes once cleaned
+            (draft_modes / 'variants' / 'x-twitter.md').write_text(
+                '```json\n' + json.dumps({'platform': 'x-twitter', 'mode': 'text', 'options': {'long_post': True}, 'media': []}) + '\n```\n\n' + ('Long post content. ' * 25) + ' TODO add link',
+                encoding='utf-8',
+            )
+            res_m = run_script(SPEC_PY, str(draft_modes))
+            self.assertNotEqual(res_m.returncode, 0)
+            bm = {r['platform']: r for r in json.loads(res_m.stdout)['results']}
+            self.assertEqual(bm['wechat-official']['specStatus'], 'fail')
+            self.assertEqual(bm['youtube']['specStatus'], 'fail')
+            self.assertEqual(bm['linkedin']['specStatus'], 'pass')
+            self.assertEqual(bm['xiaohongshu']['specStatus'], 'pass')
+            self.assertTrue(any(w['code'] == 'topic_count_advisory' for w in bm['xiaohongshu']['warnings']))
+            self.assertEqual(bm['x-twitter']['specStatus'], 'fail')
+            self.assertTrue(any(i['code'] == 'unfinished_placeholder' for i in bm['x-twitter']['issues']))
 
             # CRLF multi-tweet thread on X must split cleanly and PASS
             draft_ok = Path(tmp) / 'd-crlf'

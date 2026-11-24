@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic 5-dimension editorial evaluation and publishability gate (zero dependencies)."""
+"""Optional structured 5-dimension editorial evaluation logger and diff tracker (zero dependencies)."""
 from __future__ import annotations
 
 import argparse
@@ -17,7 +17,14 @@ def _headings(text: str) -> list[str]:
     return [m.strip() for m in re.findall(r'^##\s+(.+)$', text, re.MULTILINE)]
 
 
-def build_report(draft: str, final: str, assessment: dict) -> dict:
+def build_report(
+    draft: str,
+    final: str,
+    assessment: dict,
+    *,
+    min_average: float = 4.0,
+    min_dimension: float = 3.0,
+) -> dict:
     """Compute publishability and revision delta from draft, final, and a 5-dimension assessment."""
     if not draft.strip() or not final.strip():
         raise ValueError('Both draft and final text must be non-empty.')
@@ -41,24 +48,24 @@ def build_report(draft: str, final: str, assessment: dict) -> dict:
         raise ValueError('blockers and majorIssues must be arrays.')
 
     pass_number = assessment.get('passNumber', assessment.get('pass_number', 1))
-    if not isinstance(pass_number, int) or isinstance(pass_number, bool) or pass_number not in (1, 2):
-        raise ValueError('passNumber must be 1 or 2 (maximum two editorial passes).')
+    if not isinstance(pass_number, int) or isinstance(pass_number, bool) or pass_number < 1:
+        raise ValueError('passNumber must be a positive integer (>= 1).')
 
     ratio = difflib.SequenceMatcher(None, draft, final, autojunk=False).ratio()
     average = round(sum(normalized.values()) / len(normalized), 2)
     minimum = min(normalized.values())
-    publishable = (decision == 'pass') and (not blockers) and (minimum >= 3.0) and (average >= 4.0)
+    publishable = (decision == 'pass') and (not blockers) and (minimum >= min_dimension) and (average >= min_average)
 
     failure_reasons: list[str] = []
     if decision != 'pass':
         failure_reasons.append(f'decision is "{decision}" (must be "pass")')
     if blockers:
         failure_reasons.append(f'{len(blockers)} blocker(s) remain')
-    if minimum < 3.0:
-        low = [k for k, v in normalized.items() if v < 3.0]
-        failure_reasons.append(f'dimension(s) below 3.0: {", ".join(low)}')
-    if average < 4.0:
-        failure_reasons.append(f'dimension average {average} is below 4.0')
+    if minimum < min_dimension:
+        low = [k for k, v in normalized.items() if v < min_dimension]
+        failure_reasons.append(f'dimension(s) below {min_dimension:g}: {", ".join(low)}')
+    if average < min_average:
+        failure_reasons.append(f'dimension average {average} is below {min_average:g}')
 
     return {
         'version': 1,
@@ -85,6 +92,8 @@ def main(argv=None) -> int:
     ap.add_argument('--final', required=True, help='Path to revised final Markdown.')
     ap.add_argument('--assessment', required=True, help='Path to JSON assessment file.')
     ap.add_argument('-o', '--output', help='Optional path to write review-report.json.')
+    ap.add_argument('--min-avg', type=float, default=4.0, help='Minimum dimension average for publishable=true (default 4.0).')
+    ap.add_argument('--min-dim', type=float, default=3.0, help='Minimum single-dimension score for publishable=true (default 3.0).')
     ap.add_argument('--json', action='store_true', help='Print JSON report to stdout.')
     ap.add_argument('--strict', action='store_true', help='Exit non-zero when publishable is false.')
     args = ap.parse_args(argv)
@@ -95,7 +104,7 @@ def main(argv=None) -> int:
         assessment = json.loads(Path(args.assessment).expanduser().resolve().read_text(encoding='utf-8'))
         if not isinstance(assessment, dict):
             raise ValueError('assessment file must contain a JSON object.')
-        report = build_report(draft, final, assessment)
+        report = build_report(draft, final, assessment, min_average=args.min_avg, min_dimension=args.min_dim)
         rendered = json.dumps(report, indent=2, ensure_ascii=False)
         if args.output:
             out_path = Path(args.output).expanduser().resolve()

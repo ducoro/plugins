@@ -217,8 +217,33 @@ def hello():
             )
             self.assertEqual(p3.returncode, 1)
             bad_out = json.loads(p3.stdout)
-            rules = {item['rule'] for item in bad_out['issues']}
-            self.assertTrue({'style_tag', 'div_tag', 'class_attr', 'position_unsupported', 'display_grid', 'css_var'}.issubset(rules))
+            levels = {item['rule']: item['level'] for item in bad_out['issues']}
+            self.assertEqual(levels['style_tag'], 'ERROR')
+            self.assertEqual(levels['position_unsupported'], 'ERROR')
+            self.assertEqual(levels['css_var'], 'ERROR')
+            self.assertEqual(levels['div_tag'], 'WARN')
+            self.assertEqual(levels['class_attr'], 'WARN')
+            self.assertEqual(levels['display_grid'], 'WARN')
+
+            # Regression: technical articles discussing CSS keywords in prose/<code> must NOT trigger false positives!
+            tech_md = (
+                '# CSS 布局避坑\n\n'
+                '在现代前端里我们常用 `display: grid`、`position: fixed`、`@media`、`float: left` 和 `var(--primary)`。\n\n'
+                '在 B站 和 A股 讨论 5G手机 与 第1章 的 90后 读者。\n\n'
+                '```css\n@media (prefers-color-scheme: dark) { .box { display: grid; color: var(--fg); position: sticky; } }\n```\n'
+            )
+            res_tech = rwh.WeChatRenderer(themes['professional-clean']).convert(tech_md)
+            tech_issues = rwh.validate_wechat_html(res_tech['html'])
+            self.assertEqual(tech_issues, [], f'Prose/code CSS keywords triggered false positives: {tech_issues}')
+            self.assertIn('B站', res_tech['html'])
+            self.assertIn('A股', res_tech['html'])
+            self.assertIn('5G手机', res_tech['html'])
+            self.assertIn('第1章', res_tech['html'])
+            self.assertIn('90后', res_tech['html'])
+
+            # --no-cjk-spacing preserves exact spacing without inserting CJK-Latin spaces
+            res_nospace = rwh.WeChatRenderer(themes['professional-clean'], cjk_spacing=False).convert('# T\n\n混排AI工具2026年。\n')
+            self.assertIn('混排AI工具2026年', res_nospace['html'])
 
     def test_wechat_client_stage_draft_add_image_post_and_get_draft_over_http(self):
         recorded = []
@@ -267,11 +292,11 @@ def hello():
                 md = tdir / 'article.md'
                 md.write_text('# 测试公众号标题\n\n正文插图：\n\n![插图一](assets/fig1.png)\n', encoding='utf-8')
 
-                # 1. stage-draft uploads inline image + cover + posts unescaped Chinese JSON
+                # 1. stage-draft uploads inline image + cover + posts unescaped Chinese JSON + honors --show-cover-pic
                 from io import StringIO
                 buf = StringIO()
                 with patch('sys.stdout', buf):
-                    rc = wx_client.main(['stage-draft', '--content-file', str(md), '--cover', str(cover), '--theme', 'sspai'])
+                    rc = wx_client.main(['stage-draft', '--content-file', str(md), '--cover', str(cover), '--theme', 'sspai', '--show-cover-pic', '1'])
                 self.assertEqual(rc, 0)
                 staged = json.loads(buf.getvalue())
                 self.assertEqual(staged['draft']['media_id'], 'DRAFT_OK_123')
@@ -279,12 +304,13 @@ def hello():
                 draft_reqs = [raw.decode('utf-8') for path, raw in recorded if path.startswith('/cgi-bin/draft/add')]
                 self.assertEqual(len(draft_reqs), 1)
                 self.assertIn('测试公众号标题', draft_reqs[0])  # ensure_ascii=False preserved UTF-8
+                self.assertIn('"show_cover_pic": 1', draft_reqs[0])
                 self.assertIn('https://mmbiz.qpic.cn/mmbiz_png/uploaded_inline_1/0', draft_reqs[0])
                 self.assertNotIn('assets/fig1.png', draft_reqs[0])
 
-                # 2. stage-draft blocks invalid raw HTML before making network calls
+                # 2. stage-draft blocks truly forbidden raw HTML (<script>/<style>) before making network calls
                 bad_html = tdir / 'bad.html'
-                bad_html.write_text('<div>forbidden</div>', encoding='utf-8')
+                bad_html.write_text('<script>alert(1)</script><style>p{color:red}</style>', encoding='utf-8')
                 before_count = len(recorded)
                 err_buf = StringIO()
                 with patch('sys.stderr', err_buf):

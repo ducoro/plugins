@@ -1,33 +1,30 @@
 ---
 name: platform-linkedin
-description: "Run LinkedIn end-to-end operations: B2B practitioner topic discovery, high-dwell structured posts and media uploads, LinkedIn REST Posts API publishing and comment workflows, and dwell-time plus peer-comment retrospectives."
+description: "Neutral LinkedIn platform advisor covering professional network + knowledge-graph distribution, PDF Document Carousels, dwell time and substantive comment weights, link placement trade-offs, browser/API delivery, and engagement guardrails."
 ---
 
-# LinkedIn Operations Playbook
+# LinkedIn Platform Expert Guide
 
-LinkedIn rewards practitioner credibility, dwell time ("See more" expansion + time spent reading), and substantive comments from peers in the same industry.
+LinkedIn is a **professional identity and knowledge-sharing network** where posts spread first to 1st-degree connections and then extend into 2nd/3rd-degree feeds based on **dwell time** and **substantive discussion**.
 
-## 1. Topic Discovery (Platform-Native)
-- **B2B & operator signals**: real shipping postmortems, architecture/process trade-offs, hiring/org lessons, concrete ROI numbers, and contrarian field notes.
-- **Avoid**: hollow motivational clichés, broetry one-word-per-line formatting, or hard sales pitches.
+## 1. Audience, Mindset & Distribution Mechanics
+- **Who is here**: Professionals, founders, operators, recruiters, engineers, designers, marketers, and B2B buyers reading during workdays (mobile commute + desktop breaks).
+- **Distribution levers**:
+  - **"See more" expansion & dwell time**: Only the first ~2–3 lines (~210 chars) appear above the fold. Clean opening lines earn expansion; **PDF Document Carousels (`mode: "document"`)** generate the highest average dwell time as readers swipe slide by slide.
+  - **Meaningful comments & author replies**: Multi-sentence comments from relevant peers outperform passive likes; timely author replies extend feed lifespan across 24–72 hours.
+  - **Outbound link trade-off**: External URLs in the post body can trim initial reach; weigh direct convenience against placing the link in the first comment or editing it in after initial momentum.
 
-## 2. Native Content & Format Rules
-- **Body (`<= 3000` chars; sweet spot 800–1600 chars)**: lines 1–2 must earn the "See more" click with a specific observation or concrete result; use crisp short paragraphs and bulleted takeaways.
-- **Media**: `text`, `image_text` (up to **9** images `jpg`/`png`/`gif`, `<= 10 MB` each), or `video` (`mp4`, `<= 200 MB`, `<= 600s`).
-- **Topics**: no separate API topic field; 0–3 relevant inline hashtags max.
-- **Schedule**: weekday business mornings (`08:00–10:30` target audience local time, Tue–Thu strongest).
+## 2. Formats & Content Spectrum
+- **Specs (`references/specs.json`)**: Body `<= 3000` chars; `text`, `image_text` (up to 9 images), `video` (`MP4 <= 10 min`, `<= 200MB`), and **`document`** (1 PDF carousel `<= 100MB`, `1080x1350` `4:5` or `1080x1080` slides exported via headless Chrome print-to-PDF from `../shortform-social/scripts/card_deck.py`); inline hashtags supported (`recommendations.maxTopicCount: 5`).
+- **Style spectrum**: Practitioner case studies, industry analysis, career/leadership reflections, visual PDF frameworks, company/product milestones, hiring stories, and candid lessons learned. Avoid cringe engagement-bait ("Agree? Comment YES!").
 
-## 3. Publishing & Verification (`references/protocol.md`)
-1. Validate against `references/specs.json` with `check_media_specs.py`.
-2. **Default zero-config path (Official LinkedIn Web Composer)**: open `https://www.linkedin.com/feed/` in the user's browser session (pause for sign-in/2FA if prompted), click **Start a post**, upload local images/video/document directly from `drafts/<id>/assets/`, paste formatted copy, save draft (`draft_saved`) or pause before **Post** until Gate 2 confirmation, then copy the live post URL.
-3. **Optional official REST API path** (requires `LINKEDIN_ACCESS_TOKEN` & `LINKEDIN_AUTHOR_URN`; sends active `LinkedIn-Version`, default `202601`):
-   - Upload a local image via `scripts/client.py [--dry-run] upload-image --file <path>` (returns `imageUrn`), then publish via `scripts/client.py post --text ... [--image-urn <urn>] [--alt-text ...] [--visibility PUBLIC|CONNECTIONS]` (multi-image/video upload endpoints in `references/protocol.md`).
-   - Capture the returned `postUrn` (`x-restli-id`) and verify via `userinfo` / `list-comments` / `comment`.
-4. Record `https://www.linkedin.com/feed/update/<urn>` in `publish-log.jsonl`.
+## 3. Delivery & Verification (`references/protocol.md`)
+- Follow the shared browser / OpenAPI / Gate 2 workflow in `../content-ops-loop/references/channel-access-matrix.md` and `approval-gates.md`.
+- **Platform specifics**: Validate via `check_media_specs.py` (supports `document` PDF validation). Default path: `https://www.linkedin.com/feed/` (native scheduling, PDF carousel upload, polls, Newsletters/Articles). Optional OpenAPI: `scripts/client.py` (`LINKEDIN_ACCESS_TOKEN`, `LINKEDIN_AUTHOR_URN`). Verify Gate 2 (`validate_workspace.py --verify-slot <slotId>`) before publishing.
 
-## 4. Engagement & Risk Guardrails
-- `scripts/client.py` supports `list-comments --post-urn <urn>` and `comment --post-urn <urn> --text ...` (comment deletion follows `references/protocol.md`).
-- Engage thoughtfully with peer comments within 2 hours; keep total actions under 40/day.
+## 4. Platform Red Lines & Engagement
+- **Compliance**: Avoid engagement-pod manipulation, automated connection-request spam, and undisclosed sponsored endorsements; protect client/employer confidentiality.
+- **Rate cap**: Enforce `<= 6/hour`, `<= 40/day` (90–180s spacing) via `../engagement-and-analytics/scripts/engagement_guard.py`.
 
 ## 5. North-Star Metrics (`platformMetrics`)
-Track `seeMoreClickRate`, `substantiveCommentCount`, `repostCount`, and `profileViewsFromPost`. Note: LinkedIn's Member API does not expose personal-profile post analytics—log exported/manual numbers with `source: "manual"` for personal accounts, or use `organizationalEntityShareStatistics` for Organization Pages (see `references/protocol.md`).
+Track `dwellExpandRate`, `substantiveCommentCount`, `repostWithThoughtsCount`, `profileViews`, and `inboundDmOrLeadCount`.

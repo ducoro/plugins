@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 
 VALID_STATUSES = ('verified', 'unverified', 'user_provided')
 VALID_CLAIM_TYPES = ('fact', 'inference', 'opinion', 'user_experience')
+VALID_SOURCE_TYPES = ('web_url', 'local_file', 'first_hand_test', 'publication_or_interview')
 
 
 def _is_http_url(url: str) -> bool:
@@ -37,6 +38,8 @@ def add_source(
     title: str,
     claim: str,
     url: str = '',
+    source_type: str = 'web_url',
+    locator: str = '',
     publisher: str = '',
     published_at: str = '',
     status: str = 'verified',
@@ -44,14 +47,20 @@ def add_source(
     title = title.strip()
     claim = claim.strip()
     url = url.strip()
+    locator = locator.strip()
     if not title or not claim:
         raise ValueError('Both --title and --claim must be non-empty.')
     if status not in VALID_STATUSES:
         raise ValueError(f'Invalid status "{status}". Must be one of: {", ".join(VALID_STATUSES)}')
-    if status == 'verified' and not _is_http_url(url):
-        raise ValueError('A "verified" source requires a valid http(s):// URL (never mark model memory as verified).')
+    if source_type not in VALID_SOURCE_TYPES:
+        raise ValueError(f'Invalid source_type "{source_type}". Must be one of: {", ".join(VALID_SOURCE_TYPES)}')
     if url and not _is_http_url(url):
         raise ValueError(f'Invalid URL: "{url}" (must start with http:// or https://).')
+    if status == 'verified':
+        if source_type == 'web_url' and not _is_http_url(url):
+            raise ValueError('A "verified" web_url source requires a valid http(s):// URL (or pass --source-type local_file|first_hand_test|publication_or_interview with --locator).')
+        if source_type != 'web_url' and not locator:
+            raise ValueError(f'A "verified" {source_type} source requires a non-empty --locator (file path, publication citation, or test record).')
 
     ledger = load_ledger(ledger_path)
     next_id = f'S{len(ledger["sources"]) + 1}'
@@ -59,7 +68,9 @@ def add_source(
         'id': next_id,
         'title': title,
         'claim': claim,
+        'sourceType': source_type,
         'url': url,
+        'locator': locator,
         'publisher': publisher.strip(),
         'publishedAt': published_at.strip(),
         'status': status,
@@ -98,7 +109,7 @@ def verify_claims(ledger_path: Path, claims_path: Path) -> dict:
         linked = [sources_by_id[sid] for sid in sids]
         if ctype == 'fact':
             if not any(src.get('status') == 'verified' for src in linked):
-                issues.append({'claimId': cid, 'level': 'ERROR', 'message': 'Factual claim requires at least one verified source with an http(s) URL.'})
+                issues.append({'claimId': cid, 'level': 'ERROR', 'message': 'Factual claim requires at least one verified source (URL or non-web locator).'})
         elif ctype == 'user_experience':
             if not any(src.get('status') == 'user_provided' for src in linked):
                 issues.append({'claimId': cid, 'level': 'ERROR', 'message': 'User-experience claim requires a user_provided source from the current brief.'})
@@ -124,7 +135,9 @@ def main(argv=None) -> int:
     p_add.add_argument('--ledger', required=True, help='Path to sources.json.')
     p_add.add_argument('--title', required=True, help='Source title or user note label.')
     p_add.add_argument('--claim', required=True, help='Specific fact or detail supported by this source.')
-    p_add.add_argument('--url', default='', help='http(s) URL (required when --status verified).')
+    p_add.add_argument('--url', default='', help='http(s) URL (required when --status verified and --source-type web_url).')
+    p_add.add_argument('--source-type', choices=VALID_SOURCE_TYPES, default='web_url', help='Provenance kind (default web_url; supports local_file, first_hand_test, publication_or_interview).')
+    p_add.add_argument('--locator', default='', help='Non-web citation anchor (local file path, book/page, interview date, or test log).')
     p_add.add_argument('--publisher', default='', help='Organization, author, or channel.')
     p_add.add_argument('--published-at', default='', help='Publication date (YYYY-MM-DD).')
     p_add.add_argument('--status', choices=VALID_STATUSES, default='verified')
@@ -146,6 +159,8 @@ def main(argv=None) -> int:
                 title=args.title,
                 claim=args.claim,
                 url=args.url,
+                source_type=args.source_type,
+                locator=args.locator,
                 publisher=args.publisher,
                 published_at=args.published_at,
                 status=args.status,

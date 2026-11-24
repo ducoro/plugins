@@ -16,6 +16,7 @@ LAYOUT_NAMES = (
     'shot-stage',
     'quote-note',
     'closing-cta',
+    'map-route',
 )
 
 
@@ -213,6 +214,36 @@ def render_3x4_frame(
         <div class="thesis-note" data-mark-item="{fid}-takeaway" data-mark-label="Quote interpretation">延伸观察：用两行短句把引文拉回读者的日常工作或消费场景。</div>
       </div>
       <footer class="card-foot"><span class="brand-mark">{b}</span><span>观点摘录</span></footer>
+    </section>'''
+
+    if layout == 'map-route':
+        head = _frame_open(fid, 'frame-3x4 layout-map-route', 1080, 1440, '3:4 Spatial Route Map', f'{fid} — Route Map')
+        return f'''{head}
+      <div class="card-head"><span class="eyebrow">ROUTE MAP</span><span class="page-index">{page}</span></div>
+      <div class="card-body">
+        <h2 class="title-slide" data-mark-item="{fid}-title" data-mark-label="Map route title">四个停靠点，顺路不折返</h2>
+        <p class="lead-copy" data-mark-item="{fid}-lead" data-mark-label="Map route summary">全程约 5.2 公里、步行加停留 4 小时，可替换为本地静态地图瓦片底图。</p>
+        <figure class="map-canvas" data-mark-item="{fid}-map" data-mark-label="Route map stage">
+          <svg viewBox="0 0 936 580" aria-hidden="true">
+            <path d="M 160 440 C 260 390, 290 260, 420 270 C 550 280, 560 150, 740 140" fill="none" stroke="var(--accent)" stroke-width="6" stroke-dasharray="12 10" stroke-linecap="round" />
+            <circle cx="160" cy="440" r="10" fill="var(--accent)" />
+            <circle cx="380" cy="272" r="10" fill="var(--accent)" />
+            <circle cx="575" cy="212" r="10" fill="var(--accent)" />
+            <circle cx="740" cy="140" r="10" fill="var(--accent)" />
+          </svg>
+          <div class="map-pin" style="left: 20%; top: 76%;"><span class="map-pin-num">1</span>起点集合</div>
+          <div class="map-pin" style="left: 42%; top: 47%;"><span class="map-pin-num">2</span>核心停靠</div>
+          <div class="map-pin" style="left: 63%; top: 37%;"><span class="map-pin-num">3</span>补给观景</div>
+          <div class="map-pin" style="left: 78%; top: 24%;"><span class="map-pin-num">4</span>终点收官</div>
+        </figure>
+        <div class="route-stops" data-mark-item="{fid}-stops" data-mark-label="Route stops legend">
+          <div class="route-stop"><strong>01 起点集合</strong><span>07:30 · 0 km</span></div>
+          <div class="route-stop"><strong>02 核心停靠</strong><span>08:40 · 1.8 km</span></div>
+          <div class="route-stop"><strong>03 补给观景</strong><span>10:00 · 3.5 km</span></div>
+          <div class="route-stop"><strong>04 终点收官</strong><span>11:30 · 5.2 km</span></div>
+        </div>
+      </div>
+      <footer class="card-foot"><span class="brand-mark">{b}</span><span>路线实测参考</span></footer>
     </section>'''
 
     head = _frame_open(fid, 'frame-3x4 layout-closing-cta', 1080, 1440, '3:4 Closing Summary', f'{fid} — Closing Takeaway')

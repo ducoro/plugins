@@ -1,31 +1,29 @@
 ---
 name: platform-wechat-channels
-description: "Run WeChat Channels (视频号) end-to-end operations: social-graph shareable topic selection, crisp 16-char short-title video packaging, browser-based Creator Studio draft staging with human publish confirmation, and forward-rate retrospectives."
+description: "Neutral WeChat Channels (视频号) platform advisor covering social-graph recommendation (friend likes & chat shares), mature/general-audience mindset, Official Account cross-linking, browser Creator Studio delivery, and compliance guardrails."
 ---
 
-# WeChat Channels (视频号) Operations Playbook
+# WeChat Channels (视频号) Platform Expert Guide
 
-WeChat Channels combines interest recommendations with WeChat social-graph amplification—every "Like (♥)" or forward to a WeChat group directly exposes the video to the viewer's real-life network.
+WeChat Channels combines **social-graph amplification inside WeChat** (friend likes, Moments shares, group-chat forwards) with **algorithmic discovery**.
 
-## 1. Topic Discovery (Platform-Native)
-- **Social-currency signals**: topics a viewer feels proud or helpful sharing into a work/family/founder group; practical explanations, clear insights, and relatable industry stories.
-- **Synergy**: cross-link with your WeChat Official Account articles and private-domain communities.
+## 1. Audience, Mindset & Distribution Mechanics
+- **Audience profile**: Broadest age and demographic span across WeChat's 1B+ user base, skewing slightly older, higher purchasing power, and more trust-oriented than youth-heavy feeds.
+- **Unique distribution engine**: A single **heart (`推荐/点赞`)** or **forward to a WeChat group / Moments** exposes your video directly to the viewer's real-life social network ("X 位朋友赞过"). Content that makes the sharer look thoughtful, helpful, or tasteful outperforms edgy shock bait.
+- **Ecosystem leverage**: Native links to **WeChat Official Account articles**, **WeChat Store / mini-programs**, and **Live Rooms (`直播预约`)** let Channels act as the discovery top-of-funnel for private-domain trust.
 
-## 2. Native Content & Packaging Structure
-- **Short title (`<= 16` chars)**: WeChat Channels displays a tight short title in Moments/chat cards—make every character carry the hook.
-- **Description (`<= 1000` chars)**: clear context + 3–5 native `#topic` tags + optional Official Account article link.
-- **Video**: `9:16` vertical (preferred) or `16:9` horizontal (`mp4`/`mov`/`mkv`, `<= 1 GB`, `<= 3600s`; sweet spot 45–150s with clear subtitles for muted autoplay).
+## 2. Formats & Content Spectrum
+- **Specs (`references/specs.json`)**: Short title (`短标题`) `<= 16` chars (shown prominently on feed cards and forwards); description `<= 1000` chars; `9:16` (`1080x1920`) or `16:9` (`1920x1080`) video up to 60 min (`<= 1GB`), or `image_text` up to 9 images.
+- **Style spectrum**: Calm expertise & practical advice, local/cultural stories, health/family/finance literacy, founder talks, behind-the-scenes craft, and crisp 1-minute summaries paired with an Official Account deep dive.
+- **Safe zones & readability**: Slightly larger subtitle typography helps older mobile readers; keep key titles/captions inside `x: 60–930`, `y: 200–1520` on `1080x1920` (see `../video-production/references/video-and-script-guide.md`).
 
-## 3. Publishing & Verification (`references/protocol.md`)
-- General creator posting runs via **WeChat Channels Creator Studio** (`channels.weixin.qq.com`) using a tool-agnostic browser workflow (no open general posting API without enterprise Channels EC/partner qualifications):
-  1. Validate with `check_media_specs.py` against `references/specs.json`.
-  2. Upload video, set cover, short title (`<= 16` chars), description (`<= 1000` chars), `#topic` tags, and optional schedule in Creator Studio.
-  3. **Save draft** and pause at Gate 2 for human review/publish confirmation.
-  4. Read back the published work ID/link from **动态管理** and log it in `publish-log.jsonl`.
+## 3. Delivery & Verification (`references/protocol.md`)
+- Follow the shared browser Creator Studio + Gate 2 workflow in `../content-ops-loop/references/channel-access-matrix.md` and `approval-gates.md`.
+- **Platform specifics**: No general public posting OpenAPI—stage drafts in `https://channels.weixin.qq.com/` (supports custom `6:7` / `3:4` cover crop, `短标题`, Official Account article link, and scheduling). Validate via `check_media_specs.py` and verify Gate 2 (`validate_workspace.py --verify-slot <slotId>`) before publishing.
 
-## 4. Engagement & Risk Guardrails
-- Reply promptly to early comments (social-graph commenters are often real connections or high-trust leads).
-- Keep browser interactions gentle (max 30–40 actions/day, 6–8/hour, 90–180s spacing); stop on any WeChat scan/verification gate.
+## 4. Platform Red Lines & Engagement
+- **Compliance**: Strict enforcement against medical miracle claims, guaranteed investment returns, unverified news rumors, and off-platform QR/contact diversion. Use WeChat's native Official Account link or WeCom service card instead.
+- **Rate cap**: Enforce `<= 6/hour`, `<= 40/day` (90–180s spacing) via `../engagement-and-analytics/scripts/engagement_guard.py`.
 
 ## 5. North-Star Metrics (`platformMetrics`)
-Track `forwardCount` (chat/Moments shares), `recommendationShareRate` (♥), `completionRate`, and `officialAccountClickThrough`.
+Track `shareRate` (group + Moments forwards), `friendLikeRatio`, `completionRate`, `avgWatchSec`, and `officialAccountClickThrough`.

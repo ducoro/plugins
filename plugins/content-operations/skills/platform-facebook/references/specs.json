@@ -17,8 +17,11 @@
     "maxVideoDurationSec": 3600
   },
   "topic": {
-    "supported": false,
+    "supported": true,
     "nativeField": false
+  },
+  "recommendations": {
+    "maxTopicCount": 5
   },
   "publishPolicy": {
     "completionStrategy": "sync",

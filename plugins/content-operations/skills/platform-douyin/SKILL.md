@@ -1,32 +1,29 @@
 ---
 name: platform-douyin
-description: "Run Douyin end-to-end operations: hook-driven short video and carousel topic selection, 3-second retention scripting, strict spec validation, OpenAPI and browser-assisted publishing workflows, golden-hour comment engagement, and retention-led retrospectives."
+description: "Neutral Douyin platform advisor covering full-screen algorithmic video/carousel distribution, 3-second retention and completion levers, diverse short-video and photo-slide styles, UI safe zones, creator studio/API delivery, and compliance red lines."
 ---
 
-# Douyin Operations Playbook
+# Douyin (抖音) Platform Expert Guide
 
-Douyin is an interest-graph recommendation engine. Traffic tiers unlock sequentially based on 3-second hook retention, full completion rate, shares, and comment velocity.
+Douyin is an **interest-graph full-screen discovery feed** plus a rapidly growing **short-video search engine**. Videos enter tiered traffic pools and expand strictly on viewer retention and engagement velocity.
 
-## 1. Topic Discovery (Platform-Native)
-- **Trend & tension signals**: Douyin Hot Search, niche search autocomplete, high-share competitor videos, and polarizing practical questions from your own comment section.
-- **Winning angles**: counter-intuitive findings, live 30–60s walkthroughs, clear "before vs. after" proofs, and crisp myth-busting.
+## 1. Audience, Mindset & Distribution Mechanics
+- **Consumption mindset**: Fast, sound-on, full-screen vertical swipe. Viewers decide within **1–3 seconds** whether to keep watching or swipe away—no warm-up intros.
+- **Tiered traffic pool levers**: (1) **3-second retention & full completion rate (`完播率`)**; (2) **Re-watch rate (`复播`)**; (3) **Comments, shares, saves, and profile-click-to-follow**. Controversial or relatable comment hooks often double dwell time while viewers read replies.
+- **Search traffic**: Keyword-rich spoken audio (ASR-indexed), burned-in captions, titles, and hashtags capture long-tail Douyin search ("抖音热点宝" / "巨量算数" / search dropdown).
 
-## 2. Native Content & Script Structure
-- **0–3s Visual + Verbal Hook**: lead with the outcome, contradiction, or stakes immediately. Zero preamble.
-- **Pacing**: cut dead air; deliver a visual change or new point every 3–5 seconds; keep primary short videos in **30–90s** (hard max 900s).
-- **Format**: `9:16` vertical (`1080x1920`) for video; keep captions and cover titles inside the central 70% safe zone (avoid right action rail and bottom description overlay).
-- **Copy limits**: title `<= 30` chars (`short_title <= 12` chars when set), total text `<= 1000` chars, max **5** native topics; image carousel supports up to **12** images.
+## 2. Formats & Content Spectrum
+- **Specs (`references/specs.json`)**: Title `<= 30` chars, body+tags `<= 1000` chars; `9:16` (`1080x1920`) `H.264/AAC MP4` up to 15 min (browser up to 4GB; OpenAPI `apiOverrides` caps at 100MB); photo-slide (`图文`) up to 12 images paired with trending audio.
+- **Style spectrum (not one formula)**: Talking-head storytelling, cinematic B-roll & daily vlogs, street interviews, product demos, humorous skits, narrated visual explainers, and swipeable photo-music carousels.
+- **Packaging & safe zones**: Keep subtitles and key visuals inside `x: 60–920`, `y: 220–1500` on `1080x1920` (avoid right action rail and bottom caption bar; see `../video-production/references/video-and-script-guide.md`). Run `../video-production/scripts/video_ops.py probe --loudness` (`-14 LUFS`, `bt709`).
 
-## 3. Publishing & Verification (`references/protocol.md`)
-1. Validate first with `../content-ops-loop/scripts/check_media_specs.py` against `references/specs.json`.
-2. **Default zero-config path (Official Douyin Creator Studio)**: open `https://creator.douyin.com/creator-micro/content/upload` in the user's browser session (pause for login/QR or verification if prompted), upload local video or image carousel directly from `drafts/<id>/assets/`, fill title, cover frame (`cover_tsp`), tags, and privacy/download settings, save draft (`draft_saved`) at Gate 2, then publish after explicit human confirmation.
-3. **Optional official Douyin OpenAPI path** (requires `DOUYIN_ACCESS_TOKEN` and `DOUYIN_OPEN_ID`): use `scripts/client.py [--dry-run] query-videos --item-ids ...` and `get-fans` (`--app-type web|miniapp`) for live readback and fan counts; OAuth token exchange and QR handoff endpoints are documented in `references/protocol.md` (require approved Douyin Open Platform scopes).
-4. Read back the live URL (`https://www.douyin.com/video/<id>` or `/note/<id>`) into `publish-log.jsonl`.
+## 3. Delivery & Verification (`references/protocol.md`)
+- Follow the shared Creator Studio / Gate 2 workflow in `../content-ops-loop/references/channel-access-matrix.md` and `approval-gates.md`.
+- **Platform specifics**: Validate via `check_media_specs.py` (pass `--channel api` when using OpenAPI `100MB` cap). Default path: `https://creator.douyin.com/` (supports scheduling & custom cover). Optional OpenAPI: `scripts/client.py` (uses `DOUYIN_ACCESS_TOKEN`, returns H5 share/publish handoff). Verify Gate 2 (`validate_workspace.py --verify-slot <slotId>`) before publishing.
 
-## 4. Engagement & Risk Guardrails
-- **Golden first hour**: respond thoughtfully to the first 5–10 real comments to spark comment threads; pin one helpful summary comment when appropriate.
-- **Compliance red lines**: avoid direct off-platform diversion phrasing, unverified financial/medical promises, or repetitive copy-paste comments.
-- **Rate cap**: stay under **40 actions/day** (6–8/hour, 90–180s spacing on browser actions). Halt immediately on risk-control or CAPTCHA prompts.
+## 4. Platform Red Lines & Engagement
+- **Diversion & claims**: Never display QR codes, WeChat IDs, phone numbers, or third-party watermark logos (e.g., Kuaishou/Xiaohongshu watermarks trigger immediate suppression). Avoid absolute medical/financial/advertising claims; toggle AIGC disclosure when synthetic footage is used.
+- **Rate cap**: Enforce `<= 6/hour`, `<= 40/day` (90–180s spacing) via `../engagement-and-analytics/scripts/engagement_guard.py`.
 
 ## 5. North-Star Metrics (`platformMetrics`)
-Track `threeSecRetention`, `completionRate`, `shareRate`, and `followerConversionRate` in `analytics/snapshots.jsonl`.
+Track `retention3s`, `completionRate`, `rewatchRate`, `avgWatchSec`, and `shareRate`.

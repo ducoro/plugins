@@ -4,100 +4,94 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Analytics &amp; Retrospective Board</title>
+  <link rel="stylesheet" href="./runtime/board-ui.css" />
   <style>
-    :root {
-      --bg: #f7f8fa; --surface: #ffffff; --surface-alt: #f1f3f7; --text: #111827;
-      --muted: #5b6472; --border: #e2e6ee; --accent: #2563eb;
-      --ok: #15803d; --ok-bg: #dcfce7; --warn: #b45309; --warn-bg: #fef3c7;
-      --err: #b91c1c; --err-bg: #fee2e2; --info: #1d4ed8; --info-bg: #dbeafe;
-      --radius: 12px;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0f131a; --surface: #171c26; --surface-alt: #1f2633; --text: #f3f4f6;
-        --muted: #9ca3af; --border: #2a3342; --accent: #60a5fa;
-        --ok: #86efac; --ok-bg: #14532d; --warn: #fcd34d; --warn-bg: #78350f;
-        --err: #fca5a5; --err-bg: #7f1d1d; --info: #93c5fd; --info-bg: #1e3a8a;
-      }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { transition: none !important; animation: none !important; }
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
-    .shell { max-width: 1240px; margin: 0 auto; padding: 20px; }
-    h1 { margin: 0; font-size: 22px; }
-    h2 { margin: 20px 0 10px; font-size: 16px; }
-    .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
-    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0; }
-    select, button { font: inherit; font-size: 13px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 6px 10px; cursor: pointer; }
-    button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-    button:disabled { opacity: 0.45; cursor: not-allowed; }
-    .status-bar { padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; background: var(--info-bg); color: var(--info); }
-    .status-bar[data-tone="ok"] { background: var(--ok-bg); color: var(--ok); }
-    .status-bar[data-tone="warn"] { background: var(--warn-bg); color: var(--warn); }
-    .status-bar[data-tone="error"] { background: var(--err-bg); color: var(--err); }
-    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
-    .kpi-label { font-size: 12px; color: var(--muted); }
-    .kpi-value { font-size: 22px; font-weight: 700; margin-top: 2px; }
-    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
-    th { font-size: 12px; color: var(--muted); background: var(--surface-alt); }
-    tr.focused { outline: 2px solid var(--accent); }
-    .native-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; }
-    .retro-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
-    .retro-item:last-child { border-bottom: none; }
-    svg { width: 100%; height: 180px; display: block; }
-    html[data-ducoro-render='shot'] .toolbar,
-    html[data-ducoro-render='shot'] .retro-action,
-    html[data-ducoro-render='shot'] .status-bar { display: none !important; }
+    .metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+    .trend-svg { width: 100%; height: 196px; display: block; }
+    .retro-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .retro-row:last-child { border-bottom: 0; padding-bottom: 0; }
+    .retro-check { display: inline-flex; align-items: center; gap: 8px; }
+    .retro-done { color: var(--muted-foreground); text-decoration: line-through; }
   </style>
 </head>
 <body>
-  <div class="shell" data-ducoro-export-frame="analytics-summary">
-    <header data-card="analytics-header" data-card-title="Analytics & Retro">
-      <h1 data-mark-item="board-title" data-mark-label="Analytics Title">Analytics &amp; Retrospective Board</h1>
-      <div class="sub" id="subtitle">Loading analytics snapshot...</div>
+  <div class="ui-shell" data-ducoro-export-frame="analytics-summary">
+    <header class="ui-header" data-card="analytics-header" data-card-title="Analytics & Retro">
+      <div>
+        <h1 class="ui-title" data-mark-item="board-title" data-mark-label="Analytics Title">Analytics &amp; Retrospective</h1>
+        <p class="ui-subtitle" id="subtitle">Loading analytics snapshot...</p>
+      </div>
+      <div class="ui-toolbar" data-mark-ignore>
+        <div class="ui-tabs" role="tablist" aria-label="Time window">
+          <button class="ui-tab" type="button" role="tab" data-days="7">7d</button>
+          <button class="ui-tab" type="button" role="tab" data-days="14">14d</button>
+          <button class="ui-tab" type="button" role="tab" data-days="30">30d</button>
+        </div>
+        <select class="ui-select" id="platformFilter" aria-label="Filter by platform"><option value="all">All Platforms (Cross-Compare)</option></select>
+      </div>
     </header>
 
-    <div class="toolbar" data-mark-ignore>
-      <button class="range-btn" data-days="7">7d</button>
-      <button class="range-btn" data-days="14">14d</button>
-      <button class="range-btn" data-days="30">30d</button>
-      <select id="platformFilter" aria-label="Filter by platform"><option value="all">All Platforms (Cross-Compare)</option></select>
-    </div>
+    <div class="ui-alert" data-bridge-status data-mark-ignore hidden></div>
+    <section class="ui-kpi-grid" id="kpis" data-card="kpi-summary" data-card-title="KPI Summary"></section>
 
-    <div class="status-bar" data-bridge-status data-mark-ignore hidden></div>
-    <section class="kpis" id="kpis" data-card="kpi-summary" data-card-title="KPI Summary"></section>
-
-    <section id="nativeSection" hidden>
-      <h2 id="nativeHeading">Platform-Native Metrics</h2>
-      <div class="native-grid" id="nativeMetrics" data-card="platform-native-metrics" data-card-title="Platform Native Metrics"></div>
+    <section class="ui-section" id="nativeSection" hidden>
+      <div class="ui-section-head">
+        <h2 class="ui-section-title" id="nativeHeading">Platform-Native Metrics</h2>
+      </div>
+      <div class="metric-grid" id="nativeMetrics" data-card="platform-native-metrics" data-card-title="Platform Native Metrics"></div>
     </section>
 
-    <section id="accountSection" hidden>
-      <h2>Account Snapshots</h2>
-      <div class="native-grid" id="accountGrid" data-card="account-growth" data-card-title="Account Snapshots"></div>
+    <section class="ui-section" id="accountSection" hidden>
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">Account Snapshots</h2>
+      </div>
+      <div class="metric-grid" id="accountGrid" data-card="account-growth" data-card-title="Account Snapshots"></div>
     </section>
 
-    <h2>Views &amp; Engagement Trend</h2>
-    <section class="panel" id="trendPanel" data-card="trend-chart" data-card-title="Performance Trend"></section>
-
-    <h2>Same-Topic Cross-Platform Comparison</h2>
-    <section class="panel" id="crossPanel" data-card="cross-platform" data-card-title="Cross-Platform Comparison"></section>
-
-    <h2>Top Works</h2>
-    <section class="panel" data-card="works-leaderboard" data-card-title="Works Leaderboard">
-      <table>
-        <thead><tr><th>Work</th><th>Platform</th><th>Window</th><th>Views</th><th>Likes</th><th>Comments</th><th>Saves</th><th>Eng %</th></tr></thead>
-        <tbody id="worksBody"></tbody>
-      </table>
+    <section class="ui-section">
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">Views Trend</h2>
+        <span class="ui-muted">Daily captured views</span>
+      </div>
+      <div class="ui-card" id="trendPanel" data-card="trend-chart" data-card-title="Performance Trend"></div>
     </section>
 
-    <h2>Latest Retrospective &amp; Next-Cycle Actions</h2>
-    <section class="panel" id="retroPanel" data-card="retro-actions" data-card-title="Retrospective Actions"></section>
+    <section class="ui-section">
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">Same-Topic Cross-Platform Comparison</h2>
+      </div>
+      <div id="crossPanel" data-card="cross-platform" data-card-title="Cross-Platform Comparison"></div>
+    </section>
+
+    <section class="ui-section" data-card="works-leaderboard" data-card-title="Works Leaderboard">
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">Top Works</h2>
+      </div>
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>Work</th>
+              <th>Platform</th>
+              <th>Window</th>
+              <th class="is-num">Views</th>
+              <th class="is-num">Likes</th>
+              <th class="is-num">Comments</th>
+              <th class="is-num">Saves</th>
+              <th class="is-num">Eng %</th>
+            </tr>
+          </thead>
+          <tbody id="worksBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="ui-section">
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">Latest Retrospective &amp; Next-Cycle Actions</h2>
+      </div>
+      <div class="ui-card" id="retroPanel" data-card="retro-actions" data-card-title="Retrospective Actions"></div>
+    </section>
   </div>
 
   <script id="board-initial-data" type="application/json">
@@ -161,9 +155,7 @@
           run: ({ workId }) => {
             const list = payload?.works || [];
             const match = list.find((w) => w.workId === workId);
-            if (!match) {
-              throw new Error(`Unknown workId "${workId}". Valid IDs: ${list.map((w) => w.workId).join(', ') || '(none)'}`);
-            }
+            if (!match) throw new Error(`Unknown workId "${workId}". Valid IDs: ${list.map((w) => w.workId).join(', ') || '(none)'}`);
             if (view.platform !== 'all' && match.platform !== view.platform) view.platform = 'all';
             const workDate = String(match.capturedAt || '').slice(0, 10);
             if (workDate) {
@@ -171,10 +163,7 @@
               if (workDate < curCutoff) {
                 for (const d of VALID_DAYS) {
                   const nextCutoff = new Date(Date.now() - d * 86400 * 1000).toISOString().slice(0, 10);
-                  if (workDate >= nextCutoff) {
-                    view.days = d;
-                    break;
-                  }
+                  if (workDate >= nextCutoff) { view.days = d; break; }
                   view.days = 30;
                 }
               }
@@ -190,37 +179,57 @@
 
     function syncInputs() {
       platEl.value = view.platform;
-      for (const btn of document.querySelectorAll('button.range-btn[data-days]')) {
-        btn.classList.toggle('active', Number(btn.dataset.days) === view.days);
+      for (const btn of document.querySelectorAll('.ui-tab[data-days]')) {
+        const active = Number(btn.dataset.days) === view.days;
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-selected', String(active));
       }
     }
 
     function renderTrendSvg(points) {
-      if (!points.length) return '<div class="sub">No snapshot trend data in this window yet.</div>';
+      if (!points.length) return '<div class="ui-empty-inline">No snapshot trend data in this window yet.</div>';
       const maxViews = Math.max(...points.map((p) => p.views), 1);
-      const w = 720;
-      const h = 160;
-      const pad = 24;
-      const step = points.length > 1 ? (w - pad * 2) / (points.length - 1) : 0;
+      const w = 760, h = 180, padL = 48, padR = 20, padT = 16, padB = 26;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const step = points.length > 1 ? plotW / (points.length - 1) : 0;
       const coords = points.map((p, i) => {
-        const x = points.length > 1 ? pad + i * step : w / 2;
-        const y = h - pad - ((p.views / maxViews) * (h - pad * 2));
+        const x = points.length > 1 ? padL + i * step : padL + plotW / 2;
+        const y = padT + plotH - ((p.views / maxViews) * plotH);
         return { x: Number(x.toFixed(1)), y: Number(y.toFixed(1)), ...p };
       });
       const poly = coords.map((c) => `${c.x},${c.y}`).join(' ');
+      const area = coords.length > 1
+        ? `M ${coords[0].x},${padT + plotH} L ${coords.map((c) => `${c.x},${c.y}`).join(' L ')} L ${coords[coords.length - 1].x},${padT + plotH} Z`
+        : '';
+      const gridTicks = [0, 0.5, 1].map((t) => {
+        const gy = Number((padT + plotH * (1 - t)).toFixed(1));
+        const val = Math.round(maxViews * t).toLocaleString();
+        return `<line x1="${padL}" y1="${gy}" x2="${w - padR}" y2="${gy}" stroke="var(--border)" stroke-dasharray="${t === 0 ? '' : '3 3'}" />`
+          + `<text x="${padL - 8}" y="${gy + 4}" font-size="11" text-anchor="end" fill="var(--muted-foreground)">${val}</text>`;
+      }).join('');
+      const xLabels = coords
+        .filter((_, i) => i === 0 || i === coords.length - 1 || i === Math.floor(coords.length / 2))
+        .map((c) => `<text x="${c.x}" y="${h - 6}" font-size="11" text-anchor="middle" fill="var(--muted-foreground)">${esc(c.date)}</text>`)
+        .join('');
       return `
-        <svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Views trend">
-          <polyline fill="none" stroke="var(--accent)" stroke-width="2.5" points="${poly}" />
-          ${coords.map((c) => `<circle cx="${c.x}" cy="${c.y}" r="4" fill="var(--accent)"><title>${esc(c.date)}: ${c.views} views (${c.engagementRate}% eng)</title></circle>`).join('')}
-          ${coords.filter((_, i) => i === 0 || i === coords.length - 1 || i === Math.floor(coords.length / 2)).map((c) =>
-            `<text x="${c.x}" y="${h - 4}" font-size="11" text-anchor="middle" fill="var(--muted)">${esc(c.date)}</text>`
-          ).join('')}
+        <svg class="trend-svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="Views trend">
+          <defs>
+            <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--chart-1)" stop-opacity="0.18" />
+              <stop offset="100%" stop-color="var(--chart-1)" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          ${gridTicks}
+          ${area ? `<path d="${area}" fill="url(#trendFill)" />` : ''}
+          <polyline fill="none" stroke="var(--chart-1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${poly}" />
+          ${coords.map((c) => `<circle cx="${c.x}" cy="${c.y}" r="3.5" fill="var(--card)" stroke="var(--chart-1)" stroke-width="2"><title>${esc(c.date)}: ${c.views.toLocaleString()} views (${c.engagementRate}% eng)</title></circle>`).join('')}
+          ${xLabels}
         </svg>`;
     }
 
     function render() {
       if (!payload) return;
-      document.getElementById('subtitle').textContent = `Window: ${view.days}d · Synced: ${payload.generatedAt || 'not built yet'}`;
+      document.getElementById('subtitle').textContent = `Window ${view.days}d · Synced ${payload.generatedAt || 'pending'}`;
 
       const cutoffDate = new Date(Date.now() - view.days * 86400 * 1000).toISOString().slice(0, 10);
       let works = (payload.works || []).filter((w) => {
@@ -247,37 +256,31 @@
         ['Comments / Shares', `${totals.comments.toLocaleString()} / ${totals.shares.toLocaleString()}`, 'kpi-comments'],
         ['Avg Engagement', `${avgEng}%`, 'kpi-eng'],
       ].map(([label, val, id]) => `
-        <div class="kpi" data-mark-item="${id}" data-mark-label="${label}">
-          <div class="kpi-label">${label}</div>
-          <div class="kpi-value">${val}</div>
+        <div class="ui-kpi" data-mark-item="${id}" data-mark-label="${label}">
+          <div class="ui-kpi-label">${label}</div>
+          <div class="ui-kpi-value">${val}</div>
         </div>`).join('');
 
-      // Platform-native metric slot when a single platform is selected
       const nativeSection = document.getElementById('nativeSection');
       if (view.platform !== 'all') {
-        const agg = {};
-        const counts = {};
+        const agg = {}, counts = {};
         for (const w of works) {
           for (const [k, v] of Object.entries(w.platformMetrics || {})) {
-            if (typeof v === 'number') {
-              agg[k] = (agg[k] || 0) + v;
-              counts[k] = (counts[k] || 0) + 1;
-            }
+            if (typeof v === 'number') { agg[k] = (agg[k] || 0) + v; counts[k] = (counts[k] || 0) + 1; }
           }
         }
         const entries = Object.keys(agg);
         nativeSection.hidden = entries.length === 0;
         document.getElementById('nativeHeading').textContent = `${view.platform} Native Metrics (Average)`;
         document.getElementById('nativeMetrics').innerHTML = entries.map((k) => `
-          <div class="kpi" data-mark-item="native-${esc(k)}" data-mark-label="${esc(k)}">
-            <div class="kpi-label">${esc(k)}</div>
-            <div class="kpi-value">${(agg[k] / counts[k]).toFixed(2)}</div>
+          <div class="ui-kpi" data-mark-item="native-${esc(k)}" data-mark-label="${esc(k)}">
+            <div class="ui-kpi-label">${esc(k)}</div>
+            <div class="ui-kpi-value">${(agg[k] / counts[k]).toFixed(2)}</div>
           </div>`).join('');
       } else {
         nativeSection.hidden = true;
       }
 
-      // Account-level snapshots (followers, reach, profile views, etc.)
       const accountSection = document.getElementById('accountSection');
       let acctSnaps = (payload.accountSnapshots || []).slice();
       if (view.platform !== 'all') acctSnaps = acctSnaps.filter((a) => a.platform === view.platform);
@@ -289,67 +292,66 @@
           .map(([k, v]) => `${esc(k)}: ${typeof v === 'number' ? v.toLocaleString() : esc(v)}`)
           .join(' · ') || 'No metrics';
         return `
-          <div class="kpi" data-mark-item="acct-${esc(aid)}" data-mark-label="Account ${esc(aid)}">
-            <div class="kpi-label">${esc(a.platform || 'account')} · ${esc(aid)}</div>
-            <div class="kpi-value" style="font-size:15px">${metricText}</div>
+          <div class="ui-kpi" data-mark-item="acct-${esc(aid)}" data-mark-label="Account ${esc(aid)}">
+            <div class="ui-kpi-label">${esc(a.platform || 'account')} · ${esc(aid)}</div>
+            <div class="ui-kpi-value" style="font-size:14px;font-weight:500">${metricText}</div>
           </div>`;
       }).join('');
 
       const rawTrend = (payload.trendByPlatform && payload.trendByPlatform[view.platform]) || (view.platform === 'all' ? (payload.trend || []) : []);
-      const trendPoints = rawTrend.filter((p) => p.date >= cutoffDate);
-      document.getElementById('trendPanel').innerHTML = renderTrendSvg(trendPoints);
+      document.getElementById('trendPanel').innerHTML = renderTrendSvg(rawTrend.filter((p) => p.date >= cutoffDate));
 
       const visibleIds = new Set(works.map((w) => `${w.platform}:${w.workId}`));
       const cross = (payload.crossPlatform || [])
-        .map((row) => ({
-          ...row,
-          entries: (row.entries || []).filter((e) => visibleIds.has(`${e.platform}:${e.workId}`)),
-        }))
+        .map((row) => ({ ...row, entries: (row.entries || []).filter((e) => visibleIds.has(`${e.platform}:${e.workId}`)) }))
         .filter((row) => row.entries.length >= 2);
       document.getElementById('crossPanel').innerHTML = cross.length === 0
-        ? '<div class="sub">Publish the same topicId to 2+ platforms to unlock side-by-side comparison.</div>'
-        : `<table><thead><tr><th>Topic ID</th><th>Platform Breakdown (Views / Eng %)</th></tr></thead><tbody>${
+        ? '<div class="ui-empty">Publish the same topicId to 2+ platforms to unlock side-by-side comparison.</div>'
+        : `<div class="ui-table-wrap"><table class="ui-table"><thead><tr><th>Topic ID</th><th>Platform Breakdown (Views / Eng %)</th></tr></thead><tbody>${
             cross.map((row) => `
               <tr data-mark-item="cross-${esc(row.topicId)}" data-mark-label="Cross-compare ${esc(row.topicId)}">
-                <td><strong>${esc(row.topicId)}</strong></td>
-                <td>${row.entries.map((e) => `${esc(e.platform)}: ${e.views.toLocaleString()} (${e.engagementRate}%)`).join(' · ')}</td>
+                <td class="ui-mono">${esc(row.topicId)}</td>
+                <td class="ui-num">${row.entries.map((e) => `<span class="ui-badge ui-badge-secondary" style="margin-right:6px">${esc(e.platform)} · ${e.views.toLocaleString()} (${e.engagementRate}%)</span>`).join('')}</td>
               </tr>`).join('')
-          }</tbody></table>`;
+          }</tbody></table></div>`;
 
       document.getElementById('worksBody').innerHTML = works.length === 0
-        ? '<tr><td colspan="8" class="sub">No work snapshots recorded yet.</td></tr>'
+        ? '<tr><td colspan="8" class="ui-muted" style="text-align:center;padding:24px">No work snapshots recorded yet.</td></tr>'
         : works.map((w) => {
             const focused = view.focusWorkId === w.workId ? ' class="focused"' : '';
             return `
               <tr${focused} data-mark-item="work-${esc(w.workId)}" data-mark-label="${esc(w.title)}">
-                <td>${esc(w.title)}</td>
-                <td>${esc(w.platform)}</td>
-                <td>${esc(w.window)}</td>
-                <td>${w.views.toLocaleString()}</td>
-                <td>${w.likes.toLocaleString()}</td>
-                <td>${w.comments.toLocaleString()}</td>
-                <td>${w.saves.toLocaleString()}</td>
-                <td>${w.engagementRate}%</td>
+                <td style="font-weight:500">${esc(w.title)}</td>
+                <td><span class="ui-badge ui-badge-secondary">${esc(w.platform)}</span></td>
+                <td class="ui-muted">${esc(w.window)}</td>
+                <td class="is-num">${w.views.toLocaleString()}</td>
+                <td class="is-num">${w.likes.toLocaleString()}</td>
+                <td class="is-num">${w.comments.toLocaleString()}</td>
+                <td class="is-num">${w.saves.toLocaleString()}</td>
+                <td class="is-num">${w.engagementRate}%</td>
               </tr>`;
           }).join('');
 
       const retro = payload.retro || { title: 'No retrospective yet', actions: [] };
       document.getElementById('retroPanel').innerHTML = `
-        <div><strong>${esc(retro.title)}</strong> <span class="sub">${esc(retro.file || '')}</span></div>
+        <div class="ui-meta-row" style="justify-content:space-between;margin-bottom:${retro.actions.length ? '8px' : '0'}">
+          <strong style="font-size:14px;font-weight:600">${esc(retro.title)}</strong>
+          <span class="ui-muted ui-mono">${esc(retro.file || '')}</span>
+        </div>
         ${retro.actions.length === 0
-          ? '<div class="sub" style="margin-top:8px">Add a weekly markdown file under analytics/retros/YYYY-Www.md.</div>'
+          ? '<div class="ui-muted" style="margin-top:6px">Add a weekly markdown file under analytics/retros/YYYY-Www.md.</div>'
           : retro.actions.map((a) => `
-            <div class="retro-item" data-mark-item="action-${esc(a.id)}" data-mark-label="${esc(a.text)}">
-              <span>${a.done ? '✓' : '○'} ${esc(a.text)}</span>
-              <span class="retro-action" data-mark-ignore>
-                <button data-requires-sdk data-action="recycle-retro" data-text="${esc(a.text)}">Stage as Next-Cycle Topic</button>
+            <div class="retro-row" data-mark-item="action-${esc(a.id)}" data-mark-label="${esc(a.text)}">
+              <span class="retro-check${a.done ? ' retro-done' : ''}">${a.done ? '✓' : '○'} ${esc(a.text)}</span>
+              <span data-shot-hide data-mark-ignore>
+                <button class="ui-btn ui-btn-xs ui-btn-ghost" type="button" data-requires-sdk data-action="recycle-retro" data-text="${esc(a.text)}">Stage as Topic</button>
               </span>
             </div>`).join('')}`;
       bridge.updateWriteControls();
     }
 
-    document.querySelector('.toolbar').addEventListener('click', (event) => {
-      const btn = event.target.closest('button.range-btn[data-days]');
+    document.querySelector('.ui-toolbar').addEventListener('click', (event) => {
+      const btn = event.target.closest('.ui-tab[data-days]');
       if (!btn) return;
       view.days = Number(btn.dataset.days);
       syncInputs();

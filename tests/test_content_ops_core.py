@@ -146,11 +146,29 @@ class ContentOpsCoreScriptsTest(unittest.TestCase):
             res = run_script(SCORE_PY, str(ws))
             self.assertEqual(res.returncode, 0, res.stderr)
             scored = {t['topicId']: t for t in json.loads((ws / 'topics' / 'topics.json').read_text(encoding='utf-8'))['topics']}
-            self.assertEqual(scored['t-null']['status'], 'archived')
+            # Default preserves low-scoring candidates without silent archiving
+            self.assertEqual(scored['t-null']['status'], 'candidate')
             self.assertEqual(scored['t-win']['status'], 'shortlisted')
             self.assertTrue(scored['t-dup']['cooldownConflict'])
             self.assertEqual(scored['t-dup']['status'], 'candidate')
             self.assertEqual(scored['t-ovr']['status'], 'shortlisted')
+
+            # Explicit --auto-archive-below 3.0 archives low-scoring candidates on demand
+            res_arch = run_script(SCORE_PY, str(ws), '--auto-archive-below', '3.0')
+            self.assertEqual(res_arch.returncode, 0, res_arch.stderr)
+            scored2 = {t['topicId']: t for t in json.loads((ws / 'topics' / 'topics.json').read_text(encoding='utf-8'))['topics']}
+            self.assertEqual(scored2['t-null']['status'], 'archived')
+
+            # Deterministic --import-gated merges passed candidates without duplicating URLs
+            gated = Path(tmp) / 'gated.json'
+            gated.write_text(json.dumps({
+                'passed': [{'title': 'Fresh Gated Signal', 'evidenceUrls': ['https://example.com/sig-1'], 'targetPlatforms': ['x-twitter']}],
+            }), encoding='utf-8')
+            imp1 = json.loads(run_script(SCORE_PY, str(ws), '--import-gated', str(gated)).stdout)
+            self.assertEqual(imp1['imported']['addedCount'], 1)
+            imp2 = json.loads(run_script(SCORE_PY, str(ws), '--import-gated', str(gated)).stdout)
+            self.assertEqual(imp2['imported']['addedCount'], 0)
+            self.assertEqual(imp2['imported']['skippedCount'], 1)
 
     def test_build_boards_and_aggregate_handle_malformed_jsonl_timezones_and_edge_values(self):
         with tempfile.TemporaryDirectory() as tmp:

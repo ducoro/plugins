@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""Validate a file-backed content-ops/ workspace for schema integrity, references, and secret hygiene."""
+"""Validate a file-backed content-ops/ workspace and enforce Gate 2 tamper-proof hash checks."""
+from __future__ import annotations
+
 import argparse
+from datetime import datetime
+import hashlib
 import json
 from pathlib import Path
 import re
 import sys
+from urllib.parse import urlparse
 
 ACCOUNT_STATUSES = {'active', 'expiring', 'expired', 'manual_browser', 'paused'}
 TOPIC_STATUSES = {'candidate', 'shortlisted', 'approved', 'produced', 'archived'}
@@ -28,6 +33,28 @@ SECRET_PATTERNS = [
     re.compile(r'\bAIza[0-9A-Za-z_-]{35}\b'),
 ]
 ENV_VAR_NAME = re.compile(r'^[A-Z][A-Z0-9_]*$')
+HEX16_RE = re.compile(r'^[0-9a-f]{16}$')
+
+
+def sha256_prefix16(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+
+
+def _is_http_url(url: object) -> bool:
+    if not isinstance(url, str) or not url.strip():
+        return False
+    p = urlparse(url.strip())
+    return p.scheme in ('http', 'https') and bool(p.netloc)
+
+
+def _is_iso_ts(val: object) -> bool:
+    if not isinstance(val, str) or not val.strip():
+        return False
+    try:
+        datetime.fromisoformat(val.strip().replace('Z', '+00:00'))
+        return True
+    except ValueError:
+        return False
 
 
 def load_json(path: Path, errors: list[str]):
@@ -73,6 +100,77 @@ def scan_secrets(ws: Path, errors: list[str]) -> None:
             if pattern.search(text):
                 errors.append(f'{path.relative_to(ws)}: potential raw secret detected; store only env var names')
                 break
+
+
+def verify_publish_slot(ws: Path, slot_id: str) -> dict:
+    """Deterministic Gate 2 pre-publish verification: approvalRef, draft status, specStatus, live variantHash, idempotency."""
+    ws = ws.expanduser().resolve()
+    reasons: list[str] = []
+    cal_path = ws / 'calendar.json'
+    if not cal_path.is_file():
+        return {'ok': False, 'slotId': slot_id, 'reasons': ['missing calendar.json']}
+    cal = json.loads(cal_path.read_text(encoding='utf-8'))
+    slot = next((s for s in (cal.get('slots') or []) if isinstance(s, dict) and s.get('slotId') == slot_id), None)
+    if not slot:
+        return {'ok': False, 'slotId': slot_id, 'reasons': [f'slot "{slot_id}" not found in calendar.json']}
+
+    if slot.get('status') != 'approved':
+        reasons.append(f'slot status is "{slot.get("status")}" (must be "approved")')
+    if not str(slot.get('approvalRef') or '').strip():
+        reasons.append('slot missing non-empty approvalRef')
+
+    approved_hash = str(slot.get('approvedVariantHash') or '').strip()
+    if not HEX16_RE.fullmatch(approved_hash):
+        reasons.append('slot missing valid 16-hex approvedVariantHash')
+
+    draft_id = str(slot.get('draftId') or '').strip()
+    platform = str(slot.get('platform') or '').strip()
+    draft_dir = ws / 'drafts' / draft_id if draft_id else None
+    meta_path = (draft_dir / 'meta.json') if draft_dir else None
+    if not meta_path or not meta_path.is_file():
+        reasons.append(f'missing draft meta.json for draftId "{draft_id}"')
+        live_hash = None
+    else:
+        meta = json.loads(meta_path.read_text(encoding='utf-8'))
+        if meta.get('status') == 'needs_update':
+            reasons.append('draft status is "needs_update"; re-check and re-approve before publishing')
+        vinfo = (meta.get('variants') or {}).get(platform) or {}
+        if vinfo.get('specStatus') != 'pass':
+            reasons.append(f'variant "{platform}" specStatus is "{vinfo.get("specStatus")}" (must be "pass")')
+        vrel = vinfo.get('file') or f'variants/{platform}.md'
+        vpath = draft_dir / vrel
+        if not vpath.is_file():
+            reasons.append(f'missing variant file: {vrel}')
+            live_hash = None
+        else:
+            live_hash = sha256_prefix16(vpath)
+            if HEX16_RE.fullmatch(approved_hash) and live_hash != approved_hash:
+                reasons.append(f'variantHash mismatch: live={live_hash} != approved={approved_hash} (edited after approval)')
+
+    # Idempotency check against publish-log.jsonl
+    pub_path = ws / 'publish-log.jsonl'
+    if pub_path.is_file():
+        for line in pub_path.read_text(encoding='utf-8').splitlines():
+            s = line.strip()
+            if not s:
+                continue
+            try:
+                row = json.loads(s)
+            except ValueError:
+                continue
+            if row.get('slotId') == slot_id and row.get('status') == 'published':
+                reasons.append(f'slot "{slot_id}" already published in publish-log.jsonl ({row.get("publicUrl")})')
+                break
+
+    return {
+        'ok': not reasons,
+        'slotId': slot_id,
+        'draftId': draft_id,
+        'platform': platform,
+        'approvedVariantHash': approved_hash or None,
+        'liveVariantHash': live_hash,
+        'reasons': reasons,
+    }
 
 
 def validate_workspace(ws: Path) -> list[str]:
@@ -177,6 +275,14 @@ def validate_workspace(ws: Path) -> list[str]:
             pid = meta.get('planId')
             if pid and pid not in plan_ids:
                 errors.append(f'drafts/{entry.name}/meta.json: unknown planId "{pid}"')
+            # Protect approved master.md from silent overwrite when approvedMasterHash is recorded
+            approved_master = meta.get('approvedMasterHash')
+            if approved_master:
+                master_md = entry / 'master.md'
+                if not master_md.is_file():
+                    errors.append(f'drafts/{entry.name}/meta.json: approvedMasterHash set but master.md is missing')
+                elif sha256_prefix16(master_md) != str(approved_master):
+                    errors.append(f'drafts/{entry.name}/master.md: modified after approval (expected {approved_master}); use illustrated.md for visual edits')
 
     slot_ids: set[str] = set()
     cal_data = load_json(ws / 'calendar.json', errors)
@@ -209,8 +315,14 @@ def validate_workspace(ws: Path) -> list[str]:
         status = row.get('status')
         if status not in PUBLISH_STATUSES:
             errors.append(f'publish-log.jsonl:{lineno}: invalid status "{status}"')
-        if status == 'published' and not row.get('publicUrl'):
-            errors.append(f'publish-log.jsonl:{lineno}: status "published" requires verified publicUrl')
+        if status == 'published':
+            if not row.get('publicUrl'):
+                errors.append(f'publish-log.jsonl:{lineno}: status "published" requires verified publicUrl')
+            elif not _is_http_url(row.get('publicUrl')):
+                errors.append(f'publish-log.jsonl:{lineno}: publicUrl must be a valid http(s):// URL')
+        vhash = row.get('variantHash')
+        if vhash is not None and not HEX16_RE.fullmatch(str(vhash)):
+            errors.append(f'publish-log.jsonl:{lineno}: variantHash "{vhash}" must be 16 lowercase hex chars')
 
     inbox_data = load_json(ws / 'engagement' / 'inbox.json', errors)
     if isinstance(inbox_data, dict):
@@ -231,13 +343,21 @@ def validate_workspace(ws: Path) -> list[str]:
         for req_key in ('actionId', 'executedAt', 'platform', 'accountId', 'targetId', 'actionType'):
             if not row.get(req_key):
                 errors.append(f'engagement/action-log.jsonl:{lineno}: missing required field "{req_key}"')
+        if row.get('executedAt') and not _is_iso_ts(row.get('executedAt')):
+            errors.append(f'engagement/action-log.jsonl:{lineno}: invalid ISO executedAt "{row.get("executedAt")}"')
 
     for lineno, row in load_jsonl(ws / 'analytics' / 'snapshots.jsonl', errors):
         if row.get('window') not in SNAPSHOT_WINDOWS:
             errors.append(f'analytics/snapshots.jsonl:{lineno}: invalid window "{row.get("window")}"')
+        if row.get('capturedAt') and not _is_iso_ts(row.get('capturedAt')):
+            errors.append(f'analytics/snapshots.jsonl:{lineno}: invalid ISO capturedAt "{row.get("capturedAt")}"')
         metrics = row.get('metrics')
         if not isinstance(metrics, dict):
             errors.append(f'analytics/snapshots.jsonl:{lineno}: missing metrics object')
+        else:
+            for mk, mv in metrics.items():
+                if isinstance(mv, (int, float)) and not isinstance(mv, bool) and mv < 0:
+                    errors.append(f'analytics/snapshots.jsonl:{lineno}: negative metric "{mk}={mv}"')
 
     wl_path = ws / 'watchlist.json'
     if wl_path.is_file():
@@ -268,17 +388,28 @@ def validate_workspace(ws: Path) -> list[str]:
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description='Validate a content-ops workspace.')
+    parser = argparse.ArgumentParser(description='Validate a content-ops workspace or verify Gate 2 publish approval.')
     parser.add_argument('workspace', help='Path to the content-ops directory.')
+    parser.add_argument('--verify-slot', default='', help='Verify Gate 2 tamper-proof approval, live variantHash, and idempotency for a slotId.')
+    parser.add_argument('--json', action='store_true', help='Output JSON report (always JSON for --verify-slot).')
     args = parser.parse_args(argv)
 
-    errors = validate_workspace(Path(args.workspace))
+    ws = Path(args.workspace)
+    if args.verify_slot:
+        rep = verify_publish_slot(ws, args.verify_slot)
+        print(json.dumps(rep, indent=2, ensure_ascii=False))
+        return 0 if rep['ok'] else 1
+
+    errors = validate_workspace(ws)
+    if args.json:
+        print(json.dumps({'ok': not errors, 'workspace': str(ws.expanduser().resolve()), 'errors': errors}, indent=2, ensure_ascii=False))
+        return 0 if not errors else 1
     if errors:
         print('Workspace validation failed:', file=sys.stderr)
         for err in errors:
             print(f'  - {err}', file=sys.stderr)
         return 1
-    print(f'Workspace validation passed: {Path(args.workspace).expanduser().resolve()}')
+    print(f'Workspace validation passed: {ws.expanduser().resolve()}')
     return 0
 
 

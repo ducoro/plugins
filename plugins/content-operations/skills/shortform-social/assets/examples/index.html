@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Visual Card Studio — Finished Golden Examples</title>
+  <style>
+    :root {
+      --bg: #F6F4EF;
+      --surface: #FFFFFF;
+      --ink: #171614;
+      --muted: #5A554E;
+      --border: #DFD8CC;
+      --accent: #1D4ED8;
+      --accent-soft: #E0E7FF;
+      --font-sans: "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", -apple-system, sans-serif;
+      --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px 28px 72px;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+    }
+    .wrap {
+      max-width: 1220px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+    .hero {
+      padding: 32px 36px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .hero h1 { margin: 0; font-size: 32px; line-height: 1.25; }
+    .hero p { margin: 0; color: var(--muted); font-size: 16px; max-width: 820px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .preview-box {
+      position: relative;
+      width: 100%;
+      height: 440px;
+      overflow: hidden;
+      background: #EAE6DE;
+      border-bottom: 1px solid var(--border);
+    }
+    .preview-box iframe {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 1180px;
+      height: 1620px;
+      border: 0;
+      transform: translateX(-50%) scale(0.30);
+      transform-origin: top center;
+      pointer-events: none;
+    }
+    .card-content {
+      padding: 22px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .card h2 { margin: 0; font-size: 20px; line-height: 1.35; }
+    .card p { margin: 0; font-size: 14px; color: var(--muted); }
+    pre {
+      margin: 4px 0 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #14171F;
+      color: #E2E8F0;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .open-link {
+      margin-top: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 16px;
+      border-radius: 8px;
+      background: var(--ink);
+      color: #FFFFFF;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Visual Card Studio · 成品黄金范例（Finished Reference Decks）</h1>
+      <p>
+        以下 4 套均为<strong>零占位符、直接可发布水准</strong>的最终成品范例，覆盖全部 3 套原创视觉语言、4 种画框比例、核心页型以及 <strong>Live Photo 动态卡</strong>（单视频 / 三连并列拼图 / 四宫格无字拼图）。
+        人打开即可一眼看清最终出图水准；Agent 创作时直接参考对应范例的字数密度、留白比例与标题节奏，只需专注填充真实内容。
+      </p>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <div class="preview-box">
+          <iframe src="xhs-tool-teardown/index.html" title="范例 1 预览" loading="lazy"></iframe>
+        </div>
+        <div class="card-content">
+          <div class="badge-row">
+            <span class="badge">grid-spec / cobalt-grid</span>
+            <span class="badge">5 × 1080×1440</span>
+          </div>
+          <h2>范例 1 · 小红书效率测评组图</h2>
+          <p>演示 <code>cover-split</code> → <code>metric-hero</code> → <code>compare-two</code> → <code>shot-stage</code> → <code>closing-cta</code> 完整五页轮换与真实看板截图包装。</p>
+          <pre>python3 scripts/card_deck.py scaffold &lt;board-dir&gt; --preset xhs-carousel --style grid-spec --theme cobalt-grid --pages 5 --overwrite</pre>
+          <a class="open-link" href="xhs-tool-teardown/index.html">打开完整 5 页高清范例 →</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="preview-box">
+          <iframe src="xhs-travel-route/index.html" title="范例 2 预览" loading="lazy"></iframe>
+        </div>
+        <div class="card-content">
+          <div class="badge-row">
+            <span class="badge">paper-studio / warm-linen</span>
+            <span class="badge">4 × 1080×1440</span>
+          </div>
+          <h2>范例 2 · 小红书清晨徒步路线笔记</h2>
+          <p>演示 <code>cover-bleed</code> 无死黑遮罩安静区压图（附 <code>subject map</code> 注释）+ <code>map-route</code> 四站点路线图 + <code>step-flow</code> + <code>quote-note</code>。</p>
+          <pre>python3 scripts/card_deck.py scaffold &lt;board-dir&gt; --preset xhs-carousel --style paper-studio --theme warm-linen --layouts cover-bleed,map-route,step-flow,quote-note --overwrite</pre>
+          <a class="open-link" href="xhs-travel-route/index.html">打开完整 4 页高清范例 →</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="preview-box">
+          <iframe src="wechat-cover-pair/index.html" title="范例 3 预览" loading="lazy"></iframe>
+        </div>
+        <div class="card-content">
+          <div class="badge-row">
+            <span class="badge">darkroom-frame / obsidian-gold</span>
+            <span class="badge">900×383 + 1080×1080 + 1280×720</span>
+          </div>
+          <h2>范例 3 · 公众号封面对 + 视频封面</h2>
+          <p>演示同风格下 <code>2.35:1</code> 完整长标题主图与 <code>1:1</code> 独立 6 字短标题分享卡并排对照，以及 <code>16:9</code> 横版视频封面。</p>
+          <pre>python3 scripts/card_deck.py scaffold &lt;board-dir&gt; --preset wechat-cover-pair --style darkroom-frame --theme obsidian-gold --overwrite</pre>
+          <a class="open-link" href="wechat-cover-pair/index.html">打开完整封面对高清范例 →</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="preview-box">
+          <iframe src="xhs-live-photo/index.html" title="范例 4 预览" loading="lazy"></iframe>
+        </div>
+        <div class="card-content">
+          <div class="badge-row">
+            <span class="badge">Live Photo · 5s XHS / 3s WeChat</span>
+            <span class="badge">3 × 1080×1440</span>
+          </div>
+          <h2>范例 4 · Live Photo 透明叠层与拼图规格</h2>
+          <p>真实实拍/录屏视频专用：含可导出透明 PNG 叠层母版（静止标题 + 底层真实视频流动），以及 <code>stack-3</code> 三连横条与 <code>grid-4</code> 四宫格裁切命令。</p>
+          <pre>python3 scripts/live_photo.py compose c1.mp4 c2.mp4 c3.mp4 -o stack3.mov --platform xiaohongshu --layout stack-3 --key-jpg stack3.jpg --fallback-mp4 stack3.mp4</pre>
+          <a class="open-link" href="xhs-live-photo/index.html">打开 Live Photo 叠层与规格范例 →</a>
+        </div>
+      </article>
+    </section>
+  </div>
+</body>
+</html>

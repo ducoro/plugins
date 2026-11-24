@@ -78,6 +78,14 @@ class ContentOpsContractsTest(unittest.TestCase):
                     set(payload.keys()),
                     f'{board_name}: inline placeholder keys drift from build_boards.py output',
                 )
+                # Every board must share the canonical shadcn/ui board-ui.css and never re-declare ad-hoc root palettes
+                self.assertIn('./runtime/board-ui.css', src_html, f'{board_name}: missing shared shadcn/ui board-ui.css link')
+                self.assertNotIn('--surface-alt:', src_html, f'{board_name}: still declares legacy ad-hoc CSS palette')
+                self.assertTrue((ws / 'boards' / board_name / 'runtime' / 'board-ui.css').is_file(), f'{board_name}: init_workspace did not assemble runtime/board-ui.css')
+
+        shared_css = (SKILLS / 'content-ops-loop' / 'assets' / 'boards' / 'shared' / 'board-ui.css').read_text(encoding='utf-8')
+        for token in ('--background:', '--foreground:', '--card:', '--primary:', '--secondary:', '--muted:', '--muted-foreground:', '--destructive:', '--border:', '--radius:', '--chart-1:', '.dark {'):
+            self.assertIn(token, shared_css, f'shared/board-ui.css missing shadcn/ui token {token}')
 
     def test_media_production_card_deck_template_declares_export_frames(self):
         template = SKILLS / 'shortform-social' / 'assets' / 'card-deck-template' / 'index.html'

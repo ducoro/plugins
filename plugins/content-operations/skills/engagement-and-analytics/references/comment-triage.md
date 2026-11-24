@@ -1,16 +1,15 @@
-# Four-Tier Comment Triage
+# Four-Tier Comment Triage & Platform Compliance
 
 Every incoming comment stored in `engagement/inbox.json` gets one `tier` and one clear action path.
 
 | Tier | Signal Examples | Default Action | Approval Gate | Feed Back to Topics? |
 | --- | --- | --- | --- | --- |
-| `high_intent` | "Where is the link?", "How much?", "Does it support X?", "Can I try this?" | Draft a direct, platform-compliant answer (avoid banned off-platform phrasing on CN platforms) | **Human approval required** | Yes if asked 2+ times |
-| `feedback` | "This broke on step 3", "Your benchmark is misleading", "Why not use Y instead?" | Verify the underlying fact first; draft a calm, evidence-backed reply without defensiveness | **Human approval required** | **Always** (`topicCandidate: true`) |
-| `general` | "Great breakdown!", "Saved!", emoji reactions | Short, varied, human-sounding acknowledgement (never identical copy-paste) | Autonomous only if enabled in `brand-profile.md` | Optional |
-| `spam` | Bot ads, scam links, pure trolling | Set `status: "ignored"`; do not argue in public | Delete/hide requires approval unless standing spam rule exists | No |
+| `high_intent` | Pricing, links, compatibility, booking, purchase or collaboration questions | Draft a direct, platform-compliant answer | **Human approval required** | Yes if asked 2+ times |
+| `feedback` | Bug reports, factual corrections, strong counter-arguments | Verify the underlying fact first; draft a calm, clear reply | **Human approval required** | **Always** (`topicCandidate: true`) |
+| `general` | Appreciation, brief reactions, emojis | Natural, varied acknowledgement matching the creator's voice | Autonomous only if enabled in `brand-profile.md` | Optional |
+| `spam` | Bot ads, scams, pure abuse | Set `status: "ignored"`; do not argue in public | Delete/hide requires approval unless standing spam rule exists | No |
 
-## Reply Quality Rules
-- Match the commenter's language and the platform's tone.
-- Answer the actual question in sentence one; keep replies under 2–3 sentences unless a technical walkthrough is needed.
-- Never promise unshipped features, discounts, or SLAs without explicit human confirmation.
-- Never reply to multiple comments with identical templates (triggers spam classifiers).
+## Platform Compliance Red Lines in Comments
+- **CN off-platform diversion (`引流红线`)**: Xiaohongshu, Douyin, Kuaishou, Bilibili, and WeChat Channels actively throttle or mute comments containing raw WeChat IDs, phone numbers, QR codes, external links, or homophone workarounds ("加V", "绿泡泡", "主页微"). Use official platform contact cards, pinned shop/service links, or compliant DM flows instead.
+- **Cross-platform originality order**: When syndicating one piece across CN platforms (WeChat Official, Xiaohongshu, Bilibili, Douyin), publish and declare **Original (`原创`)** on the lead platform first—especially WeChat Official Account before third-party aggregators crawl it—to avoid false copyright strikes.
+- **No fabricated commitments or copy-paste bursts**: Never promise unshipped features, discounts, or SLAs without human confirmation, and never blast identical replies (triggers spam classifiers). Always run `scripts/engagement_guard.py` before acting.

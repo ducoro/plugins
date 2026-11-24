@@ -468,16 +468,22 @@ def sync_board_dir(
 
     index_target = board_dir / 'index.html'
     needs_template = overwrite_templates or is_blank_seed_html(index_target)
+    shared_dir = BOARDS_SRC / 'shared'
     if needs_template:
         shutil.copyfile(src_board / 'index.html', index_target)
         shutil.copyfile(src_board / 'README.md', board_dir / 'README.md')
-        if shared_bridge.is_file():
-            shutil.copyfile(shared_bridge, board_dir / 'runtime' / 'board-sdk-bridge.js')
+        for shared_name in ('board-sdk-bridge.js', 'board-ui.css'):
+            src_shared = shared_dir / shared_name
+            if src_shared.is_file():
+                shutil.copyfile(src_shared, board_dir / 'runtime' / shared_name)
     else:
         if not (board_dir / 'README.md').exists():
             shutil.copyfile(src_board / 'README.md', board_dir / 'README.md')
-        if shared_bridge.is_file() and not (board_dir / 'runtime' / 'board-sdk-bridge.js').exists():
-            shutil.copyfile(shared_bridge, board_dir / 'runtime' / 'board-sdk-bridge.js')
+        for shared_name in ('board-sdk-bridge.js', 'board-ui.css'):
+            src_shared = shared_dir / shared_name
+            dst_shared = board_dir / 'runtime' / shared_name
+            if src_shared.is_file() and not dst_shared.exists():
+                shutil.copyfile(src_shared, dst_shared)
 
     data_json = json.dumps(payload, indent=2, ensure_ascii=False)
     (board_dir / 'assets' / 'data.json').write_text(data_json + '\n', encoding='utf-8')

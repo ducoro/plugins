@@ -1,32 +1,28 @@
 ---
 name: platform-facebook
-description: "Run Facebook Page end-to-end operations: community-oriented topic discovery, Feed/Photo/Video/Reels authoring, strict spec checks, Meta Graph API Page publishing and comment engagement, and Page Insights retrospectives."
+description: "Neutral Facebook Page platform advisor covering community/group discussion dynamics, Reels + photo-album + long-caption formats, Meta Business Suite vs Graph API delivery, compliance guardrails, and share/reach analytics."
 ---
 
-# Facebook Page Operations Playbook
+# Facebook Page Platform Expert Guide
 
-Facebook Pages work best for community discussion, link-supported updates, local/brand announcements, and short Reels discovery. Personal profiles cannot publish via the Pages API—always target an authorized **Facebook Page**.
+Facebook combines **local & interest-based communities (Pages + Groups)** with **algorithmic discovery** (Reels, shareable visual posts, and discussion-sparking stories) across a broad, global, multi-generational audience.
 
-## 1. Topic Discovery (Platform-Native)
-- **Community discussion triggers**: questions in adjacent Facebook Groups, customer stories, relatable visual comparisons, and short vertical Reels repurposed from TikTok/IG.
-- **Winning angles**: story-first posts that ask a grounded question, photo sets with clear narrative captions, and native video/Reels (native video beats raw external YouTube links).
+## 1. Audience, Mindset & Distribution Mechanics
+- **Audience breadth**: Skews broader and older globally than TikTok/Threads, with strong engagement in local services, family/parenting, hobbies, community news, education, small business, and niche interest Groups.
+- **Distribution levers**: **Shares to personal feeds/Messenger/Groups** and **genuine comment threads** drive organic Page reach. Native Reels tap into non-follower discovery, while photo albums and candid stories perform well with existing followers and Groups.
+- **Link trade-off**: External link preview posts often see lower organic reach than native photo/video/text posts; consider native visual storytelling with the link placed naturally in the caption or first comment when optimizing for reach vs. direct click-through.
 
-## 2. Native Content & Format Rules
-- **Modes**: `text`, `image_text` (up to 10 images, `<= 10 MB` each), `video` / Reels (`mp4`/`mov`/`avi`, `<= 1 GB`, `<= 3600s`).
-- **Body (`<= 63206` chars; aim 100–400 chars for scannable feed posts)**: hook in lines 1–2 before "See more".
-- **Topics**: no native API topic field; use minimal inline hashtags (0–3).
+## 2. Formats & Content Spectrum
+- **Specs (`references/specs.json`)**: Text up to `63,206` chars (keep opening hook crisp before "See more"); up to 10 images (`<= 10MB` each); native video (`MP4/MOV/AVI`, `<= 1GB`, `<= 60 min`; `9:16` for Reels, `1:1`/`4:5`/`16:9` for Feed); inline hashtags supported (`recommendations.maxTopicCount: 5`).
+- **Style spectrum**: Community discussions & Q&As, photo stories & event recaps, practical tips & carousels (`../shortform-social/scripts/card_deck.py`), short vertical Reels (`../video-production/SKILL.md`), and local/brand announcements.
 
-## 3. Publishing & Verification (`references/protocol.md`)
-1. Validate against `references/specs.json` with `check_media_specs.py`.
-2. **Default zero-config path (Official Meta Business Suite)**: open `https://business.facebook.com/latest/composer` in the user's browser session (pause for login/2FA if prompted), select the target Facebook Page, upload local photos/video directly from `drafts/<id>/assets/`, fill post copy, save draft (`draft_saved`) or pause before **Publish** until Gate 2 confirmation, then record the verified post URL.
-3. **Optional official Graph API path** (requires `FACEBOOK_PAGE_ACCESS_TOKEN` & `FACEBOOK_PAGE_ID`):
-   - For photo/video URL publishing, upload local assets right before publishing via `ducoro-cli media upload <local-file> --json` to get a 5-hour temporary `publicUrl` (on non-Ducoro hosts, use your own HTTPS storage/CDN).
-   - Use `scripts/client.py [--dry-run] <cmd>`: `post-feed`, `post-photo`, `list-posts`, `post-insights`, `page-insights` (multi-photo/video/Reels endpoints in `references/protocol.md`).
-4. Record verified `permalink_url` in `publish-log.jsonl`.
+## 3. Delivery & Verification (`references/protocol.md`)
+- Follow the shared browser / OpenAPI / Gate 2 workflow in `../content-ops-loop/references/channel-access-matrix.md` and `approval-gates.md`.
+- **Platform specifics**: Validate via `check_media_specs.py`. Default path: Meta Business Suite (`https://business.facebook.com/`, supports scheduling, Reels, cross-posting with Instagram, and inbox management). Optional OpenAPI: `scripts/client.py` (`FACEBOOK_PAGE_ACCESS_TOKEN`, `FACEBOOK_PAGE_ID`). Verify Gate 2 (`validate_workspace.py --verify-slot <slotId>`) before publishing.
 
-## 4. Engagement & Risk Guardrails
-- `scripts/client.py` supports `list-comments --post-id <id>` and `reply-comment --object-id <id> --message ...` (likes and deletes follow `references/protocol.md`). Stay within 60 actions/day.
-- Reply promptly to early questions to sustain discussion threads.
+## 4. Platform Red Lines & Engagement
+- **Compliance**: Avoid explicit engagement-bait ("Like if you agree, Share if you love X"), misleading health/financial claims, and undisclosed branded partnerships (use Meta Branded Content tags when paid).
+- **Rate cap**: Enforce `<= 12/hour`, `<= 60/day` (30–60s spacing) via `../engagement-and-analytics/scripts/engagement_guard.py`.
 
 ## 5. North-Star Metrics (`platformMetrics`)
-Track `postReach`, `postClicks`, `shares`, `commentDepth`, and `pageFollows`.
+Track `shareRate`, `meaningfulCommentCount`, `video3sRetention`, `reachToFollowerRatio`, and `linkClickThroughRate`.

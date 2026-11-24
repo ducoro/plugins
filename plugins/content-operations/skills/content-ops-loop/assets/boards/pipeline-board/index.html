@@ -4,80 +4,25 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Topic Pool &amp; Draft Pipeline Board</title>
-  <style>
-    :root {
-      --bg: #f7f8fa; --surface: #ffffff; --surface-alt: #f1f3f7; --text: #111827;
-      --muted: #5b6472; --border: #e2e6ee; --accent: #2563eb;
-      --ok: #15803d; --ok-bg: #dcfce7; --warn: #b45309; --warn-bg: #fef3c7;
-      --err: #b91c1c; --err-bg: #fee2e2; --info: #1d4ed8; --info-bg: #dbeafe;
-      --radius: 12px;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0f131a; --surface: #171c26; --surface-alt: #1f2633; --text: #f3f4f6;
-        --muted: #9ca3af; --border: #2a3342; --accent: #60a5fa;
-        --ok: #86efac; --ok-bg: #14532d; --warn: #fcd34d; --warn-bg: #78350f;
-        --err: #fca5a5; --err-bg: #7f1d1d; --info: #93c5fd; --info-bg: #1e3a8a;
-      }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { transition: none !important; animation: none !important; }
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
-    .shell { max-width: 1320px; margin: 0 auto; padding: 20px; }
-    header { margin-bottom: 14px; }
-    h1 { margin: 0; font-size: 22px; }
-    .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
-    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
-    select, button, label { font: inherit; font-size: 13px; }
-    select, button { border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 6px 10px; cursor: pointer; }
-    button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-    button:disabled { opacity: 0.45; cursor: not-allowed; }
-    .status-bar { padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; background: var(--info-bg); color: var(--info); }
-    .status-bar[data-tone="ok"] { background: var(--ok-bg); color: var(--ok); }
-    .status-bar[data-tone="warn"] { background: var(--warn-bg); color: var(--warn); }
-    .status-bar[data-tone="error"] { background: var(--err-bg); color: var(--err); }
-    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
-    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
-    .kpi-label { font-size: 12px; color: var(--muted); }
-    .kpi-value { font-size: 24px; font-weight: 700; margin-top: 2px; }
-    .board-cols { display: grid; grid-template-columns: repeat(4, minmax(240px, 1fr)); gap: 12px; align-items: start; }
-    @media (max-width: 980px) { .board-cols { grid-template-columns: repeat(2, minmax(240px, 1fr)); } }
-    @media (max-width: 600px) { .board-cols { grid-template-columns: 1fr; } }
-    .col { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
-    .col-head { display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
-    .card { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
-    .card.focused { outline: 2px solid var(--accent); }
-    .card-title { font-size: 13px; font-weight: 600; }
-    .chips { display: flex; flex-wrap: wrap; gap: 5px; font-size: 11px; }
-    .chip { padding: 2px 7px; border-radius: 999px; background: var(--info-bg); color: var(--info); font-weight: 600; }
-    .chip-score { background: var(--ok-bg); color: var(--ok); }
-    .chip-alert { background: var(--err-bg); color: var(--err); }
-    .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
-    .actions button { font-size: 11px; padding: 4px 8px; }
-    .empty { font-size: 12px; color: var(--muted); padding: 12px 4px; text-align: center; }
-    html[data-ducoro-render='shot'] .toolbar,
-    html[data-ducoro-render='shot'] .actions,
-    html[data-ducoro-render='shot'] .status-bar { display: none !important; }
-  </style>
+  <link rel="stylesheet" href="./runtime/board-ui.css" />
 </head>
 <body>
-  <div class="shell" data-ducoro-export-frame="pipeline-summary">
-    <header data-card="pipeline-header" data-card-title="Pipeline Overview">
-      <h1 data-mark-item="board-title" data-mark-label="Pipeline Title">Topic Pool &amp; Draft Pipeline</h1>
-      <div class="sub" id="subtitle">Loading pipeline snapshot...</div>
+  <div class="ui-shell" data-ducoro-export-frame="pipeline-summary">
+    <header class="ui-header" data-card="pipeline-header" data-card-title="Pipeline Overview">
+      <div>
+        <h1 class="ui-title" data-mark-item="board-title" data-mark-label="Pipeline Title">Topic Pool &amp; Draft Pipeline</h1>
+        <p class="ui-subtitle" id="subtitle">Loading pipeline snapshot...</p>
+      </div>
+      <div class="ui-toolbar" data-mark-ignore>
+        <select class="ui-select" id="planFilter" aria-label="Filter by campaign plan"><option value="all">All Plans</option></select>
+        <select class="ui-select" id="platformFilter" aria-label="Filter by platform"><option value="all">All Platforms</option></select>
+        <label class="ui-check-pill"><input type="checkbox" id="alertsOnly" /><span>Spec alerts only</span></label>
+      </div>
     </header>
 
-    <div class="toolbar" data-mark-ignore>
-      <select id="planFilter" aria-label="Filter by campaign plan"><option value="all">All Plans</option></select>
-      <select id="platformFilter" aria-label="Filter by platform"><option value="all">All Platforms</option></select>
-      <label><input type="checkbox" id="alertsOnly" /> Spec Alerts Only</label>
-    </div>
-
-    <div class="status-bar" data-bridge-status data-mark-ignore hidden></div>
-    <section class="kpis" id="kpis" data-card="pipeline-kpis" data-card-title="Pipeline Summary"></section>
-    <main class="board-cols" id="columns"></main>
+    <div class="ui-alert" data-bridge-status data-mark-ignore hidden></div>
+    <section class="ui-kpi-grid" id="kpis" data-card="pipeline-kpis" data-card-title="Pipeline Summary"></section>
+    <main class="ui-kanban" id="columns"></main>
   </div>
 
   <script id="board-initial-data" type="application/json">
@@ -140,9 +85,7 @@
           run: ({ itemId }) => {
             const all = Object.values(payload?.columns || {}).flat();
             const match = all.find((x) => x.id === itemId);
-            if (!match) {
-              throw new Error(`Unknown itemId "${itemId}". Valid IDs: ${all.map((x) => x.id).join(', ') || '(none)'}`);
-            }
+            if (!match) throw new Error(`Unknown itemId "${itemId}". Valid IDs: ${all.map((x) => x.id).join(', ') || '(none)'}`);
             if (view.planId !== 'all' && match.planId !== view.planId) view.planId = 'all';
             if (view.platform !== 'all' && !(match.platforms || []).includes(view.platform)) view.platform = 'all';
             if (view.onlyAlerts && !(match.specAlerts || []).length) view.onlyAlerts = false;
@@ -175,25 +118,26 @@
 
     function render() {
       if (!payload) return;
-      document.getElementById('subtitle').textContent = `Synced: ${payload.generatedAt || 'not built yet'}`;
+      document.getElementById('subtitle').textContent = `Synced ${payload.generatedAt || 'pending'}`;
       const s = payload.summary || {};
+      const alertCount = s.specAlertCount ?? 0;
       document.getElementById('kpis').innerHTML = [
-        ['Inbox Signals', s.inboxCount ?? 0, 'kpi-inbox'],
-        ['Candidate Topics', s.candidateTopics ?? 0, 'kpi-candidates'],
-        ['Approved / Drafting', s.approvedItems ?? 0, 'kpi-approved'],
-        ['Ready / Scheduled', s.draftsReady ?? 0, 'kpi-ready'],
-        ['Spec Alerts', s.specAlertCount ?? 0, 'kpi-alerts'],
-      ].map(([label, val, id]) => `
-        <div class="kpi" data-mark-item="${id}" data-mark-label="${label}">
-          <div class="kpi-label">${label}</div>
-          <div class="kpi-value">${val}</div>
+        ['Inbox Signals', s.inboxCount ?? 0, 'kpi-inbox', ''],
+        ['Candidate Topics', s.candidateTopics ?? 0, 'kpi-candidates', ''],
+        ['Approved / Drafting', s.approvedItems ?? 0, 'kpi-approved', ''],
+        ['Ready / Scheduled', s.draftsReady ?? 0, 'kpi-ready', ''],
+        ['Spec Alerts', alertCount, 'kpi-alerts', alertCount > 0 ? 'destructive' : ''],
+      ].map(([label, val, id, tone]) => `
+        <div class="ui-kpi" data-mark-item="${id}" data-mark-label="${label}">
+          <div class="ui-kpi-label">${label}</div>
+          <div class="ui-kpi-value"${tone ? ` data-tone="${tone}"` : ''}>${val}</div>
         </div>`).join('');
 
       const stages = [
-        ['intake', '1. Intake & Gate 1 Candidates'],
-        ['approved', '2. Approved & In Production'],
-        ['ready', '3. Ready & Scheduled'],
-        ['archive', '4. Published / Archived'],
+        ['intake', 'Intake & Gate 1'],
+        ['approved', 'In Production'],
+        ['ready', 'Ready & Scheduled'],
+        ['archive', 'Published / Archived'],
       ];
 
       document.getElementById('columns').innerHTML = stages.map(([key, title]) => {
@@ -202,24 +146,31 @@
         if (view.platform !== 'all') items = items.filter((i) => (i.platforms || []).includes(view.platform));
         if (view.onlyAlerts) items = items.filter((i) => (i.specAlerts || []).length > 0);
         return `
-          <section class="col" data-card="stage-${key}" data-card-title="${title}">
-            <div class="col-head"><span>${title}</span><span>${items.length}</span></div>
-            ${items.length === 0 ? '<div class="empty">No items</div>' : items.map((item) => {
+          <section class="ui-kanban-col" data-card="stage-${key}" data-card-title="${title}">
+            <div class="ui-col-head">
+              <span>${title}</span>
+              <span class="ui-badge ui-badge-outline ui-num">${items.length}</span>
+            </div>
+            ${items.length === 0 ? '<div class="ui-empty-inline">No items</div>' : items.map((item) => {
               const prefix = item.itemType === 'topic' ? 'topic' : 'draft';
               const focused = view.focusItemId === item.id ? ' focused' : '';
               const alerts = item.specAlerts || [];
+              const needsUpdate = item.status === 'needs_update';
+              const statusClass = needsUpdate ? 'ui-status-warning' : 'ui-status-neutral';
               return `
-                <article class="card${focused}" data-mark-item="${prefix}-${esc(item.id)}" data-mark-label="${esc(item.title)}">
-                  <div class="card-title">${esc(item.title)}</div>
-                  <div class="chips">
-                    <span class="chip">${esc(item.status)}</span>
-                    ${item.score != null ? `<span class="chip chip-score">Score ${esc(item.score)}</span>` : ''}
-                    ${(item.platforms || []).map((p) => `<span class="chip">${esc(p)}</span>`).join('')}
-                    ${alerts.length ? `<span class="chip chip-alert">${alerts.length} spec alert(s)</span>` : ''}
+                <article class="ui-item-card${focused}" data-mark-item="${prefix}-${esc(item.id)}" data-mark-label="${esc(item.title)}">
+                  <div class="ui-meta-row" style="justify-content:space-between">
+                    <span class="ui-status ${statusClass}">${esc(String(item.status || '').replace(/_/g, ' '))}</span>
+                    ${item.score != null ? `<span class="ui-muted ui-num">Score ${esc(item.score)}</span>` : ''}
                   </div>
-                  <div class="actions" data-mark-ignore>
-                    ${item.itemType === 'topic' && key === 'intake' ? `<button class="primary" data-requires-sdk data-action="approve-topic" data-id="${esc(item.id)}" data-title="${esc(item.title)}">Draft Gate 1 Approval</button>` : ''}
-                    ${alerts.length ? `<button data-requires-sdk data-action="fix-spec" data-id="${esc(item.id)}" data-title="${esc(item.title)}">Draft Spec Fix Request</button>` : ''}
+                  <div class="ui-item-title">${esc(item.title)}</div>
+                  <div class="ui-meta-row">
+                    ${(item.platforms || []).map((p) => `<span class="ui-badge ui-badge-secondary">${esc(p)}</span>`).join('')}
+                    ${alerts.length ? `<span class="ui-badge ui-badge-destructive">${alerts.length} spec alert${alerts.length === 1 ? '' : 's'}</span>` : ''}
+                  </div>
+                  <div class="ui-actions" data-mark-ignore>
+                    ${item.itemType === 'topic' && key === 'intake' ? `<button class="ui-btn ui-btn-xs ui-btn-primary-ghost" type="button" data-requires-sdk data-action="approve-topic" data-id="${esc(item.id)}" data-title="${esc(item.title)}">Draft Gate 1 Approval</button>` : ''}
+                    ${alerts.length ? `<button class="ui-btn ui-btn-xs ui-btn-destructive-ghost" type="button" data-requires-sdk data-action="fix-spec" data-id="${esc(item.id)}" data-title="${esc(item.title)}">Fix Spec Alerts</button>` : ''}
                   </div>
                 </article>`;
             }).join('')}

@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 620" width="880" height="620">
+  <rect width="880" height="620" fill="#F8FAFC"/>
+  <!-- Sidebar -->
+  <rect x="0" y="0" width="196" height="620" fill="#0F172A"/>
+  <text x="28" y="48" font-family="SF Mono, monospace" font-size="18" font-weight="700" fill="#FFFFFF">OPS DIGEST</text>
+  <rect x="20" y="76" width="156" height="38" rx="8" fill="#1D4ED8"/>
+  <text x="36" y="101" font-family="PingFang SC, sans-serif" font-size="16" font-weight="600" fill="#FFFFFF">本周汇总看板</text>
+  <text x="36" y="148" font-family="PingFang SC, sans-serif" font-size="15" fill="#94A3B8">项目里程碑 (12)</text>
+  <text x="36" y="186" font-family="PingFang SC, sans-serif" font-size="15" fill="#94A3B8">阻塞与风险 (2)</text>
+  <text x="36" y="224" font-family="PingFang SC, sans-serif" font-size="15" fill="#94A3B8">下周待拍板 (3)</text>
+
+  <!-- Main Header -->
+  <text x="228" y="50" font-family="PingFang SC, sans-serif" font-size="24" font-weight="700" fill="#0F172A">W47 周报自动草稿 · 已校验 14 条事实源</text>
+  <rect x="720" y="26" width="132" height="34" rx="6" fill="#DCFCE7"/>
+  <text x="786" y="49" text-anchor="middle" font-family="SF Mono, monospace" font-size="14" font-weight="700" fill="#166534">READY · 0 ERR</text>
+
+  <!-- 3 KPI cards -->
+  <rect x="228" y="80" width="196" height="114" rx="10" fill="#FFFFFF" stroke="#E2E8F0"/>
+  <text x="248" y="110" font-family="PingFang SC, sans-serif" font-size="14" fill="#64748B">本周完成事项</text>
+  <text x="248" y="162" font-family="SF Mono, monospace" font-size="40" font-weight="700" fill="#0F172A">18</text>
+
+  <rect x="442" y="80" width="196" height="114" rx="10" fill="#FFFFFF" stroke="#E2E8F0"/>
+  <text x="462" y="110" font-family="PingFang SC, sans-serif" font-size="14" fill="#64748B">自动归档证据链接</text>
+  <text x="462" y="162" font-family="SF Mono, monospace" font-size="40" font-weight="700" fill="#1D4ED8">42</text>
+
+  <rect x="656" y="80" width="196" height="114" rx="10" fill="#FFFFFF" stroke="#E2E8F0"/>
+  <text x="676" y="110" font-family="PingFang SC, sans-serif" font-size="14" fill="#64748B">人工审校耗时</text>
+  <text x="676" y="162" font-family="SF Mono, monospace" font-size="40" font-weight="700" fill="#0F764A">11m</text>
+
+  <!-- Table block -->
+  <rect x="228" y="218" width="624" height="368" rx="12" fill="#FFFFFF" stroke="#E2E8F0"/>
+  <text x="252" y="256" font-family="PingFang SC, sans-serif" font-size="17" font-weight="700" fill="#0F172A">自动聚合变更流水（按影响面排序）</text>
+  <line x1="252" y1="274" x2="828" y2="274" stroke="#E2E8F0"/>
+
+  <rect x="252" y="294" width="68" height="26" rx="4" fill="#E0E7FF"/>
+  <text x="286" y="312" text-anchor="middle" font-family="SF Mono, monospace" font-size="13" font-weight="700" fill="#1D4ED8">SHIP</text>
+  <text x="336" y="313" font-family="PingFang SC, sans-serif" font-size="16" font-weight="600" fill="#0F172A">结账页首屏加载降至 1.1s（较上周 -38%）</text>
+  <text x="766" y="313" font-family="SF Mono, monospace" font-size="14" fill="#64748B">#PR-418</text>
+  <line x1="252" y1="338" x2="828" y2="338" stroke="#F1F5F9"/>
+
+  <rect x="252" y="358" width="68" height="26" rx="4" fill="#E0E7FF"/>
+  <text x="286" y="376" text-anchor="middle" font-family="SF Mono, monospace" font-size="13" font-weight="700" fill="#1D4ED8">SHIP</text>
+  <text x="336" y="377" font-family="PingFang SC, sans-serif" font-size="16" font-weight="600" fill="#0F172A">新增 3 组自动巡检告警，提前拦截两次超时</text>
+  <text x="766" y="377" font-family="SF Mono, monospace" font-size="14" fill="#64748B">#PR-425</text>
+  <line x1="252" y1="402" x2="828" y2="402" stroke="#F1F5F9"/>
+
+  <rect x="252" y="422" width="68" height="26" rx="4" fill="#FEF3C7"/>
+  <text x="286" y="440" text-anchor="middle" font-family="SF Mono, monospace" font-size="13" font-weight="700" fill="#B45309">RISK</text>
+  <text x="336" y="441" font-family="PingFang SC, sans-serif" font-size="16" font-weight="600" fill="#0F172A">第三方短信网关高峰延迟，待拍板切主备通道</text>
+  <text x="766" y="441" font-family="SF Mono, monospace" font-size="14" fill="#B45309">待确认</text>
+  <line x1="252" y1="466" x2="828" y2="466" stroke="#F1F5F9"/>
+
+  <rect x="252" y="486" width="68" height="26" rx="4" fill="#DCFCE7"/>
+  <text x="286" y="504" text-anchor="middle" font-family="SF Mono, monospace" font-size="13" font-weight="700" fill="#166534">NEXT</text>
+  <text x="336" y="505" font-family="PingFang SC, sans-serif" font-size="16" font-weight="600" fill="#0F172A">下周聚焦：老客户续费提醒与月度对账脚本</text>
+  <text x="766" y="505" font-family="SF Mono, monospace" font-size="14" fill="#64748B">W48</text>
+</svg>

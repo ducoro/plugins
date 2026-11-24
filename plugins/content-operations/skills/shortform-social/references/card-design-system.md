@@ -1,80 +1,64 @@
-# Visual Card Design System & Blueprints
+# Visual Card Design System & Starter Blueprints
 
-Use this guide when designing multi-slide social carousels (`3:4`), WeChat Official Account cover pairs (`2.35:1` + `1:1`), or `16:9` video thumbnails via `scripts/card_deck.py` and `ducoro-cli board shot`.
+HTML-based visual cards give far higher typography precision, adjustability, and consistency than asking image-generation models to render text directly. The styles, palettes, and blueprints bundled here are **neutral starter scaffolds and examples**—users and agents are free to pick a preset, mix elements, or author custom HTML/CSS for any brand or aesthetic while relying on `card_deck.py audit` and `ducoro-cli board check` for objective integrity checks.
 
-## 1. Choose One Visual Language Per Deck
+## 1. Platform Export Frame Dimensions
 
-Pick by **editorial stance**, not rigid topic stereotypes. Never mix two visual languages inside the same deck unless explicitly requested.
+`card_deck.py audit` recognizes standard multi-platform frame sizes out of the box (and accepts any custom size via `--allow-custom-size`):
 
-| Style (`data-style`) | Visual Character | Best Fit | Default Theme |
-|---|---|---|---|
-| `paper-studio` | Tactile paper base, serif display headlines, generous breathing room, soft hairline dividers | Narratives, essays, travel notes, reading digests, lifestyle guides | `warm-linen` |
-| `grid-spec` | Subtle 48px hairline matrix, crisp sans display (**lighter weight at larger scale**), monospace indices, one vivid accent | Tool teardowns, benchmarks, SOP checklists, tutorials, AI & product explainers | `cobalt-grid` |
-| `darkroom-frame` | Deep charcoal canvas, warm silver typography, subtle studio rim glow | Dark UI screenshots, hardware showcases, gaming/film reviews, night photography | `obsidian-gold` |
+| Frame Size | Ratio | Common Surfaces |
+|---|---|---|
+| `1080 × 1440` | `3:4` | Xiaohongshu carousel, Instagram portrait / profile grid, WeChat `newspic` |
+| `1080 × 1350` | `4:5` | Instagram primary vertical feed |
+| `1080 × 1920` | `9:16` | Stories, Reels/Douyin/Shorts vertical covers |
+| `1080 × 1080` | `1:1` | Square carousels, WeChat share cover (`wechat-square`) |
+| `900 × 383` | `2.35:1` | WeChat Official Account primary feed cover (`wechat-cover`) |
+| `1280 × 720` | `16:9` | YouTube, Bilibili, WeChat Channels landscape thumbnail |
+| `1200 × 675` | `16:9` | X/Twitter and LinkedIn landscape cards |
+| `1000 × 1500` | `2:3` | Pinterest standard vertical pin |
 
-## 2. Preset Palettes (All WCAG 2.1 Verified)
+## 2. Three Starter Visual Languages & 11 WCAG AA Palettes
 
-Never invent arbitrary inline hex colors inside cards. Select one preset theme on `<html data-theme="...">`:
+Use these as fast, high-craft starting points when the user has not specified a custom design system:
 
-- **`paper-studio`**: `warm-linen` (default), `celadon-ink` (cool sage), `slate-ivory` (clean tech editorial), `oat-umber` (warm heritage)
-- **`grid-spec`**: `cobalt-grid` (default), `vermilion-spec` (sharp red accent), `emerald-lab` (growth/health), `amber-signal` (alert/news)
-- **`darkroom-frame`**: `obsidian-gold` (default), `midnight-cyan` (tech/night), `plum-velvet` (culture/film)
+| Starter Style (`data-style`) | Visual Character | Preset Themes (`data-theme`) |
+|---|---|---|
+| `paper-studio` | Warm tactile paper base, serif display headlines, editorial spacing | `warm-linen` (default), `celadon-ink`, `slate-ivory`, `oat-umber` |
+| `grid-spec` | Subtle hairline matrix, clean sans display, monospace indices, crisp accent | `cobalt-grid` (default), `vermilion-spec`, `emerald-lab`, `amber-signal` |
+| `darkroom-frame` | Deep charcoal canvas, warm light type, subtle studio depth | `obsidian-gold` (default), `midnight-cyan`, `plum-velvet` |
 
-Inspect all contrast ratios any time via:
-```sh
-python3 scripts/card_deck.py themes --json
-```
-
-### Custom Brand Color (Constrained Derivation)
-When the user requires a specific brand hex, derive a contrast-safe theme token block instead of pasting raw hex:
+Need a brand color without manual contrast math? Derive an objective WCAG 2.1 AA-safe palette while preserving original hue and chroma as closely as possible:
 ```sh
 python3 scripts/card_deck.py brand-theme "#2D6CDF" --style grid-spec --id brand --json
 ```
-Or pass `--brand-hex "#2D6CDF"` directly to `scaffold`. If the derived palette cannot satisfy WCAG 2.1 `4.5:1` contrast, the command fails cleanly—fall back to a preset.
+Or author custom CSS directly inside the Board HTML—`card_deck.py audit` enforces objective contrast only on declared theme blocks and never blocks custom styles.
 
-## 3. Exact Export Frames
+## 3. Eleven Starter `3:4` Blueprints
 
-| Frame Preset | Exact Size | Target Surfaces |
-|---|---|---|
-| `3:4` vertical card | `1080 × 1440` | Xiaohongshu carousel, Instagram portrait carousel, WeChat `newspic` |
-| WeChat primary cover | `900 × 383` (`2.35:1`) | WeChat Official Account primary feed header (always pair with `1080 × 1080`) |
-| WeChat share cover | `1080 × 1080` (`1:1`) | WeChat chat card / Moments / secondary cover (independent short headline) |
-| `16:9` thumbnail | `1280 × 720` | YouTube, Bilibili, WeChat Channels landscape cover |
+Rotate, combine, or customize freely depending on the story:
+1. `cover-split` — headline + lead + framed visual/diagram slot
+2. `cover-bleed` — full-bleed photo with quiet-zone typography
+3. `thesis` — single sharp statement + context note
+4. `metric-hero` — primary verified figure + comparison bars
+5. `compare-two` — two-column side-by-side contrast
+6. `checklist` — numbered scannable action points
+7. `step-flow` — sequential workflow steps with badges
+8. `shot-stage` — framed UI screenshot showcase (`.device-browser` / `.device-phone`)
+9. `quote-note` — editorial pull quote + practical note
+10. `closing-cta` — summary frame with takeaway chips
+11. `map-route` — offline route canvas (vector or local static map tile) with numbered pins & stop timings
 
-## 4. Ten Semantic Layout Blueprints (`3:4`)
+## 4. Deterministic Ducoro Board Export Pipeline
 
-Rotate layouts across a 5–9 slide deck so no two adjacent content slides look identical:
-
-1. **`cover-split`** — Eyebrow, punchy headline, concise lead, and a large framed visual slot. Safest default cover.
-2. **`cover-bleed`** — Full-bleed photograph with quiet-zone typography (requires subject mapping and explicit `object-position`).
-3. **`thesis`** — Single bold statement + evidence callout strip. Use when a slide carries one sharp insight.
-4. **`metric-hero`** — Oversized verified stat + proportional comparison bars. Ideal for test results and benchmarks.
-5. **`compare-two`** — Side-by-side two-column contrast (common pitfall vs. recommended approach).
-6. **`checklist`** — Three numbered high-scannability cards with clear title + 1–2 line detail.
-7. **`step-flow`** — Four-step vertical process track with monospace badges.
-8. **`shot-stage`** — Pure-CSS textured backdrop with `.device-browser` or `.device-phone` chrome for real UI screenshots.
-9. **`quote-note`** — Editorial pull quote with attribution plus practical takeaway band.
-10. **`closing-cta`** — Highlight-bordered summary frame with 3 takeaway chips and a comment/save prompt.
-
-## 5. End-to-End Ducoro Board Pipeline
-
-1. **Create Board**: `ducoro-cli board new --space <space-id> --title "<Deck Title>" --json`
-2. **Scaffold Deck**:
+1. `ducoro-cli board new --space <space-id> --title "<Deck Title>" --json`
+2. Optional quick start via scaffold (or write custom HTML with `[data-ducoro-export-frame]`):
    ```sh
    python3 scripts/card_deck.py scaffold <space-work-root>/boards/<board-id> \
-     --preset xhs-carousel --style grid-spec --theme cobalt-grid \
-     --pages 5 --title "实测对比标题" --brand "@Handle" --overwrite --json
+     --preset xhs-carousel --style paper-studio --theme warm-linen --pages 5 --overwrite --json
    ```
-   (Use `--preset wechat-cover-pair` for paired `900×383` + `1080×1080` covers, or `--preset video-thumb` for `1280×720`.)
-3. **Author Content & Visuals**: edit `index.html` with real copy and verified assets in `assets/`; preserve stable `data-card` and `data-mark-item` IDs so the human can click any slide in Preview to request targeted revisions.
-4. **Offline Hard Audit**:
-   ```sh
-   python3 scripts/card_deck.py audit <space-work-root>/boards/<board-id> --json
-   ```
-   Fix every `error` (dimensions, duplicate IDs, missing assets, raw inline colors, tiny fonts, absolute footer, missing 1:1 WeChat pair, contrast failures).
-5. **Live Browser Check & Export**:
-   ```sh
-   ducoro-cli board check --space <space-id> --board boards/<board-id> --json
-   ducoro-cli board shot --space <space-id> --board boards/<board-id> --query pack=all --json
-   ```
-   Show the rendered PNGs to the user for visual sign-off, copy approved PNGs into `drafts/<draft-id>/assets/`, and run `../content-ops-loop/scripts/check_media_specs.py`.
+3. Author real copy, visuals (under `assets/`), and any custom CSS; keep `data-card` and `data-mark-item` unique for interactive Preview edits.
+4. Run objective offline audit (dimensions, unique IDs, local image existence, zero leftover placeholders, WCAG AA contrast):
+   `python3 scripts/card_deck.py audit <space-work-root>/boards/<board-id> --json`
+5. Verify real browser layout & export exact PNGs/ZIP:
+   `ducoro-cli board check --space <space-id> --board boards/<board-id> --json`
+   `ducoro-cli board shot --space <space-id> --board boards/<board-id> --query pack=all --json`

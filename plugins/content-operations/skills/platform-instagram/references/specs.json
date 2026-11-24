@@ -5,12 +5,12 @@
   "contentLimits": {
     "modes": ["image_text", "video"],
     "maxBodyLength": 2200,
-    "maxImages": 10,
+    "maxImages": 20,
     "maxVideos": 1,
     "allowMixedMedia": false
   },
   "mediaRules": {
-    "imageFormats": ["jpg", "jpeg"],
+    "imageFormats": ["jpg", "jpeg", "png", "webp"],
     "videoFormats": ["mp4", "mov"],
     "maxImageSizeBytes": 8388608,
     "maxVideoSizeBytes": 314572800,
@@ -21,10 +21,21 @@
       "max": 1.91
     }
   },
+  "apiOverrides": {
+    "contentLimits": {
+      "maxImages": 10
+    },
+    "mediaRules": {
+      "imageFormats": ["jpg", "jpeg"]
+    }
+  },
   "topic": {
     "supported": true,
     "nativeField": false,
     "maxCount": 30
+  },
+  "recommendations": {
+    "maxTopicCount": 5
   },
   "publishPolicy": {
     "completionStrategy": "polling",
