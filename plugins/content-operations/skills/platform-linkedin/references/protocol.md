@@ -27,9 +27,11 @@ Required headers on all `/rest/*` calls:
    - List: `GET /rest/socialActions/<encodedPostUrn>/comments`
    - Create: `POST /rest/socialActions/<encodedPostUrn>/comments` (`{ actor, object: <postUrn>, message: { text } }`)
    - Delete: `DELETE /rest/socialActions/<encodedCommentUrn>`
-6. **Analytics Boundary**:
-   - LinkedIn's standard Member Posts API (`w_member_social`) does **not** expose personal-profile post impressions/analytics. For personal accounts (`urn:li:person:...`), record manual/exported LinkedIn Post Analytics figures into `analytics/snapshots.jsonl` with `source: "manual"`.
-   - For Organization Pages (`urn:li:organization:...`) with `r_organization_social`, query `GET /rest/organizationalEntityShareStatistics?q=organizationalEntity&organizationalEntity=<encodedOrgUrn>`.
+6. **Analytics (`scripts/client.py org-analytics` & `post-analytics`)**:
+   - **Organization Pages (`urn:li:organization:...` with `r_organization_social`)**:
+     - Daily page performance & follower gains: `python3 scripts/client.py org-analytics --org-urn urn:li:organization:<id> --days 30 [--with-followers] [--workspace <content-ops>]` (queries `/rest/organizationalEntityShareStatistics` & optional `/rest/organizationalEntityFollowerStatistics`).
+     - Post-level impressions/clicks/engagement: `python3 scripts/client.py post-analytics --post-urn <urn> --org-urn urn:li:organization:<id> [--workspace <content-ops> --window 7d]`.
+   - **Personal Member Profiles (`urn:li:person:...`)**: LinkedIn's standard `w_member_social` scope does **not** expose personal post impressions. `python3 scripts/client.py post-analytics --post-urn <urn>` pulls live `likesSummary` and `commentsSummary` from `/rest/socialActions/<encodedPostUrn>`; supplement impressions manually from LinkedIn Post Analytics when needed.
 
 ## Default Official Browser Composer Path (Zero API Setup)
 When no LinkedIn Developer OAuth token is configured:

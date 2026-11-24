@@ -26,4 +26,4 @@ YouTube is the world's largest **long-form video library, recommendation engine,
 - **Rate cap**: Enforce `<= 12/hour`, `<= 60/day` (30–60s spacing) via `../engagement-and-analytics/scripts/engagement_guard.py`.
 
 ## 5. North-Star Metrics (`platformMetrics`)
-Track `thumbnailCtr`, `avgViewDurationSec`, `avgViewPct`, `viewedVsSwipedPct` (Shorts), and `returningViewers`.
+Track `thumbnailCtr`, `avgViewDurationSec`, `avgViewPct`, `estimatedMinutesWatched`, `viewedVsSwipedPct` (Shorts), and `returningViewers`. Check an active Ducoro `youtube` Connector (`ducoro-cli mcp catalog status youtube` / `tools youtube`) first for channel/video data; when deeper YouTube Analytics v2 reports (`yt-analytics.readonly`) are needed, use `scripts/client.py channel-analytics` / `video-analytics --workspace <content-ops>` or YouTube Studio.

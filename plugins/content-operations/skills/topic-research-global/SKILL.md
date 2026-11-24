@@ -13,7 +13,7 @@ Capture global/English demand signals across any vertical (business, culture, he
 
 ## Four-Track Lawful Source Ladder (Never Scrape Cookies)
 
-1. **Connected Platform Connectors (Highest Priority)**: Check `ducoro-cli mcp catalog` / `status <slug>` (e.g., X, GitHub, YouTube, Reddit, Slack); query via `ducoro-cli mcp call` and normalize into `content-ops-signal-envelope/1` JSON (`region: "global"`).
+1. **Connected Platform Connectors (Highest Priority)**: Check `ducoro-cli mcp catalog list --json` / `ducoro-cli mcp catalog status <slug> --json` / `tools <slug> --json` (e.g., X, GitHub, YouTube, Reddit, Slack); invoke mounted Connector tools (or `ducoro-cli mcp catalog call <slug> <tool> --args-file <path|-> --json`) and normalize into `content-ops-signal-envelope/1` JSON (`region: "global"`).
 2. **Verified Keyless Public Radars**:
    ```sh
    python3 scripts/fetch_hotspots_global.py --sources gnews,polymarket,hackernews,lobsters,github,devto,arxiv --query "<topic>" --window-days 30 --limit 30 --envelope > <workspace>/inbox/global-public.json

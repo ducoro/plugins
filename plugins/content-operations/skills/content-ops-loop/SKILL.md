@@ -34,7 +34,7 @@ Shared deterministic utilities in `scripts/` (reused across regions and formats)
 
 ## Native Orchestration & Deterministic Boundaries
 
-- **Semantic judgment & fan-out belong to strong models and native runtime primitives**: query authenticated sources via configured Connectors (`ducoro-cli mcp catalog` / `status` / `call`), shard high-volume raw feeds (`100–300+` items) across parallel subagents, schedule recurring `watchlist.json` delta scans with `ducoro-cli task create` (and persistent background runs via `ducoro-cli job`), and delegate cross-role handoffs via `ducoro-cli space send`.
+- **Semantic judgment & fan-out belong to strong models and native runtime primitives**: check Ducoro Core Connectors first for any external platform interaction—intake, publish, engagement, or analytics (`ducoro-cli mcp catalog list` / `status <slug>` / `tools <slug>` / `call <slug> <tool> --args-file <path|->`)—shard high-volume raw feeds (`100–300+` items) across parallel subagents, schedule recurring `watchlist.json` delta scans with `ducoro-cli task create` (and persistent background runs via `ducoro-cli job`), and delegate cross-role handoffs via `ducoro-cli space send`.
 - **Hard invariants belong to deterministic scripts**: `scripts/signal_gate.py` enforces grounded `http(s)://` URLs, ISO timestamps, keep-richest URL dedupe, incremental `seen-signals.json` deltas, anti-hallucination URL verification, and honest `nothing_solid` empty states; `scripts/score_topics.py` adds `--import-gated` merging and annotate-only fuzzy repeat detection; `scripts/check_media_specs.py` checks objective platform limits (`--channel browser|api`) and unfinished placeholders; `scripts/validate_workspace.py --verify-slot <slotId>` enforces Gate 2 tamper-proof `variantHash` pinning and publish idempotency.
 
 Available platform skills (14):
@@ -49,18 +49,20 @@ Read on demand—do not recite from memory:
 - `references/operating-cadence.md`: daily/weekly loop schedule, retry/stop rules, and failure handling.
 - `references/board-schemas.md`: unified data contract for all 5 interactive boards plus per-platform metric slots.
 - `references/board-sdk-integration.md`: File-Backed Executable Document (FBED) conventions and progressive `window.ducoro` integration for all boards.
-- `references/channel-access-matrix.md`: legitimate dual-track access guide (default official browser Creator Studio vs. optional official OpenAPI, token lifecycles, and media upload routes) across all 14 platforms.
+- `references/channel-access-matrix.md`: legitimate 3-tier access guide (connected Ducoro Core Connectors first, default official browser Creator Studio fallback, and optional user-owned official OpenAPI) across all 14 platforms.
 - `references/issue-reporting.md`: when and how to offer a redacted plugin problem report via `ducoro-cli feedback send` with `[plugin:content-operations@<version>]` tags (always ask human first).
 
-## Legitimate Execution Channels (Two Official Tracks Only)
+## Legitimate Execution Channels (Connector-First, Official Paths Only)
 
-Every platform supports **only two legitimate execution paths**—never extract session cookies, call reverse-engineered private web APIs, or bypass login/CAPTCHA challenges:
+Never extract session cookies, call reverse-engineered private web APIs, or bypass login/CAPTCHA challenges. Across publishing, engagement, and analytics, follow this exact priority order:
 
-1. **Default zero-config path — Official Creator Studio / Web App via Browser** (supported on **all 14 platforms**):
+1. **Connected Ducoro Core Connectors (Check First)**:
+   - Check `ducoro-cli mcp catalog list --json`, `ducoro-cli mcp catalog status <slug> --json`, and `ducoro-cli mcp catalog tools <slug> --json`. When an active Connector exposes the target platform's publish, comment, or analytics tool, use it first (always preserving Gate 2 human approval and `engagement_guard.py` rate/idempotency checks).
+2. **Default zero-config fallback — Official Creator Studio / Web App via Browser** (supported on **all 14 platforms**):
    - Open the platform's official web publishing studio in the user's browser session. If login, QR scan, 2FA, or CAPTCHA appears, pause immediately and hand control to the human.
    - Upload local media files directly from `drafts/<id>/assets/`, fill title/body/tags/cover, save as draft (`draft_saved`) or pause before the final Publish button until **Gate 2** is approved, then read back the verified live URL.
-2. **Optional advanced path — Official Platform OpenAPI** (available on **12 platforms** when the user already holds official developer credentials in environment variables):
-   - Call the platform's documented `scripts/client.py [--dry-run] <cmd>` using user-owned env vars (no third-party OAuth hosting). For Meta/Pinterest APIs that fetch from a public HTTPS URL, upload local files right before publish via `ducoro-cli media upload <path> --json` (5-hour temporary relay) or user-owned HTTPS storage.
+3. **Optional advanced path — Official Platform OpenAPI** (available on **12 platforms** when the user already holds official developer credentials in environment variables, or needs deep API endpoints not exposed by a Connector):
+   - Call the platform's documented `scripts/client.py [--dry-run] <cmd>` using user-owned env vars. For Meta/Pinterest APIs that fetch from a public HTTPS URL, upload local files right before publish via `ducoro-cli media upload <path> --json` (5-hour temporary relay) or user-owned HTTPS storage.
 
 ## Workflow
 

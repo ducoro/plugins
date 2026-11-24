@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Zero-dependency Python 3 reference client for LinkedIn REST API."""
 import argparse
+from datetime import datetime, timedelta, timezone
 import json
 import mimetypes
 import os
@@ -17,11 +18,113 @@ API_VERSION = os.environ.get('LINKEDIN_API_VERSION', '202601').strip() or '20260
 FRONT_JSON_RE = re.compile(r'^\s*```json\s*\n(.*?)\n```\s*\n?(.*)$', re.S)
 
 
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
 def require_env(name: str) -> str:
     val = os.environ.get(name, '').strip()
     if not val:
         raise RuntimeError(f'Missing required environment variable: {name}')
     return val
+
+
+def resolve_org_urn(explicit: str | None, dry_run: bool = False) -> str:
+    if explicit and explicit.strip():
+        urn = explicit.strip()
+    elif dry_run:
+        return 'urn:li:organization:DRY_RUN'
+    else:
+        urn = os.environ.get('LINKEDIN_ORG_URN', '').strip()
+        if not urn:
+            author = os.environ.get('LINKEDIN_AUTHOR_URN', '').strip()
+            if author.startswith('urn:li:organization:'):
+                urn = author
+    if not urn.startswith('urn:li:organization:'):
+        raise RuntimeError('Organization analytics requires --org-urn urn:li:organization:<id> (or LINKEDIN_ORG_URN)')
+    return urn
+
+
+def resolve_time_range_ms(days: int, start_ms: int | None, end_ms: int | None) -> tuple[int, int]:
+    if days <= 0:
+        raise ValueError('--days must be positive')
+    now_ms = int(utc_now().timestamp() * 1000)
+    end_val = end_ms if end_ms is not None else now_ms
+    start_val = start_ms if start_ms is not None else int((utc_now() - timedelta(days=days)).timestamp() * 1000)
+    if start_val > end_val:
+        raise ValueError(f'start-ms ({start_val}) cannot be after end-ms ({end_val})')
+    return start_val, end_val
+
+
+def parse_org_share_statistics(raw: dict) -> dict:
+    """Normalize LinkedIn organizationalEntityShareStatistics elements into daily rows and totals."""
+    elements = raw.get('elements') or []
+    daily: list[dict] = []
+    totals = {
+        'impressionCount': 0,
+        'uniqueImpressionsCount': 0,
+        'clickCount': 0,
+        'likeCount': 0,
+        'commentCount': 0,
+        'shareCount': 0,
+    }
+    engagement_vals: list[float] = []
+
+    for el in elements:
+        stats = el.get('totalShareStatistics') or {}
+        tr = el.get('timeRange') or {}
+        start_ts = tr.get('start')
+        day_str = (
+            datetime.fromtimestamp(start_ts / 1000.0, tz=timezone.utc).strftime('%Y-%m-%d')
+            if isinstance(start_ts, (int, float))
+            else None
+        )
+        row = {
+            'date': day_str,
+            'impressionCount': int(stats.get('impressionCount', 0) or 0),
+            'uniqueImpressionsCount': int(stats.get('uniqueImpressionsCount', 0) or 0),
+            'clickCount': int(stats.get('clickCount', 0) or 0),
+            'likeCount': int(stats.get('likeCount', 0) or 0),
+            'commentCount': int(stats.get('commentCount', 0) or 0),
+            'shareCount': int(stats.get('shareCount', 0) or 0),
+            'engagement': round(float(stats.get('engagement', 0.0) or 0.0), 4),
+        }
+        daily.append(row)
+        for key in totals:
+            totals[key] += row[key]
+        if isinstance(stats.get('engagement'), (int, float)):
+            engagement_vals.append(float(stats['engagement']))
+
+    impressions = totals['impressionCount']
+    if impressions > 0:
+        agg_engagement = round(
+            (totals['clickCount'] + totals['likeCount'] + totals['commentCount'] + totals['shareCount']) / impressions,
+            4,
+        )
+    elif engagement_vals:
+        agg_engagement = round(sum(engagement_vals) / len(engagement_vals), 4)
+    else:
+        agg_engagement = 0.0
+
+    totals['engagement'] = agg_engagement
+    return {
+        'rowCount': len(daily),
+        'daily': daily,
+        'totals': totals,
+        'platformMetrics': {
+            'uniqueImpressionsCount': totals['uniqueImpressionsCount'],
+            'clickCount': totals['clickCount'],
+            'engagementRatio': agg_engagement,
+        },
+    }
+
+
+def append_snapshot(workspace: Path, row: dict) -> str:
+    snap_path = workspace.expanduser().resolve() / 'analytics' / 'snapshots.jsonl'
+    snap_path.parent.mkdir(parents=True, exist_ok=True)
+    with snap_path.open('a', encoding='utf-8') as fh:
+        fh.write(json.dumps(row, ensure_ascii=False) + '\n')
+    return str(snap_path)
 
 
 def api_call(method: str, url: str, token: str, body: dict | None = None, dry_run: bool = False) -> dict:
@@ -209,6 +312,24 @@ def main(argv=None) -> int:
     p_pfr.add_argument('--alt-text', default='')
     p_pfr.add_argument('--resume-post-urn', default=None, help='Resume attaching firstReply to an already-published post URN.')
 
+    p_oa = sub.add_parser('org-analytics', help='Fetch Organization Page daily share/impression statistics (requires r_organization_social).')
+    p_oa.add_argument('--org-urn', default=None, help='urn:li:organization:<id> (defaults to LINKEDIN_ORG_URN or org LINKEDIN_AUTHOR_URN).')
+    p_oa.add_argument('--days', type=int, default=30, help='Lookback window in days when --start-ms is omitted (default 30).')
+    p_oa.add_argument('--start-ms', type=int, default=None, help='Optional UTC start epoch in milliseconds.')
+    p_oa.add_argument('--end-ms', type=int, default=None, help='Optional UTC end epoch in milliseconds.')
+    p_oa.add_argument('--with-followers', action='store_true', help='Also query organizationalEntityFollowerStatistics.')
+    p_oa.add_argument('--workspace', default='', help='Optional content-ops workspace to append an account snapshot into analytics/snapshots.jsonl.')
+    p_oa.add_argument('--account-id', default='linkedin-org', help='Account ID used when writing to snapshots.jsonl.')
+
+    p_pa = sub.add_parser('post-analytics', help='Fetch post-level analytics (Org share statistics with --org-urn, or socialActions summary for member posts).')
+    p_pa.add_argument('--post-urn', required=True, help='urn:li:share:<id> or urn:li:ugcPost:<id>.')
+    p_pa.add_argument('--org-urn', default=None, help='Optional urn:li:organization:<id> to pull impressions/clicks via organizationalEntityShareStatistics.')
+    p_pa.add_argument('--workspace', default='', help='Optional content-ops workspace to append a work snapshot into analytics/snapshots.jsonl.')
+    p_pa.add_argument('--window', choices=['24h', '72h', '7d', '30d'], default='7d', help='Snapshot window label (default 7d).')
+    p_pa.add_argument('--account-id', default='linkedin-main', help='Account ID used when writing to snapshots.jsonl.')
+    p_pa.add_argument('--topic-id', default='', help='Optional topicId metadata for cross-platform grouping.')
+    p_pa.add_argument('--title', default='', help='Optional work title for snapshots.jsonl.')
+
     p_cmts = sub.add_parser('list-comments', help='List comments on a post URN.')
     p_cmts.add_argument('--post-urn', required=True)
 
@@ -264,6 +385,130 @@ def main(argv=None) -> int:
             )
             if not ok:
                 exit_code = 1
+        elif args.cmd == 'org-analytics':
+            org_urn = resolve_org_urn(args.org_urn, dry_run=args.dry_run)
+            start_ms, end_ms = resolve_time_range_ms(args.days, args.start_ms, args.end_ms)
+            enc_org = urllib.parse.quote(org_urn, safe='')
+            time_interval = f'(timeRange:(start:{start_ms},end:{end_ms}),timeGranularityType:DAY)'
+            share_url = (
+                f'{REST_BASE}/organizationalEntityShareStatistics'
+                f'?q=organizationalEntity&organizationalEntity={enc_org}&timeIntervals={time_interval}'
+            )
+            share_raw = api_call('GET', share_url, token, dry_run=args.dry_run)
+            follower_url = (
+                f'{REST_BASE}/organizationalEntityFollowerStatistics'
+                f'?q=organizationalEntity&organizationalEntity={enc_org}&timeIntervals={time_interval}'
+            )
+            if args.dry_run:
+                res = {'dryRun': True, 'shareStatsRequest': share_raw}
+                if args.with_followers:
+                    res['followerStatsRequest'] = api_call('GET', follower_url, token, dry_run=True)
+            else:
+                parsed = parse_org_share_statistics(share_raw)
+                res = {'orgUrn': org_urn, 'startMs': start_ms, 'endMs': end_ms, **parsed}
+                if args.with_followers:
+                    f_raw = api_call('GET', follower_url, token, dry_run=False)
+                    organic = paid = 0
+                    for el in (f_raw.get('elements') or []):
+                        gains = el.get('followerGains') or {}
+                        organic += int(gains.get('organicFollowerGain', 0) or 0)
+                        paid += int(gains.get('paidFollowerGain', 0) or 0)
+                    res['followerGains'] = {'organic': organic, 'paid': paid, 'total': organic + paid}
+                    res['platformMetrics']['organicFollowerGain'] = organic
+                    res['platformMetrics']['paidFollowerGain'] = paid
+                if args.workspace:
+                    t = parsed['totals']
+                    snap = {
+                        'capturedAt': utc_now().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                        'platform': 'linkedin',
+                        'accountId': args.account_id,
+                        'window': 'account',
+                        'source': 'api',
+                        'metrics': {
+                            'views': t['impressionCount'],
+                            'likes': t['likeCount'],
+                            'comments': t['commentCount'],
+                            'shares': t['shareCount'],
+                            'saves': 0,
+                        },
+                        'platformMetrics': res['platformMetrics'],
+                    }
+                    res['snapshotAppended'] = append_snapshot(Path(args.workspace), snap)
+        elif args.cmd == 'post-analytics':
+            enc_post = urllib.parse.quote(args.post_urn, safe='')
+            if args.org_urn:
+                org_urn = resolve_org_urn(args.org_urn, dry_run=args.dry_run)
+                enc_org = urllib.parse.quote(org_urn, safe='')
+                filter_key = 'ugcPosts' if ':ugcPost:' in args.post_urn else 'shares'
+                url = (
+                    f'{REST_BASE}/organizationalEntityShareStatistics'
+                    f'?q=organizationalEntity&organizationalEntity={enc_org}&{filter_key}=List({enc_post})'
+                )
+                raw = api_call('GET', url, token, dry_run=args.dry_run)
+                if args.dry_run:
+                    res = raw
+                else:
+                    parsed = parse_org_share_statistics(raw)
+                    res = {'scope': 'organization_share_statistics', 'orgUrn': org_urn, 'postUrn': args.post_urn, **parsed}
+                    if args.workspace:
+                        t = parsed['totals']
+                        snap = {
+                            'capturedAt': utc_now().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                            'platform': 'linkedin',
+                            'accountId': args.account_id,
+                            'workId': args.post_urn,
+                            'window': args.window,
+                            'source': 'api',
+                            'metrics': {
+                                'views': t['impressionCount'],
+                                'likes': t['likeCount'],
+                                'comments': t['commentCount'],
+                                'shares': t['shareCount'],
+                                'saves': 0,
+                            },
+                            'platformMetrics': parsed['platformMetrics'],
+                        }
+                        if args.topic_id:
+                            snap['topicId'] = args.topic_id
+                        if args.title:
+                            snap['title'] = args.title
+                        res['snapshotAppended'] = append_snapshot(Path(args.workspace), snap)
+            else:
+                url = f'{REST_BASE}/socialActions/{enc_post}'
+                raw = api_call('GET', url, token, dry_run=args.dry_run)
+                if args.dry_run:
+                    res = raw
+                else:
+                    likes_count = int(((raw.get('likesSummary') or {}).get('totalLikes')) or 0)
+                    comments_count = int(((raw.get('commentsSummary') or {}).get('totalFirstLevelComments')) or 0)
+                    res = {
+                        'scope': 'member_public_actions',
+                        'postUrn': args.post_urn,
+                        'note': 'Personal member API returns likes and comments only; impressions require Organization Page scope or manual export.',
+                        'totals': {'likeCount': likes_count, 'commentCount': comments_count},
+                    }
+                    if args.workspace:
+                        snap = {
+                            'capturedAt': utc_now().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                            'platform': 'linkedin',
+                            'accountId': args.account_id,
+                            'workId': args.post_urn,
+                            'window': args.window,
+                            'source': 'api',
+                            'metrics': {
+                                'views': 0,
+                                'likes': likes_count,
+                                'comments': comments_count,
+                                'shares': 0,
+                                'saves': 0,
+                            },
+                            'platformMetrics': {'impressionsUnavailableOnMemberApi': True},
+                        }
+                        if args.topic_id:
+                            snap['topicId'] = args.topic_id
+                        if args.title:
+                            snap['title'] = args.title
+                        res['snapshotAppended'] = append_snapshot(Path(args.workspace), snap)
         elif args.cmd == 'list-comments':
             enc = urllib.parse.quote(args.post_urn, safe='')
             res = api_call('GET', f'{REST_BASE}/socialActions/{enc}/comments', token, dry_run=args.dry_run)

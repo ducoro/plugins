@@ -31,3 +31,18 @@ Platform chrome overlays (top search/tabs, right action rail, bottom caption/aud
 - **Programmatic / code-driven video**: Remotion or HyperFrames rendered deterministically to `H.264/AAC MP4`.
 - **Footage / screen recordings / external edits**: Package with timed `script.md`, validated `.srt`, and clean thumbnail (`1280x720` for YouTube/Bilibili, `1080x1440` or `1080x1920` for vertical feeds).
 - **Variant JSON**: Put the cover in top-level `"cover": {"path": "assets/cover.jpg"}` (never inside `media[]`), and declare `"durationSec"` (auto-verified against real `ffprobe` when available).
+
+## 5. Line-Indexed Long-to-Short Clipping Workflow
+
+When turning a long-form recording (podcast, talk, tutorial, walkthrough) into standalone short vertical clips:
+1. Run `video_ops.py index-transcript <captions.srt|vtt> --text-only` to print 0-indexed cues (`index [start - end] text`).
+2. Select self-contained arcs that open with a hook, complete one clear point, and stay within target duration bounds (default `20–90s`, adjustable via `--min-sec` / `--max-sec`). Reference **cue indices** (`from`, `to`) rather than hand-calculated timestamps so clips always start and end on true spoken boundaries:
+   ```json
+   {
+     "clips": [
+       { "from": 0, "to": 11, "title": "Opening thesis", "caption": "Draft social caption..." },
+       { "from": 24, "to": 39, "title": "Concrete example", "caption": "Draft social caption..." }
+     ]
+   }
+   ```
+3. Run `video_ops.py plan-clips` to verify bounds, duration, and zero overlap deterministically, then `video_ops.py slice-clips` to emit `H.264/AAC bt709` MP4 slices, rebased `00:00:00,000` `.srt` files, and `clips-manifest.json`.

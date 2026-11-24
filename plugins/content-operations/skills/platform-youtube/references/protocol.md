@@ -17,9 +17,12 @@
 4. **Update metadata**: `PUT /videos?part=snippet,status`
 5. **Read work & statistics**: `GET /videos?part=snippet,statistics,status&id=<videoId>`
 6. **Channel statistics**: `GET /channels?part=snippet,statistics&mine=true`
-7. **List comments**: `GET /commentThreads?part=snippet,replies&videoId=<videoId>&maxResults=50`
-8. **Reply to comment**: `POST /comments?part=snippet` (`{ snippet: { parentId, textOriginal } }`)
-9. **Delete comment**: `DELETE /comments?id=<commentId>`
+7. **YouTube Analytics v2 (`https://youtubeanalytics.googleapis.com/v2/reports`, requires `yt-analytics.readonly`)**:
+   - Channel daily analytics: `python3 scripts/client.py channel-analytics --days 14 [--workspace <content-ops>] [--account-id <id>]` — pulls `views`, `estimatedMinutesWatched`, `averageViewDuration` (`avgViewDurationSec`), `averageViewPercentage` (`avgViewPct`), `subscribersGained`, `subscribersLost`, and `likes`.
+   - Single-video analytics: `python3 scripts/client.py video-analytics --video-id <id> --days 30 [--with-stats] [--workspace <content-ops> --window 7d]` — queries `filters=video==<id>` and optionally appends a normalized snapshot to `analytics/snapshots.jsonl`.
+8. **List comments**: `GET /commentThreads?part=snippet,replies&videoId=<videoId>&maxResults=50`
+9. **Reply to comment**: `POST /comments?part=snippet` (`{ snippet: { parentId, textOriginal } }`)
+10. **Delete comment**: `DELETE /comments?id=<commentId>`
 
 ## Default Official Browser Studio Path (Zero API Setup)
 When no Google Cloud OAuth credentials are configured:

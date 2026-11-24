@@ -18,7 +18,7 @@ Serve as a neutral editorial advisor for long-form writing across any genre or v
 
 1. **Align scope, audience, and channel realities.**
    - Create `<workspace>/drafts/<draft-id>/` (`meta.json`, `master.md`, `variants/`, `assets/`).
-   - Read `brand-profile.md` and any active workspace rules via `python3 scripts/learn_edits.py summarize <workspace> --json` (optional; filter by `--framework` / `--persona` when set).
+   - Read `brand-profile.md` and any active workspace rules via `python3 scripts/learn_edits.py summarize <workspace> --json` (optional; filter by `--framework` / `--persona` when set). When `analytics/snapshots.jsonl` has history, optionally check `topHooks` via `../engagement-and-analytics/scripts/aggregate_metrics.py <workspace> --days 30` for proven opening inspiration.
    - For first-time style setup or bootstrapping from 5–30 historical articles in `style/corpus/`, run `python3 scripts/build_playbook.py init-style` or `analyze`.
 2. **Ground facts proportionally (`scripts/source_ledger.py`, recommended for fact-heavy reporting).**
    - Never fabricate statistics, citations, quotes, or first-person anecdotes.

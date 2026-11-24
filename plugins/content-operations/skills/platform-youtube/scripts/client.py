@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Zero-dependency Python 3 reference client for YouTube Data API v3."""
+"""Zero-dependency Python 3 reference client for YouTube Data API v3 and Analytics API v2."""
 import argparse
+from datetime import datetime, timedelta, timezone
 import json
 import mimetypes
 import os
@@ -12,7 +13,90 @@ import urllib.request
 
 BASE = 'https://www.googleapis.com/youtube/v3'
 UPLOAD_BASE = 'https://www.googleapis.com/upload/youtube/v3'
+ANALYTICS_BASE = 'https://youtubeanalytics.googleapis.com/v2'
 OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token'
+
+DEFAULT_CHANNEL_METRICS = (
+    'views,estimatedMinutesWatched,averageViewDuration,'
+    'averageViewPercentage,subscribersGained,subscribersLost,likes'
+)
+DEFAULT_VIDEO_METRICS = (
+    'views,estimatedMinutesWatched,averageViewDuration,'
+    'averageViewPercentage,likes,comments,shares,subscribersGained'
+)
+AVERAGE_METRICS = {'averageViewDuration', 'averageViewPercentage'}
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def resolve_date_range(days: int, start_date: str | None, end_date: str | None) -> tuple[str, str]:
+    if days <= 0:
+        raise ValueError('--days must be positive')
+    now = utc_now()
+    end_str = (end_date or now.strftime('%Y-%m-%d')).strip()
+    start_str = (start_date or (now - timedelta(days=days)).strftime('%Y-%m-%d')).strip()
+    datetime.strptime(start_str, '%Y-%m-%d')
+    datetime.strptime(end_str, '%Y-%m-%d')
+    if start_str > end_str:
+        raise ValueError(f'start-date ({start_str}) cannot be after end-date ({end_str})')
+    return start_str, end_str
+
+
+def parse_analytics_report(raw: dict) -> dict:
+    """Normalize YouTube Analytics API columnHeaders + rows into daily entries and summary totals."""
+    headers = [str(col.get('name') or f'col_{i}') for i, col in enumerate(raw.get('columnHeaders') or [])]
+    rows = raw.get('rows') or []
+    daily: list[dict] = []
+    sums: dict[str, float] = {}
+    counts: dict[str, int] = {}
+
+    for row in rows:
+        entry: dict = {}
+        for idx, col_name in enumerate(headers):
+            val = row[idx] if idx < len(row) else None
+            entry[col_name] = val
+            if col_name == 'day':
+                continue
+            if isinstance(val, (int, float)) and not isinstance(val, bool):
+                sums[col_name] = sums.get(col_name, 0.0) + float(val)
+                counts[col_name] = counts.get(col_name, 0) + 1
+        daily.append(entry)
+
+    totals: dict = {}
+    for metric, total_val in sums.items():
+        if metric in AVERAGE_METRICS:
+            totals[metric] = round(total_val / max(counts.get(metric, 1), 1), 2)
+        else:
+            totals[metric] = int(round(total_val)) if abs(total_val - round(total_val)) < 1e-6 else round(total_val, 2)
+
+    platform_metrics: dict = {}
+    if 'averageViewDuration' in totals:
+        platform_metrics['avgViewDurationSec'] = totals['averageViewDuration']
+    if 'averageViewPercentage' in totals:
+        platform_metrics['avgViewPct'] = totals['averageViewPercentage']
+    if 'estimatedMinutesWatched' in totals:
+        platform_metrics['estimatedMinutesWatched'] = totals['estimatedMinutesWatched']
+    if 'subscribersGained' in totals:
+        platform_metrics['subscribersGained'] = totals['subscribersGained']
+    if 'subscribersLost' in totals:
+        platform_metrics['subscribersLost'] = totals['subscribersLost']
+
+    return {
+        'rowCount': len(daily),
+        'daily': daily,
+        'totals': totals,
+        'platformMetrics': platform_metrics,
+    }
+
+
+def append_snapshot(workspace: Path, row: dict) -> str:
+    snap_path = workspace.expanduser().resolve() / 'analytics' / 'snapshots.jsonl'
+    snap_path.parent.mkdir(parents=True, exist_ok=True)
+    with snap_path.open('a', encoding='utf-8') as fh:
+        fh.write(json.dumps(row, ensure_ascii=False) + '\n')
+    return str(snap_path)
 
 
 def refresh_oauth_token(dry_run: bool = False) -> dict:
@@ -91,7 +175,7 @@ def upload_binary(method: str, url: str, file_path: Path, token: str | None, con
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description='YouTube Data API v3 reference client.')
+    parser = argparse.ArgumentParser(description='YouTube Data API v3 and Analytics API v2 reference client.')
     parser.add_argument('--dry-run', action='store_true', help='Preview request without network I/O.')
     sub = parser.add_subparsers(dest='cmd', required=True)
 
@@ -122,6 +206,28 @@ def main(argv=None) -> int:
 
     p_stat = sub.add_parser('video-stats', help='Fetch live video snippet, status, and statistics.')
     p_stat.add_argument('--video-id', required=True)
+
+    p_ca = sub.add_parser('channel-analytics', help='Fetch daily channel analytics (AVD, avgViewPct, watch minutes, subs) via YouTube Analytics API v2.')
+    p_ca.add_argument('--days', type=int, default=14, help='Lookback window in days when --start-date is omitted (default 14).')
+    p_ca.add_argument('--start-date', default=None, help='Start date YYYY-MM-DD (inclusive).')
+    p_ca.add_argument('--end-date', default=None, help='End date YYYY-MM-DD (inclusive).')
+    p_ca.add_argument('--metrics', default=DEFAULT_CHANNEL_METRICS, help='Comma-separated YouTube Analytics metrics.')
+    p_ca.add_argument('--ids', default='channel==MINE', help='YouTube Analytics ids parameter (default channel==MINE).')
+    p_ca.add_argument('--workspace', default='', help='Optional content-ops workspace to append an account snapshot into analytics/snapshots.jsonl.')
+    p_ca.add_argument('--account-id', default='youtube-main', help='Account ID used when writing to snapshots.jsonl.')
+
+    p_va = sub.add_parser('video-analytics', help='Fetch single-video analytics (AVD, avgViewPct, watch minutes, shares, subs) and optionally append to snapshots.jsonl.')
+    p_va.add_argument('--video-id', required=True)
+    p_va.add_argument('--days', type=int, default=30, help='Lookback window in days when --start-date is omitted (default 30).')
+    p_va.add_argument('--start-date', default=None, help='Start date YYYY-MM-DD (inclusive).')
+    p_va.add_argument('--end-date', default=None, help='End date YYYY-MM-DD (inclusive).')
+    p_va.add_argument('--metrics', default=DEFAULT_VIDEO_METRICS, help='Comma-separated YouTube Analytics metrics.')
+    p_va.add_argument('--with-stats', action='store_true', help='Also query Data API /videos to enrich title and lifetime counts.')
+    p_va.add_argument('--workspace', default='', help='Optional content-ops workspace to append a work snapshot into analytics/snapshots.jsonl.')
+    p_va.add_argument('--window', choices=['24h', '72h', '7d', '30d'], default='7d', help='Snapshot window label (default 7d).')
+    p_va.add_argument('--account-id', default='youtube-main', help='Account ID used when writing to snapshots.jsonl.')
+    p_va.add_argument('--topic-id', default='', help='Optional topicId metadata for cross-platform grouping.')
+    p_va.add_argument('--title', default='', help='Optional work title override for snapshots.jsonl.')
 
     p_cmts = sub.add_parser('list-comments', help='List top-level comment threads on a video.')
     p_cmts.add_argument('--video-id', required=True)
@@ -160,6 +266,99 @@ def main(argv=None) -> int:
                 res = upload_binary('POST', url, Path(args.file), token, dry_run=args.dry_run)
             elif args.cmd == 'video-stats':
                 res = api_call('GET', BASE, '/videos', token, {'part': 'snippet,statistics,status', 'id': args.video_id}, dry_run=args.dry_run)
+            elif args.cmd == 'channel-analytics':
+                start_str, end_str = resolve_date_range(args.days, args.start_date, args.end_date)
+                query = {
+                    'ids': args.ids,
+                    'startDate': start_str,
+                    'endDate': end_str,
+                    'metrics': args.metrics,
+                    'dimensions': 'day',
+                    'sort': 'day',
+                }
+                raw = api_call('GET', ANALYTICS_BASE, '/reports', token, query, dry_run=args.dry_run)
+                if args.dry_run:
+                    res = raw
+                else:
+                    parsed = parse_analytics_report(raw)
+                    res = {'startDate': start_str, 'endDate': end_str, **parsed}
+                    if args.workspace:
+                        totals = parsed['totals']
+                        snap = {
+                            'capturedAt': utc_now().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                            'platform': 'youtube',
+                            'accountId': args.account_id,
+                            'window': 'account',
+                            'source': 'api',
+                            'metrics': {
+                                'views': int(totals.get('views', 0) or 0),
+                                'likes': int(totals.get('likes', 0) or 0),
+                            },
+                            'platformMetrics': parsed['platformMetrics'],
+                        }
+                        res['snapshotAppended'] = append_snapshot(Path(args.workspace), snap)
+            elif args.cmd == 'video-analytics':
+                start_str, end_str = resolve_date_range(args.days, args.start_date, args.end_date)
+                query = {
+                    'ids': 'channel==MINE',
+                    'startDate': start_str,
+                    'endDate': end_str,
+                    'metrics': args.metrics,
+                    'filters': f'video=={args.video_id}',
+                    'dimensions': 'day',
+                    'sort': 'day',
+                }
+                raw = api_call('GET', ANALYTICS_BASE, '/reports', token, query, dry_run=args.dry_run)
+                if args.dry_run:
+                    res = {'dryRun': True, 'analyticsRequest': raw}
+                    if args.with_stats:
+                        res['statsRequest'] = api_call('GET', BASE, '/videos', token, {'part': 'snippet,statistics,status', 'id': args.video_id}, dry_run=True)
+                else:
+                    parsed = parse_analytics_report(raw)
+                    title = args.title
+                    lifetime = {}
+                    if args.with_stats:
+                        vdata = api_call('GET', BASE, '/videos', token, {'part': 'snippet,statistics,status', 'id': args.video_id}, dry_run=False)
+                        item = (vdata.get('items') or [{}])[0]
+                        title = title or str((item.get('snippet') or {}).get('title') or '')
+                        stats = item.get('statistics') or {}
+                        lifetime = {
+                            'views': int(stats.get('viewCount', 0) or 0),
+                            'likes': int(stats.get('likeCount', 0) or 0),
+                            'comments': int(stats.get('commentCount', 0) or 0),
+                        }
+                    res = {
+                        'videoId': args.video_id,
+                        'startDate': start_str,
+                        'endDate': end_str,
+                        'title': title,
+                        **parsed,
+                    }
+                    if lifetime:
+                        res['lifetimeStats'] = lifetime
+                    if args.workspace:
+                        totals = parsed['totals']
+                        snap = {
+                            'capturedAt': utc_now().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                            'platform': 'youtube',
+                            'accountId': args.account_id,
+                            'workId': args.video_id,
+                            'window': args.window,
+                            'source': 'api',
+                            'metrics': {
+                                'views': int(lifetime.get('views', totals.get('views', 0)) or 0),
+                                'likes': int(lifetime.get('likes', totals.get('likes', 0)) or 0),
+                                'comments': int(lifetime.get('comments', totals.get('comments', 0)) or 0),
+                                'shares': int(totals.get('shares', 0) or 0),
+                                'saves': 0,
+                            },
+                            'platformMetrics': parsed['platformMetrics'],
+                        }
+                        if args.topic_id:
+                            snap['topicId'] = args.topic_id
+                        if title:
+                            snap['title'] = title
+                        res['snapshotAppended'] = append_snapshot(Path(args.workspace), snap)
             elif args.cmd == 'list-comments':
                 res = api_call('GET', BASE, '/commentThreads', token, {'part': 'snippet,replies', 'videoId': args.video_id, 'maxResults': args.max_results}, dry_run=args.dry_run)
             else:

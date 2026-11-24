@@ -23,4 +23,4 @@ LinkedIn is a **professional identity and knowledge-sharing network** where post
 
 ## 4. Red Lines & North-Star Metrics (`platformMetrics`)
 - Avoid engagement pods, automated connection spam, and undisclosed endorsements; protect client/employer confidentiality. Enforce shared cap `<= 6/hour`, `<= 40/day` (90–180s spacing) via `engagement_guard.py`.
-- Track `dwellExpandRate`, `substantiveCommentCount`, `repostWithThoughtsCount`, `profileViews`, and `inboundDmOrLeadCount`.
+- Track `dwellExpandRate`, `substantiveCommentCount`, `repostWithThoughtsCount`, `profileViews`, and `inboundDmOrLeadCount`. Check an active Ducoro `linkedin` Connector (`ducoro-cli mcp catalog status linkedin` / `tools linkedin`) first for publishing, comments, and Organization Page statistics; fall back to `scripts/client.py org-analytics` / `post-analytics --workspace <content-ops>` or LinkedIn browser analytics as needed.

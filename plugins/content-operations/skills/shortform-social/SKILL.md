@@ -22,6 +22,7 @@ Browse 4 finished starter decks (`xhs-tool-teardown/`, `xhs-travel-route/`, `wec
 1. **Load native platform rules first.**
    - Read the target `../platform-<name>/SKILL.md` and `../platform-<name>/references/specs.json`.
    - Start from the approved brief (`topics/briefs/<topic-id>.md`) or canonical `master.md`; preserve factual accuracy while adapting hook and structure natively.
+   - Optional creative flywheel: when `analytics/snapshots.jsonl` has history, run `python3 ../engagement-and-analytics/scripts/aggregate_metrics.py <workspace> --days 30 --platform <plat>` to inspect `topHooks` from this account's own winning posts before drafting the opening 1–2 lines.
 2. **Write native short copy (`variants/<platform>.md`).**
    - Open with a leading ```` ```json ```` metadata fence (`platform`, `mode`, `title`, `topics`, `media`, optional `cover`, optional `threads`, `options`)—never YAML frontmatter. Separate multi-post threads with `\n---\n`.
 3. **Produce visual cards, PDF carousels, or Live Photo motion cards via deterministic pipelines.**

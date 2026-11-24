@@ -13,7 +13,7 @@ Capture Chinese-market demand signals across any vertical (consumer, lifestyle, 
 
 ## Four-Track Lawful Source Ladder (Never Scrape Cookies)
 
-1. **Connected Platform Connectors (Highest Priority)**: Check `ducoro-cli mcp catalog` / `status <slug>` for configured connectors; query via `ducoro-cli mcp call` and write `content-ops-signal-envelope/1` JSON (`region: "cn"`).
+1. **Connected Platform Connectors (Highest Priority)**: Check `ducoro-cli mcp catalog list --json` / `ducoro-cli mcp catalog status <slug> --json` / `tools <slug> --json` for configured connectors; invoke mounted Connector tools (or `ducoro-cli mcp catalog call <slug> <tool> --args-file <path|-> --json`) and write `content-ops-signal-envelope/1` JSON (`region: "cn"`).
 2. **CN Keyless Live Radars & Search Demand**:
    - **CN Hot Boards & General/Keyword News**:
      ```sh

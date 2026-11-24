@@ -12,6 +12,20 @@ A snapshot alone is vanity metrics. Every weekly retro (`analytics/retros/YYYY-W
 | High comments + skepticism/confusion | **Missing caveat or unclear framing** | Turn the top objection into next week's follow-up topic and clarify `master.md` |
 | Same `topicId` won on Platform A but flopped on Platform B | **Platform adaptation mismatch** | Check Platform B's native structure and format rather than discarding the topic |
 
+## Breakout Amplification & Hook Recall
+- **Breakout triggers (`aggregate_metrics.py --stage-breakouts`)**: Rather than waiting until the weekly retro to react, detect recently published works (default `<= 168h` old) outperforming the platform median (`>= 2.0x` by default) or explicit per-platform thresholds configured in optional `engagement/breakout-rules.json`:
+  ```json
+  {
+    "defaults": { "baselineMultiplier": 2.0, "maxAgeHours": 168 },
+    "platforms": {
+      "x-twitter": { "minLikes": 40, "maxAgeHours": 168 },
+      "linkedin": { "minInteractions": 30, "maxAgeHours": 120 }
+    }
+  }
+  ```
+  Staged entries land in `engagement/outbound-queue.json` with `status: "discovered"`, `requiresApproval: true`, and idempotency checks against both `outbound-queue.json` and `engagement/action-log.jsonl`.
+- **Top historical hooks (`topHooks`)**: Pull proven opening lines from the account's own highest-performing drafts (`python3 scripts/aggregate_metrics.py <workspace> --days 30 --platform <plat>`) before drafting new openings—refine the hook first, then write the body.
+
 ## Weekly Retro Markdown Template (`analytics/retros/YYYY-Www.md`)
 
 ```markdown
