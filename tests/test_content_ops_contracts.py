@@ -121,6 +121,35 @@ class ContentOpsContractsTest(unittest.TestCase):
                         hits.append(f'{rel}:{lineno}: {line.strip()}')
         self.assertEqual(hits, [], 'Found removed legacy board render contract references:\n' + '\n'.join(hits))
 
+    def test_all_card_deck_preset_references_are_valid(self):
+        shortform_scripts = str(SKILLS / 'shortform-social' / 'scripts')
+        if shortform_scripts not in sys.path:
+            sys.path.insert(0, shortform_scripts)
+        cd_mod = load_module(SKILLS / 'shortform-social' / 'scripts' / 'card_deck.py', 'card_deck_contract_mod')
+        valid_presets = set(cd_mod.PRESETS)
+        preset_re = re.compile(r'--preset\s+([a-z0-9|-]+)')
+        invalid = []
+        for path in sorted(PLUGIN.rglob('*')):
+            if not path.is_file() or path.suffix not in {'.md', '.html'}:
+                continue
+            text = path.read_text(encoding='utf-8', errors='replace')
+            rel = path.relative_to(ROOT).as_posix()
+            for lineno, line in enumerate(text.splitlines(), start=1):
+                for m in preset_re.finditer(line):
+                    for candidate in m.group(1).split('|'):
+                        if candidate not in valid_presets:
+                            invalid.append(f'{rel}:{lineno}: unknown card_deck preset "{candidate}" (valid: {sorted(valid_presets)})')
+        self.assertEqual(invalid, [], 'Invalid card_deck --preset references found:\n' + '\n'.join(invalid))
+
+    def test_all_14_platform_skills_defer_to_mounted_agent_context(self):
+        missing = []
+        for plat in EXPECTED_PLATFORMS:
+            skill_md = SKILLS / f'platform-{plat}' / 'SKILL.md'
+            text = skill_md.read_text(encoding='utf-8')
+            if 'defer to the mounted agent' not in text.lower():
+                missing.append(plat)
+        self.assertEqual(missing, [], f'Platform skills missing mounted-agent context deference clause: {missing}')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -5,7 +5,7 @@ description: "Neutral Kuaishou (快手) platform advisor covering dual-column di
 
 # Kuaishou (快手) Platform Expert Guide
 
-Kuaishou blends **equitable discovery (`发现` / `精选`)** with an unusually loyal **follower tab (`关注`)**—creators with authentic, relatable presence build durable private trust (`老铁文化`) even without constant viral hits.
+Kuaishou blends **equitable discovery (`发现` / `精选`)** with an unusually loyal **follower tab (`关注`)**—creators with authentic, relatable presence build durable private trust (`老铁文化`) even without constant viral hits. Always defer to the mounted agent's own context (profile, memory, private skills, workspace state) for voice, goals, and targets.
 
 ## 1. Audience, Mindset & Distribution Mechanics
 - **Audience & culture**: Strong reach across tier-2 to tier-5 cities as well as nationwide practical/craft/agriculture/local-life/entertainment communities. Audiences value straightforwardness, authenticity, and real human warmth over polished corporate gloss.

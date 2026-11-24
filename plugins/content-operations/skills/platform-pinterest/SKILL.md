@@ -5,7 +5,7 @@ description: "Neutral Pinterest platform advisor covering visual search-engine c
 
 # Pinterest Platform Expert Guide
 
-Pinterest is a **visual discovery and planning search engine**, not a real-time social feed. Users arrive with future-oriented intent (designing, shopping, cooking, traveling, learning, building) and actively save Pins to themed Boards for later action.
+Pinterest is a **visual discovery and planning search engine**, not a real-time social feed. Users arrive with future-oriented intent (designing, shopping, cooking, traveling, learning, building) and actively save Pins to themed Boards for later action. Always defer to the mounted agent's own context (profile, memory, private skills, workspace state) for voice, goals, and targets.
 
 ## 1. Audience, Mindset & Distribution Mechanics
 - **Compounding time horizon**: Unlike ephemeral feeds that peak in 24 hours, a well-indexed Pin often gains momentum over **2–12 weeks** and keeps driving outbound clicks for months or years—always track **T+30d** snapshots.

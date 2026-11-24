@@ -12,6 +12,9 @@
 1. **Create container**: `POST /<userId>/threads` (`media_type=TEXT|IMAGE|VIDEO|CAROUSEL`, `text`, optional `image_url`/`video_url`/`topic_tag`/`reply_control`/`reply_to_id`).
 2. **Poll container**: `GET /<containerId>?fields=status,error_message` until `FINISHED`.
 3. **Publish**: `POST /<userId>/threads_publish` (`creation_id=<containerId>`).
+   - **Multi-post chain + optional `firstReply` (`scripts/client.py post-thread`)**:
+     - `python3 scripts/client.py post-thread --variant <workspace>/drafts/<id>/variants/threads.md [--dry-run]`
+     - Runs create-container → publish sequentially across `\n---\n` / `meta.threads[]` + `options.firstReply`, chaining `reply_to_id` and attaching `topic_tag` only on the root post. On partial failure, exits non-zero and returns `publishedPosts` + `resumeReplyTo` for safe continuation via `--resume-reply-to <id>`.
 4. **Read post & permalink**: `GET /<postId>?fields=id,text,permalink,timestamp,media_type`
 5. **Replies & moderation**:
    - List: `GET /<postId>/replies?fields=id,text,username,timestamp,hide_status`

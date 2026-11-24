@@ -5,7 +5,7 @@ description: "Neutral Facebook Page platform advisor covering community/group di
 
 # Facebook Page Platform Expert Guide
 
-Facebook combines **local & interest-based communities (Pages + Groups)** with **algorithmic discovery** (Reels, shareable visual posts, and discussion-sparking stories) across a broad, global, multi-generational audience.
+Facebook combines **local & interest-based communities (Pages + Groups)** with **algorithmic discovery** (Reels, shareable visual posts, and discussion-sparking stories) across a broad, global, multi-generational audience. Always defer to the mounted agent's own context (profile, memory, private skills, workspace state) for voice, goals, and targets.
 
 ## 1. Audience, Mindset & Distribution Mechanics
 - **Audience breadth**: Skews broader and older globally than TikTok/Threads, with strong engagement in local services, family/parenting, hobbies, community news, education, small business, and niche interest Groups.

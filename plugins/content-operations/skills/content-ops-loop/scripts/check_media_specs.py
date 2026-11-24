@@ -239,13 +239,14 @@ def validate_variant(
                 if fr_len > fr_cap:
                     issues.append({'code': 'too_big', 'field': 'firstReply', 'message': f'options.firstReply length {fr_len} exceeds max {fr_cap}'})
 
-    if platform == 'x-twitter' and not skip_x_280:
+    if platform in ('x-twitter', 'linkedin') and not skip_x_280:
         root_text = thread_parts[0] if thread_parts else norm_body
         if URL_RE.search(root_text) and not str(first_reply or '').strip():
+            plat_label = 'X' if platform == 'x-twitter' else 'LinkedIn'
             warnings.append({
                 'code': 'outbound_link_in_root',
                 'field': 'body',
-                'message': 'Root X post contains an external URL; consider moving links to options.firstReply to preserve For You reach.',
+                'message': f'Root {plat_label} post contains an external URL; consider moving links to options.firstReply to preserve feed reach.',
             })
 
     for req_opt in req_options:

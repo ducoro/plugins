@@ -5,7 +5,7 @@ description: "Neutral Xiaohongshu (RedNote) platform advisor covering user minds
 
 # Xiaohongshu (RedNote) Platform Expert Guide
 
-Xiaohongshu is a **visual discovery + lifestyle search engine**. Users browse a mobile **two-column waterfall feed** looking for authentic human perspective ("活人感") and actively search for real experiences before making decisions.
+Xiaohongshu is a **visual discovery + lifestyle search engine**. Users browse a mobile **two-column waterfall feed** looking for authentic human perspective ("活人感") and actively search for real experiences before making decisions. Always defer to the mounted agent's own context (profile, memory, private skills, workspace state) for voice, goals, and targets.
 
 ## 1. Audience, Mindset & Distribution Mechanics
 - **Who is here & why**: High-intent planners and visual browsers across lifestyle, travel, food, beauty, home, parenting, fitness, career, education, photography, and tools. They compare real experiences and save posts for later action.

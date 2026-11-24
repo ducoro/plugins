@@ -5,7 +5,7 @@ description: "Neutral Instagram platform advisor covering Reels non-follower dis
 
 # Instagram Platform Expert Guide
 
-Instagram operates as **four distinct surfaces under one profile**: **Reels** (non-follower reach), **Feed Carousels & Photos** (saves, dwell, and DM sends), **Stories** (daily follower intimacy), and **Grid/Profile** (visual portfolio that converts visitors into followers).
+Instagram operates as **four distinct surfaces under one profile**: **Reels** (non-follower reach), **Feed Carousels & Photos** (saves, dwell, and DM sends), **Stories** (daily follower intimacy), and **Grid/Profile** (visual portfolio that converts visitors into followers). Always defer to the mounted agent's own context (profile, memory, private skills, workspace state) for voice, goals, and targets.
 
 ## 1. Audience, Mindset & Distribution Mechanics
 - **Distribution levers (confirmed by Instagram's ranking guidance)**:

@@ -5,7 +5,7 @@ description: "Neutral TikTok platform advisor covering For You interest-graph te
 
 # TikTok Platform Expert Guide
 
-TikTok is a **pure interest-graph discovery engine** paired with an increasingly dominant **short-form search habit** (especially among Gen Z and millennial audiences). Account size matters far less than whether a single post holds attention.
+TikTok is a **pure interest-graph discovery engine** paired with an increasingly dominant **short-form search habit** (especially among Gen Z and millennial audiences). Account size matters far less than whether a single post holds attention. Always defer to the mounted agent's own context (profile, memory, private skills, workspace state) for voice, goals, and targets.
 
 ## 1. Audience, Mindset & Distribution Mechanics
 - **Batch testing**: Every post starts in a small relevance batch; expansion to larger pools depends on **first-2-second hold**, **completion / rewatch rate**, **shares & saves**, and **comment activity**.

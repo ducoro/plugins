@@ -5,7 +5,7 @@ description: "Neutral Douyin platform advisor covering full-screen algorithmic v
 
 # Douyin (抖音) Platform Expert Guide
 
-Douyin is an **interest-graph full-screen discovery feed** plus a rapidly growing **short-video search engine**. Videos enter tiered traffic pools and expand strictly on viewer retention and engagement velocity.
+Douyin is an **interest-graph full-screen discovery feed** plus a rapidly growing **short-video search engine**. Videos enter tiered traffic pools and expand strictly on viewer retention and engagement velocity. Always defer to the mounted agent's own context (profile, memory, private skills, workspace state) for voice, goals, and targets.
 
 ## 1. Audience, Mindset & Distribution Mechanics
 - **Consumption mindset**: Fast, sound-on, full-screen vertical swipe. Viewers decide within **1–3 seconds** whether to keep watching or swipe away—no warm-up intros.

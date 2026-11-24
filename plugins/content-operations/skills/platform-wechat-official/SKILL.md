@@ -5,7 +5,7 @@ description: "Neutral WeChat Official Account (公众号) platform advisor cover
 
 # WeChat Official Account (公众号) Platform Expert Guide
 
-WeChat Official Accounts serve **high-trust private subscribers**, **WeChat Recommendation feed (`看一看`/信息流)**, and **WeChat Search (`搜一搜`)**.
+WeChat Official Accounts serve **high-trust private subscribers**, **WeChat Recommendation feed (`看一看`/信息流)**, and **WeChat Search (`搜一搜`)**. Always defer to the mounted agent's own context (profile, memory, private skills, workspace state) for voice, goals, and targets.
 
 ## 1. Audience, Mindset & Distribution Mechanics
 - **Two distinct traffic pools**: (1) **Private-domain push** — subscribers scan title + `2.35:1` cover inside their subscription feed (open rate + finish rate + forward-to-chat/Moments drive reach); (2) **Recommendation & Search** — non-subscribers discover posts by topic relevance, completion rate, likes/wow (`在看`), and exact search intent in `搜一搜`.

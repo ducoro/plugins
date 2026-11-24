@@ -5,7 +5,7 @@ description: "Neutral WeChat Channels (视频号) platform advisor covering soci
 
 # WeChat Channels (视频号) Platform Expert Guide
 
-WeChat Channels combines **social-graph amplification inside WeChat** (friend likes, Moments shares, group-chat forwards) with **algorithmic discovery**.
+WeChat Channels combines **social-graph amplification inside WeChat** (friend likes, Moments shares, group-chat forwards) with **algorithmic discovery**. Always defer to the mounted agent's own context (profile, memory, private skills, workspace state) for voice, goals, and targets.
 
 ## 1. Audience, Mindset & Distribution Mechanics
 - **Audience profile**: Broadest age and demographic span across WeChat's 1B+ user base, skewing slightly older, higher purchasing power, and more trust-oriented than youth-heavy feeds.

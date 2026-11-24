@@ -19,6 +19,9 @@ Required headers on all `/rest/*` calls:
 1. **Initialize image upload**: `POST /rest/images?action=initializeUpload` (`{ initializeUploadRequest: { owner } }`) → PUT bytes to `uploadUrl`, receive image URN.
 2. **Initialize / finalize video upload**: `POST /rest/videos?action=initializeUpload` → PUT parts → `POST /rest/videos?action=finalizeUpload`.
 3. **Create post**: `POST /rest/posts` (`author`, `commentary`, `visibility: "PUBLIC"`, `distribution: { feedDistribution: "MAIN_FEED" }`, `lifecycleState: "PUBLISHED"`, optional `content.media` / `content.multiImage`). Read `x-restli-id` response header for the live post URN.
+   - **Post + automatic `firstReply` comment (`scripts/client.py post-with-first-reply`)**:
+     - `python3 scripts/client.py post-with-first-reply --variant <workspace>/drafts/<id>/variants/linkedin.md [--image-urn <urn>] [--dry-run]`
+     - Publishes the root post, then attaches `options.firstReply` via `POST /rest/socialActions/<encodedPostUrn>/comments`. On partial failure (root posted, comment failed), exits non-zero and returns `postUrn` + `resumePostUrn` so the comment can be retried via `--resume-post-urn <urn>` without duplicating the post.
 4. **Read / Delete post**: `GET /rest/posts/<encodedPostUrn>`, `DELETE /rest/posts/<encodedPostUrn>`.
 5. **Comments**:
    - List: `GET /rest/socialActions/<encodedPostUrn>/comments`
