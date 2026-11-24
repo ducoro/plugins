@@ -103,10 +103,10 @@ class VisualCardStudioUnitAndFormalTest(unittest.TestCase):
         """Class-A formal proof: every style x every preset + all 10 layouts scaffold & pass audit with 0 errors."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            # 1. All 3 styles x 4 presets
+            # 1. All 3 styles x all 6 presets (including 4:5 Instagram & LinkedIn PDF carousels)
             for style, meta in CC.STYLES.items():
                 default_theme = meta['defaultTheme']
-                for preset in ('xhs-carousel', 'wechat-cover-pair', 'video-thumb', 'full-showcase'):
+                for preset in CD.PRESETS:
                     out_dir = root / f'{style}-{preset}'
                     res = CD.scaffold_deck(
                         target_dir=out_dir,
@@ -123,6 +123,10 @@ class VisualCardStudioUnitAndFormalTest(unittest.TestCase):
                     self.assertTrue(res['auditPassed'], f'{style}/{preset} failed audit: {res["errors"]}')
                     self.assertTrue((out_dir / 'index.html').is_file())
                     self.assertTrue((out_dir / 'README.md').is_file())
+                    if preset in ('ig-carousel', 'linkedin-pdf'):
+                        rendered_html = (out_dir / 'index.html').read_text(encoding='utf-8')
+                        self.assertIn('frame-4x5', rendered_html)
+                        self.assertIn('@page { size: 1080px 1350px; margin: 0; }', rendered_html)
 
             # 2. Brand-hex scaffold for every style passes custom contrast audit
             for style in CC.STYLES:
@@ -189,14 +193,14 @@ class VisualCardStudioUnitAndFormalTest(unittest.TestCase):
                 self.assertIn(expected_rule, rules, f'Fault {name} missed {expected_rule}; got {rules}')
 
             # Guard 1: bad frame dimensions (and verify --allow-custom-size permits custom dimensions)
-            bad_dim_html = good_html.replace('data-ducoro-export-width="900"', 'data-ducoro-export-width="777"')
+            bad_dim_html = good_html.replace('data-export-width="900"', 'data-export-width="777"')
             check_fault('f1-dim', bad_dim_html, 'frame_dimensions')
             self.assertTrue(CD.audit_deck(Path(tmp) / 'f1-dim', allow_custom_size=True)['passed'])
 
             # Guard 2: duplicate export frame id
             check_fault(
                 'f2-dup',
-                good_html.replace('data-ducoro-export-frame="wechat-square"', 'data-ducoro-export-frame="wechat-cover"'),
+                good_html.replace('data-export-frame="wechat-square"', 'data-export-frame="wechat-cover"'),
                 'unique_identities',
             )
 
@@ -248,13 +252,13 @@ class VisualCardStudioUnitAndFormalTest(unittest.TestCase):
             self.assertTrue(wrep['passed'])
             self.assertIn('min_font_advisory', {w['rule'] for w in wrep['warnings']})
 
-            # Creative freedom: freeform custom HTML with inline hex, custom CSS, and no preset theme passes cleanly!
+            # Creative freedom: freeform custom HTML using only standard render.md `data-export-frame` + inline CSS pixels passes cleanly!
             free_dir = Path(tmp) / 'freeform-custom'
             free_dir.mkdir()
             (free_dir / 'index.html').write_text(
                 '<!doctype html><html><body>'
-                '<section data-ducoro-export-frame="slide-01" data-ducoro-export-width="1080" data-ducoro-export-height="1350" '
-                'style="background:#FDF4E7;color:#1F1A17;position:relative;">'
+                '<section data-export-frame="slide-01" '
+                'style="width:1080px;height:1350px;background:#FDF4E7;color:#1F1A17;position:relative;">'
                 '<h1 style="color:#E63946;font-size:64px;">Custom Editorial Poster</h1>'
                 '<footer style="position:absolute;bottom:24px;">@Creator</footer></section>'
                 '</body></html>',

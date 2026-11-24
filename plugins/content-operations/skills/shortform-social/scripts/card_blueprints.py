@@ -23,9 +23,33 @@ LAYOUT_NAMES = (
 def _frame_open(fid: str, classes: str, w: int, h: int, label: str, card_title: str) -> str:
     return (
         f'    <section id="{fid}" class="card-frame {classes}" '
-        f'data-ducoro-export-frame="{fid}" data-ducoro-export-width="{w}" data-ducoro-export-height="{h}" '
-        f'data-ducoro-export-label="{escape(label, quote=True)}" '
+        f'data-export-frame="{fid}" data-export-width="{w}" data-export-height="{h}" '
+        f'data-export-label="{escape(label, quote=True)}" '
         f'data-card="{fid}" data-card-title="{escape(card_title, quote=True)}">'
+    )
+
+
+def render_carousel_frame(
+    frame_id: str,
+    layout: str,
+    idx: int,
+    total: int,
+    brand: str = '@BrandName',
+    deck_title: str = '核心观点卡片组',
+    *,
+    width: int = 1080,
+    height: int = 1440,
+    frame_class: str = 'frame-3x4',
+    ratio_label: str = '3:4',
+) -> str:
+    """Render one exportable vertical carousel slide (3:4 1080x1440 or 4:5 1080x1350) for the requested semantic layout."""
+    html = render_3x4_frame(frame_id, layout, idx, total, brand=brand, deck_title=deck_title)
+    if width == 1080 and height == 1440 and frame_class == 'frame-3x4' and ratio_label == '3:4':
+        return html
+    return (
+        html.replace('class="card-frame frame-3x4 ', f'class="card-frame {frame_class} ', 1)
+        .replace('data-export-width="1080" data-export-height="1440"', f'data-export-width="{width}" data-export-height="{height}"', 1)
+        .replace('data-export-label="3:4 ', f'data-export-label="{ratio_label} ', 1)
     )
 
 

@@ -11,7 +11,7 @@ python3 scripts/build_boards.py <workspace>/content-ops --board publish-ledger-b
 Content identity conventions:
 - Sections: `data-card="accounts-matrix"` and `data-card="publish-ledger"`.
 - Items: `data-mark-item="acct-<accountId>"` and `data-mark-item="pub-<publishId>"`.
-- Export frame: `[data-ducoro-export-frame="ledger-summary"]`.
+- Export frame for `ducoro-cli render check` / `render shot`: `[data-export-frame="ledger-summary"]`.
 
 ## Declared View Commands
 - `filterPlatform` (`platform`): `board command filterPlatform --space <space-id> --board <board> --arg platform=youtube`

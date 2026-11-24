@@ -26,10 +26,19 @@ ALLOWED_DIMENSIONS = {
 }
 
 FONT_SIZE_PX_RE = re.compile(r'font-size\s*:\s*([0-9]+(?:\.[0-9]+)?)\s*px', re.I)
+INLINE_WIDTH_PX_RE = re.compile(r'(?:^|;)\s*width\s*:\s*([0-9]+)\s*px', re.I)
+INLINE_HEIGHT_PX_RE = re.compile(r'(?:^|;)\s*height\s*:\s*([0-9]+)\s*px', re.I)
 CSS_VAR_RE = re.compile(r'--([a-z-]+)\s*:\s*([^;}\n]+)')
 PLACEHOLDER_TEXT_RE = re.compile(r'(?:\bTODO\b|\bTBD\b|\[insert\s+[^\]]+\]|替换为\s*<img)', re.I)
 WINDOWS_ABS_RE = re.compile(r'^[A-Za-z]:\\')
 FILE_URI_PREFIX = 'file:' + '//'
+KNOWN_FRAME_CLASS_DIMS = {
+    'frame-3x4': ('1080', '1440'),
+    'frame-4x5': ('1080', '1350'),
+    'frame-16x9': ('1280', '720'),
+    'frame-wechat-wide': ('900', '383'),
+    'frame-wechat-sq': ('1080', '1080'),
+}
 
 
 class _DeckParser(HTMLParser):
@@ -66,11 +75,29 @@ class _DeckParser(HTMLParser):
         if 'data-mark-item' in attr_map:
             self.all_mark_items.append(attr_map['data-mark-item'])
 
-        if 'data-ducoro-export-frame' in attr_map:
+        if 'data-export-frame' in attr_map:
+            width_val = attr_map.get('data-export-width', '').strip()
+            height_val = attr_map.get('data-export-height', '').strip()
+            style_raw = attr_map.get('style', '')
+            if not width_val:
+                mw = INLINE_WIDTH_PX_RE.search(style_raw)
+                if mw:
+                    width_val = mw.group(1)
+            if not height_val:
+                mh = INLINE_HEIGHT_PX_RE.search(style_raw)
+                if mh:
+                    height_val = mh.group(1)
+            if not width_val or not height_val:
+                for cls_name in attr_map.get('class', '').split():
+                    if cls_name in KNOWN_FRAME_CLASS_DIMS:
+                        cw, ch = KNOWN_FRAME_CLASS_DIMS[cls_name]
+                        width_val = width_val or cw
+                        height_val = height_val or ch
+                        break
             frame_info = {
-                'id': attr_map.get('data-ducoro-export-frame', '').strip(),
-                'width': attr_map.get('data-ducoro-export-width', '').strip(),
-                'height': attr_map.get('data-ducoro-export-height', '').strip(),
+                'id': attr_map.get('data-export-frame', '').strip(),
+                'width': width_val,
+                'height': height_val,
                 'card': attr_map.get('data-card', '').strip(),
                 'depth': self._tag_depth,
                 'headings': [],
@@ -186,7 +213,7 @@ def audit_deck(
 
     # 1. Objective export frame declarations & platform dimensions
     if not parser.frames:
-        add_issue('frame_dimensions', 'error', 'No [data-ducoro-export-frame] elements declared in HTML.')
+        add_issue('frame_dimensions', 'error', 'No [data-export-frame] elements declared in HTML.')
 
     seen_frames: set = set()
     wide_frames: List[Dict[str, Any]] = []
@@ -195,9 +222,9 @@ def audit_deck(
     for fr in parser.frames:
         fid = fr['id']
         if not fid:
-            add_issue('unique_identities', 'error', 'Encountered empty data-ducoro-export-frame attribute.')
+            add_issue('unique_identities', 'error', 'Encountered empty data-export-frame attribute.')
         elif fid in seen_frames:
-            add_issue('unique_identities', 'error', f'Duplicate data-ducoro-export-frame id: {fid}', fid)
+            add_issue('unique_identities', 'error', f'Duplicate data-export-frame id: {fid}', fid)
         else:
             seen_frames.add(fid)
 

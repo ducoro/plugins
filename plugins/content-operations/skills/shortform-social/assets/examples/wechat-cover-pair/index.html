@@ -172,13 +172,13 @@
       color: var(--ink);
       display: flex;
       flex-direction: column;
-      border: var(--rule-width) solid var(--border);
+      outline: var(--rule-width) solid var(--border);
       isolation: isolate;
       flex-shrink: 0;
     }
 
     html[data-ducoro-render="shot"] .card-frame {
-      border: none;
+      outline: none;
     }
 
     /* Paper Studio: ultra-subtle tactile grain + warm top wash */
@@ -966,7 +966,7 @@
   <header class="studio-bar" data-mark-ignore>
     <div class="studio-bar-meta">
       <strong>Visual Card Studio</strong>
-      <span>Exact-pixel export frames for <code>ducoro-cli board check</code> &amp; <code>board shot</code></span>
+      <span>Exact-pixel export frames for <code>ducoro-cli render check</code>, <code>render shot</code> &amp; <code>render pdf</code></span>
     </div>
     <div class="studio-controls">
       <label>
@@ -1000,7 +1000,7 @@
     <!-- FRAMES_START -->
 
     <div class="pair-group">
-      <section id="wechat-cover" class="card-frame frame-wechat-wide" data-ducoro-export-frame="wechat-cover" data-ducoro-export-width="900" data-ducoro-export-height="383" data-ducoro-export-label="WeChat 2.35:1 Primary Cover" data-card="wechat-cover" data-card-title="WeChat 2.35:1 Primary Cover">
+      <section id="wechat-cover" class="card-frame frame-wechat-wide" data-export-frame="wechat-cover" data-export-width="900" data-export-height="383" data-export-label="WeChat 2.35:1 Primary Cover" data-card="wechat-cover" data-card-title="WeChat 2.35:1 Primary Cover">
         <div class="card-head">
           <span class="eyebrow-pill" data-mark-item="wechat-cover-tag" data-mark-label="Wide cover tag">90 天实战复盘</span>
           <span class="page-index">900 × 383</span>
@@ -1012,7 +1012,7 @@
         <footer class="card-foot"><span class="brand-mark">系统主理人笔记</span><span>主推送头图</span></footer>
       </section>
 
-      <section id="wechat-square" class="card-frame frame-wechat-sq" data-ducoro-export-frame="wechat-square" data-ducoro-export-width="1080" data-ducoro-export-height="1080" data-ducoro-export-label="WeChat 1:1 Square Share Cover" data-card="wechat-square" data-card-title="WeChat 1:1 Square Share Cover">
+      <section id="wechat-square" class="card-frame frame-wechat-sq" data-export-frame="wechat-square" data-export-width="1080" data-export-height="1080" data-export-label="WeChat 1:1 Square Share Cover" data-card="wechat-square" data-card-title="WeChat 1:1 Square Share Cover">
         <div class="card-head">
           <span class="eyebrow" data-mark-item="wechat-square-tag" data-mark-label="Square tag">SHARE CARD</span>
           <span class="page-index">1080 × 1080</span>
@@ -1028,7 +1028,7 @@
       </section>
     </div>
 
-    <section id="thumb-16x9" class="card-frame frame-16x9 layout-thesis" data-ducoro-export-frame="thumb-16x9" data-ducoro-export-width="1280" data-ducoro-export-height="720" data-ducoro-export-label="16:9 Video Thumbnail" data-card="thumb-16x9" data-card-title="16:9 Video Thumbnail">
+    <section id="thumb-16x9" class="card-frame frame-16x9 layout-thesis" data-export-frame="thumb-16x9" data-export-width="1280" data-export-height="720" data-export-label="16:9 Video Thumbnail" data-card="thumb-16x9" data-card-title="16:9 Video Thumbnail">
       <div class="card-head">
         <span class="eyebrow-solid" data-mark-item="thumb-16x9-tag" data-mark-label="Video tag">DEEP REVIEW</span>
         <span class="page-index">1280 × 720</span>
@@ -1102,14 +1102,14 @@
         sdk.board.commands({
           'focus-frame': {
             describe: 'Scroll a specific export frame into view for visual review.',
-            params: { frame: { type: 'string', required: true, description: 'data-ducoro-export-frame id' } },
+            params: { frame: { type: 'string', required: true, description: 'data-export-frame id' } },
             run: function (args) {
               var id = args && args.frame;
               var el = null;
               if (id) {
-                var nodes = document.querySelectorAll('[data-ducoro-export-frame]');
+                var nodes = document.querySelectorAll('[data-export-frame]');
                 for (var i = 0; i < nodes.length; i++) {
-                  if (nodes[i].getAttribute('data-ducoro-export-frame') === id) { el = nodes[i]; break; }
+                  if (nodes[i].getAttribute('data-export-frame') === id) { el = nodes[i]; break; }
                 }
               }
               if (!el) throw new Error('Unknown frame: ' + id);

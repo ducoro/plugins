@@ -11,7 +11,7 @@ python3 scripts/build_boards.py <workspace>/content-ops --board analytics-retro-
 Content identity conventions:
 - Sections: `data-card="kpi-summary"`, `platform-native-metrics`, `trend-chart`, `cross-platform`, `works-leaderboard`, `retro-actions`.
 - Items: `data-mark-item="work-<workId>"`, `data-mark-item="cross-<topicId>"`, `data-mark-item="action-<id>"`.
-- Export frame: `[data-ducoro-export-frame="analytics-summary"]`.
+- Export frame for `ducoro-cli render check` / `render shot`: `[data-export-frame="analytics-summary"]`.
 
 ## Declared View Commands
 - `setRange` (`days`: `7 | 14 | 30`): `board command setRange --space <space-id> --board <board> --arg days=7`

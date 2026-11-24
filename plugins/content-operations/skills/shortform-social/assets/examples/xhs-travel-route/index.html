@@ -172,13 +172,13 @@
       color: var(--ink);
       display: flex;
       flex-direction: column;
-      border: var(--rule-width) solid var(--border);
+      outline: var(--rule-width) solid var(--border);
       isolation: isolate;
       flex-shrink: 0;
     }
 
     html[data-ducoro-render="shot"] .card-frame {
-      border: none;
+      outline: none;
     }
 
     /* Paper Studio: ultra-subtle tactile grain + warm top wash */
@@ -966,7 +966,7 @@
   <header class="studio-bar" data-mark-ignore>
     <div class="studio-bar-meta">
       <strong>Visual Card Studio</strong>
-      <span>Exact-pixel export frames for <code>ducoro-cli board check</code> &amp; <code>board shot</code></span>
+      <span>Exact-pixel export frames for <code>ducoro-cli render check</code>, <code>render shot</code> &amp; <code>render pdf</code></span>
     </div>
     <div class="studio-controls">
       <label>
@@ -999,7 +999,7 @@
   <main class="deck-canvas">
     <!-- FRAMES_START -->
 
-    <section id="card-01" class="card-frame frame-3x4 layout-cover-bleed" data-ducoro-export-frame="card-01" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Full-Bleed Travel Cover" data-card="card-01" data-card-title="Card 01 — 满铺安静区封面">
+    <section id="card-01" class="card-frame frame-3x4 layout-cover-bleed" data-export-frame="card-01" data-export-width="1080" data-export-height="1440" data-export-label="3:4 Full-Bleed Travel Cover" data-card="card-01" data-card-title="Card 01 — 满铺安静区封面">
       <!-- subject map (westlake-morning.svg):
            quiet zone: top mist sky 0%..42% y (low detail, warm light tone, zero scrim needed)
            focal subjects: layered hills 52%..76% y, stone arch bridge right-middle 68%..74% y, boat lower-left 79%..83% y
@@ -1016,7 +1016,7 @@
       </div>
     </section>
 
-    <section id="card-02" class="card-frame frame-3x4 layout-map-route" data-ducoro-export-frame="card-02" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Travel Route Map" data-card="card-02" data-card-title="Card 02 — 4 站点路线图">
+    <section id="card-02" class="card-frame frame-3x4 layout-map-route" data-export-frame="card-02" data-export-width="1080" data-export-height="1440" data-export-label="3:4 Travel Route Map" data-card="card-02" data-card-title="Card 02 — 4 站点路线图">
       <div class="card-head"><span class="eyebrow">ROUTE MAP</span><span class="page-index">02 / 04</span></div>
       <div class="card-body">
         <h2 class="title-slide" data-mark-item="card-02-title" data-mark-label="Map title">一路向南不折返，水岸全程树荫</h2>
@@ -1044,7 +1044,7 @@
       <footer class="card-foot"><span class="brand-mark">@SlowTrail</span><span>杭州西线实走路线</span></footer>
     </section>
 
-    <section id="card-03" class="card-frame frame-3x4 layout-step-flow" data-ducoro-export-frame="card-03" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Time Schedule" data-card="card-03" data-card-title="Card 03 — 分时段节奏">
+    <section id="card-03" class="card-frame frame-3x4 layout-step-flow" data-export-frame="card-03" data-export-width="1080" data-export-height="1440" data-export-label="3:4 Time Schedule" data-card="card-03" data-card-title="Card 03 — 分时段节奏">
       <div class="card-head"><span class="eyebrow">MORNING PACE</span><span class="page-index">03 / 04</span></div>
       <div class="card-body">
         <h2 class="title-slide" data-mark-item="card-03-title" data-mark-label="Schedule title">卡准这 4 个时间点，光线最好人最少</h2>
@@ -1058,7 +1058,7 @@
       <footer class="card-foot"><span class="brand-mark">@SlowTrail</span><span>春秋两季体验最佳</span></footer>
     </section>
 
-    <section id="card-04" class="card-frame frame-3x4 layout-quote-note" data-ducoro-export-frame="card-04" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Field Note" data-card="card-04" data-card-title="Card 04 — 实走手记">
+    <section id="card-04" class="card-frame frame-3x4 layout-quote-note" data-export-frame="card-04" data-export-width="1080" data-export-height="1440" data-export-label="3:4 Field Note" data-card="card-04" data-card-title="Card 04 — 实走手记">
       <div class="card-head"><span class="eyebrow">FIELD NOTE</span><span class="page-index">04 / 04</span></div>
       <div class="card-body">
         <blockquote class="quote-block" data-mark-item="card-04-quote" data-mark-label="Travel pull quote">
@@ -1131,14 +1131,14 @@
         sdk.board.commands({
           'focus-frame': {
             describe: 'Scroll a specific export frame into view for visual review.',
-            params: { frame: { type: 'string', required: true, description: 'data-ducoro-export-frame id' } },
+            params: { frame: { type: 'string', required: true, description: 'data-export-frame id' } },
             run: function (args) {
               var id = args && args.frame;
               var el = null;
               if (id) {
-                var nodes = document.querySelectorAll('[data-ducoro-export-frame]');
+                var nodes = document.querySelectorAll('[data-export-frame]');
                 for (var i = 0; i < nodes.length; i++) {
-                  if (nodes[i].getAttribute('data-ducoro-export-frame') === id) { el = nodes[i]; break; }
+                  if (nodes[i].getAttribute('data-export-frame') === id) { el = nodes[i]; break; }
                 }
               }
               if (!el) throw new Error('Unknown frame: ' + id);

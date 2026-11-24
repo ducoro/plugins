@@ -15,7 +15,7 @@ LinkedIn is a **professional identity and knowledge-sharing network** where post
   - **Outbound link trade-off**: External URLs in the post body can trim initial reach; weigh direct convenience against placing the link in the first comment or editing it in after initial momentum.
 
 ## 2. Formats & Content Spectrum
-- **Specs (`references/specs.json`)**: Body `<= 3000` chars; `text`, `image_text` (up to 9 images), `video` (`MP4 <= 10 min`, `<= 200MB`), and **`document`** (1 PDF carousel `<= 100MB`, `1080x1350` `4:5` or `1080x1080` slides exported via headless Chrome print-to-PDF from `../shortform-social/scripts/card_deck.py`); inline hashtags supported (`recommendations.maxTopicCount: 5`).
+- **Specs (`references/specs.json`)**: Body `<= 3000` chars; `text`, `image_text` (up to 9 images), `video` (`MP4 <= 10 min`, `<= 200MB`), and **`document`** (1 PDF carousel `<= 100MB`, `1080x1350` `4:5` or `1080x1080` slides scaffolded with `../shortform-social/scripts/card_deck.py --preset linkedin-pdf` and exported via `ducoro-cli render pdf --file <deck>/index.html --out <draft>/assets/deck.pdf --json`); inline hashtags supported (`recommendations.maxTopicCount: 5`).
 - **Style spectrum**: Practitioner case studies, industry analysis, career/leadership reflections, visual PDF frameworks, company/product milestones, hiring stories, and candid lessons learned. Avoid cringe engagement-bait ("Agree? Comment YES!").
 
 ## 3. Delivery & Verification (`references/protocol.md`)

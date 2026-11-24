@@ -83,19 +83,18 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      border: var(--rule-width) solid var(--border);
+      outline: var(--rule-width) solid var(--border);
       flex-shrink: 0;
     }
 
-    html[data-ducoro-render="shot"] .card-frame { border: none; }
+    html[data-ducoro-render="shot"] .card-frame { outline: none; }
 
-    /* Frame 1: Real transparent typography overlay (for `live_photo.py compose --overlay`) */
+    /* Frame 1: Clean top-quiet-zone title canvas (keep preview guides outside this export frame) */
     .overlay-canvas {
       background:
-        linear-gradient(180deg, rgba(168, 200, 232, 0.28) 0%, rgba(246, 242, 234, 0.14) 45%, rgba(27, 25, 23, 0.08) 100%),
-        repeating-conic-gradient(rgba(var(--tint-rgb), 0.04) 0% 25%, transparent 0% 50%) 0 0 / 32px 32px;
+        linear-gradient(180deg, rgba(168, 200, 232, 0.22) 0%, rgba(246, 242, 234, 0.10) 42%, transparent 62%);
       padding: 116px 84px 72px;
-      justify-content: space-between;
+      justify-content: flex-start;
     }
 
     html[data-ducoro-render="shot"] .overlay-canvas {
@@ -120,14 +119,15 @@
     }
 
     .quiet-guide {
-      margin-top: auto;
-      padding: 24px 28px;
-      border: 2px dashed var(--border);
+      width: 100%;
+      max-width: 1080px;
+      padding: 20px 24px;
+      border: 1px dashed var(--border);
       border-radius: var(--radius-lg);
-      background: rgba(255, 253, 248, 0.72);
+      background: var(--surface);
       color: var(--muted);
-      font-size: 24px;
-      line-height: 1.55;
+      font-size: 16px;
+      line-height: 1.6;
     }
 
     html[data-ducoro-render="shot"] .quiet-guide {
@@ -247,35 +247,36 @@
   <main class="deck-canvas">
     <!-- FRAMES_START -->
 
-    <!-- Frame 1: Exportable Transparent Typography Overlay for Single-Video Live Photo -->
+    <!-- Frame 1: Exportable Typography Overlay for Single-Video Live Photo -->
     <section
       id="live-overlay-top"
       class="card-frame overlay-canvas"
-      data-ducoro-export-frame="live-overlay-top"
-      data-ducoro-export-width="1080"
-      data-ducoro-export-height="1440"
-      data-ducoro-export-label="Live Photo Transparent Top Overlay"
+      data-export-frame="live-overlay-top"
+      data-export-width="1080"
+      data-export-height="1440"
+      data-export-label="Live Photo Top Quiet-Zone Overlay"
       data-card="live-overlay-top"
-      data-card-title="透明叠层母版 — 单视频顶部安静区标题"
+      data-card-title="叠层母版 — 单视频顶部安静区标题"
     >
       <div>
         <h1 class="overlay-headline" data-mark-item="live-overlay-top-title" data-mark-label="Quiet-zone headline">把出发交给风，<br />把远方留给时间</h1>
         <p class="overlay-sub" data-mark-item="live-overlay-top-sub" data-mark-label="Quiet-zone subtitle">清晨启程 · 沿着水路慢慢向前</p>
       </div>
-      <div class="quiet-guide">
-        <strong>真实视频主体区（导出透明 PNG 时自动隐藏本提示框）：</strong>
-        底部 60% 留给真实流动视频主体；无全屏黑遮罩、无假 LIVE 角标、无多余装饰线。配合 <code>live_photo.py compose --layout single --crop-x 0.16 --overlay overlay.png</code> 合成，标题纹丝不动、底层视频自然流动 5 秒。
-      </div>
     </section>
+
+    <aside class="quiet-guide" data-mark-ignore>
+      <strong>真实视频主体区说明（位于导出画框外，不会被 <code>ducoro-cli render shot --file</code> 拍入）：</strong>
+      画框底部 60% 留给真实流动视频主体；无全屏黑遮罩、无假 LIVE 角标、无多余装饰线。需要真透明 PNG 叠加层时使用透明图层素材或合成脚本，配合 <code>live_photo.py compose --layout single --crop-x 0.16 --overlay overlay.png</code> 合成。
+    </aside>
 
     <!-- Frame 2: Stack-3 Horizontal Strip Blueprint (Best for 16:9 Footage & Screen Recordings) -->
     <section
       id="live-spec-stack3"
       class="card-frame spec-canvas"
-      data-ducoro-export-frame="live-spec-stack3"
-      data-ducoro-export-width="1080"
-      data-ducoro-export-height="1440"
-      data-ducoro-export-label="Live Photo Stack-3 Blueprint"
+      data-export-frame="live-spec-stack3"
+      data-export-width="1080"
+      data-export-height="1440"
+      data-export-label="Live Photo Stack-3 Blueprint"
       data-card="live-spec-stack3"
       data-card-title="三连横条规格 — stack-3（宽屏素材首选）"
     >
@@ -293,10 +294,10 @@
     <section
       id="live-spec-quad"
       class="card-frame spec-canvas"
-      data-ducoro-export-frame="live-spec-quad"
-      data-ducoro-export-width="1080"
-      data-ducoro-export-height="1440"
-      data-ducoro-export-label="Live Photo Four-Grid Blueprint"
+      data-export-frame="live-spec-quad"
+      data-export-width="1080"
+      data-export-height="1440"
+      data-export-label="Live Photo Four-Grid Blueprint"
       data-card="live-spec-quad"
       data-card-title="四宫格规格 — grid-4（纯素材拼图）"
     >

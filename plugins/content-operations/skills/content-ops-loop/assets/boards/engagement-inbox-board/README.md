@@ -12,7 +12,7 @@ Content identity conventions:
 - Queue container: `data-card="triage-queue"` (stable across tab filter changes).
 - Comment items: `data-mark-item="comment-<commentId>"`.
 - Rate-limit meters: `data-mark-item="cap-<platform>"`.
-- Export frame: `[data-ducoro-export-frame="engagement-summary"]`.
+- Export frame for `ducoro-cli render check` / `render shot`: `[data-export-frame="engagement-summary"]`.
 
 ## Declared View Commands
 - `selectTier` (`tier`: `all | high_intent | feedback | general | spam`): `board command selectTier --space <space-id> --board <board> --arg tier=high_intent`

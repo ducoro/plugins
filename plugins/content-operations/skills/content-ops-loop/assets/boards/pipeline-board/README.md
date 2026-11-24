@@ -11,7 +11,7 @@ python3 scripts/build_boards.py <workspace>/content-ops --board pipeline-board -
 Content identity conventions:
 - Stage columns: `data-card="stage-intake"`, `stage-approved`, `stage-ready`, `stage-archive`.
 - Cards: `data-mark-item="topic-<topicId>"` or `data-mark-item="draft-<draftId>"`.
-- Export frame: `[data-ducoro-export-frame="pipeline-summary"]`.
+- Export frame for `ducoro-cli render check` / `render shot`: `[data-export-frame="pipeline-summary"]`.
 
 ## Declared View Commands
 - `filterPlan` (`planId`): `board command filterPlan --space <space-id> --board <board> --arg planId=plan-launch`

@@ -11,7 +11,7 @@ SENSITIVE_KEY = re.compile(r'(token|secret|password|passwd|api[_-]?key|authoriza
 FORBIDDEN_ROOT_ENTRIES = ['.agents', '.claude-plugin']
 FORBIDDEN_BUNDLE_ENTRIES = ['hooks', 'commands', 'agents', '.app.json', '.claude-plugin', '.codex-plugin']
 BARE_DUCORO_CLI = re.compile(
-    r'(?<![A-Za-z0-9_.-])ducoro\s+(?:board|feedback|media|local-folder|space|spaces|agent|agents|daemon|job|task|plan|plugin|skill|mcp|cli)\b|`ducoro`\s+CLI'
+    r'(?<![A-Za-z0-9_.-])ducoro\s+(?:board|render|feedback|media|local-folder|space|spaces|agent|agents|daemon|job|task|plan|plugin|skill|mcp|cli)\b|`ducoro`\s+CLI'
 )
 
 

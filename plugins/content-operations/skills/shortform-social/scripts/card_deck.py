@@ -22,6 +22,16 @@ import card_colors as cc  # noqa: E402
 audit_deck = ca.audit_deck
 
 
+PRESETS = (
+    'xhs-carousel',
+    'ig-carousel',
+    'linkedin-pdf',
+    'wechat-cover-pair',
+    'video-thumb',
+    'full-showcase',
+)
+
+
 def scaffold_deck(
     target_dir: Path,
     preset: str,
@@ -34,7 +44,7 @@ def scaffold_deck(
     brand_hex: Optional[str],
     overwrite: bool,
 ) -> Dict[str, Any]:
-    """Generate a self-contained Ducoro Board card deck folder from the bundled studio shell."""
+    """Generate a self-contained HTML card deck directory (renders directly via `ducoro-cli render`; optionally usable as a Board)."""
     if style not in cc.STYLES:
         raise ValueError(f'Unknown style {style!r}; expected one of: {", ".join(cc.STYLES)}')
 
@@ -51,14 +61,36 @@ def scaffold_deck(
     readme_src = (TEMPLATE_DIR / 'README.md').read_text(encoding='utf-8')
 
     frames_blocks: List[str] = []
+    print_page_css = '@page { size: 1080px 1440px; margin: 0; }'
     if preset == 'xhs-carousel':
         seq = bp.pick_carousel_layouts(pages, layouts)
         total = len(seq)
         for idx, layout in enumerate(seq, start=1):
             frames_blocks.append(bp.render_3x4_frame(f'card-{idx:02d}', layout, idx, total, brand=brand, deck_title=title))
+    elif preset in ('ig-carousel', 'linkedin-pdf'):
+        seq = bp.pick_carousel_layouts(pages, layouts)
+        total = len(seq)
+        print_page_css = '@page { size: 1080px 1350px; margin: 0; }'
+        for idx, layout in enumerate(seq, start=1):
+            frames_blocks.append(
+                bp.render_carousel_frame(
+                    f'card-{idx:02d}',
+                    layout,
+                    idx,
+                    total,
+                    brand=brand,
+                    deck_title=title,
+                    width=1080,
+                    height=1350,
+                    frame_class='frame-4x5',
+                    ratio_label='4:5',
+                )
+            )
     elif preset == 'wechat-cover-pair':
+        print_page_css = '@page { size: 1080px 1080px; margin: 0; }'
         frames_blocks.append(bp.render_wechat_pair(wide_title=title, brand=brand))
     elif preset == 'video-thumb':
+        print_page_css = '@page { size: 1280px 720px; margin: 0; }'
         frames_blocks.append(bp.render_video_thumb(title=title, brand=brand))
     elif preset == 'full-showcase':
         total = len(bp.LAYOUT_NAMES)
@@ -67,11 +99,12 @@ def scaffold_deck(
         frames_blocks.append(bp.render_wechat_pair(wide_title=title, brand=brand))
         frames_blocks.append(bp.render_video_thumb(title=title, brand=brand))
     else:
-        raise ValueError(f'Unknown preset {preset!r}; expected xhs-carousel | wechat-cover-pair | video-thumb | full-showcase')
+        raise ValueError(f'Unknown preset {preset!r}; expected {" | ".join(PRESETS)}')
 
     html_out = re.sub(r'data-style="[^"]+"', f'data-style="{style}"', shell_html, count=1)
     html_out = re.sub(r'data-theme="[^"]+"', f'data-theme="{chosen_theme}"', html_out, count=1)
     html_out = re.sub(r'<title>.*?</title>', f'<title>{title}</title>', html_out, count=1, flags=re.S)
+    html_out = html_out.replace('/* <!-- PRINT_PAGE_RULE --> */', print_page_css)
     if brand_css:
         html_out = html_out.replace('/* <!-- BRAND_THEME_HERE --> */', brand_css)
 
@@ -121,16 +154,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_brand.add_argument('--id', default='brand', dest='theme_id')
     p_brand.add_argument('--json', action='store_true', dest='as_json')
 
-    p_scaf = sub.add_parser('scaffold', help='Create a self-contained Ducoro Board card deck directory.')
+    p_scaf = sub.add_parser('scaffold', help='Create a self-contained HTML card deck directory for ducoro-cli render.')
     p_scaf.add_argument('target_dir', type=Path)
-    p_scaf.add_argument('--preset', default='xhs-carousel', choices=['xhs-carousel', 'wechat-cover-pair', 'video-thumb', 'full-showcase'])
+    p_scaf.add_argument('--preset', default='xhs-carousel', choices=list(PRESETS))
     p_scaf.add_argument('--style', default='paper-studio', choices=list(cc.STYLES.keys()))
     p_scaf.add_argument('--theme', default=None)
     p_scaf.add_argument('--brand-hex', default=None)
     p_scaf.add_argument('--title', default='核心观点卡片组')
     p_scaf.add_argument('--brand', default='@BrandName')
     p_scaf.add_argument('--pages', type=int, default=5)
-    p_scaf.add_argument('--layouts', default=None, help='Comma-separated layout names for xhs-carousel')
+    p_scaf.add_argument('--layouts', default=None, help='Comma-separated layout names for carousel/PDF presets')
     p_scaf.add_argument('--overwrite', action='store_true')
     p_scaf.add_argument('--json', action='store_true', dest='as_json')
 

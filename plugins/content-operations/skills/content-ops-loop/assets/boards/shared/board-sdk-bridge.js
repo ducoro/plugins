@@ -1,7 +1,7 @@
 // Shared progressive-enhancement bridge for content-operations interactive boards.
 // Standalone first: works with zero host SDK injection, and activates window.ducoro
 // features (Composer draft staging, live cast, shared view storage, agent commands,
-// live file revalidation, and board shot read-only projection) when served in a Ducoro Space.
+// live file revalidation, and read-only preview / shot projection) when served in a Ducoro Space.
 
 export function createBoardBridge({
   boardId,

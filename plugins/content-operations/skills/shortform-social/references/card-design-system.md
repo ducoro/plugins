@@ -1,6 +1,6 @@
 # Visual Card Design System & Starter Blueprints
 
-HTML-based visual cards give far higher typography precision, adjustability, and consistency than asking image-generation models to render text directly. The styles, palettes, and blueprints bundled here are **neutral starter scaffolds and examples**—users and agents are free to pick a preset, mix elements, or author custom HTML/CSS for any brand or aesthetic while relying on `card_deck.py audit` and `ducoro-cli board check` for objective integrity checks.
+HTML-based visual cards give far higher typography precision, adjustability, and consistency than asking image-generation models to render text directly. The styles, palettes, and blueprints bundled here are **neutral starter scaffolds and examples**—users and agents are free to pick a preset, mix elements, or author custom HTML/CSS for any brand or aesthetic while relying on `card_deck.py audit` and `ducoro-cli render check` for objective integrity checks.
 
 ## 1. Platform Export Frame Dimensions
 
@@ -48,17 +48,19 @@ Rotate, combine, or customize freely depending on the story:
 10. `closing-cta` — summary frame with takeaway chips
 11. `map-route` — offline route canvas (vector or local static map tile) with numbered pins & stop timings
 
-## 4. Deterministic Ducoro Board Export Pipeline
+## 4. Deterministic Local HTML Export Pipeline (`ducoro-cli render`, No Board Required)
 
-1. `ducoro-cli board new --space <space-id> --title "<Deck Title>" --json`
-2. Optional quick start via scaffold (or write custom HTML with `[data-ducoro-export-frame]`):
+1. Optional quick start via scaffold into the draft folder (or write custom HTML with `[data-export-frame="<id>"]` sized in explicit CSS pixels):
    ```sh
-   python3 scripts/card_deck.py scaffold <space-work-root>/boards/<board-id> \
+   python3 scripts/card_deck.py scaffold <workspace>/drafts/<draft-id>/deck \
      --preset xhs-carousel --style paper-studio --theme warm-linen --pages 5 --overwrite --json
    ```
-3. Author real copy, visuals (under `assets/`), and any custom CSS; keep `data-card` and `data-mark-item` unique for interactive Preview edits.
-4. Run objective offline audit (dimensions, unique IDs, local image existence, zero leftover placeholders, WCAG AA contrast):
-   `python3 scripts/card_deck.py audit <space-work-root>/boards/<board-id> --json`
-5. Verify real browser layout & export exact PNGs/ZIP:
-   `ducoro-cli board check --space <space-id> --board boards/<board-id> --json`
-   `ducoro-cli board shot --space <space-id> --board boards/<board-id> --query pack=all --json`
+   (Use `--preset ig-carousel` for `4:5` Instagram cards, `--preset linkedin-pdf` for `4:5` LinkedIn PDF carousels, `--preset wechat-cover-pair` for `900×383 + 1080×1080` WeChat covers, or `--preset video-thumb` for `1280×720` thumbnails.)
+2. Author real copy, visuals (under `assets/`), and any custom CSS.
+3. Run objective offline audit (dimensions, unique IDs, local image existence, zero leftover placeholders, WCAG AA contrast):
+   `python3 scripts/card_deck.py audit <workspace>/drafts/<draft-id>/deck --json`
+4. Verify real browser layout & actual rendered fonts:
+   `ducoro-cli render check --file <workspace>/drafts/<draft-id>/deck/index.html --json`
+5. Export exact PNG/JPEG files or PDF directly into `drafts/<draft-id>/assets/`:
+   `ducoro-cli render shot --file <workspace>/drafts/<draft-id>/deck/index.html --all --out-dir <workspace>/drafts/<draft-id>/assets --json`
+   `ducoro-cli render pdf --file <workspace>/drafts/<draft-id>/deck/index.html --out <workspace>/drafts/<draft-id>/assets/deck.pdf --json`

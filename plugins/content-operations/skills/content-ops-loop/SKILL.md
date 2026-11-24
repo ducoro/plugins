@@ -93,7 +93,7 @@ Every platform supports **only two legitimate execution paths**—never extract 
    python3 scripts/diagnose.py --workspace <content-ops-path> --json
    python3 scripts/build_boards.py <content-ops-path>
    ```
-   - Canonical data stays in the registered Local Folder (default `~/.ducoro/workspaces/content-ops`), while each Space Board lives under that Space's `boards/<board-id>/`. Create each Board with `ducoro-cli board new --space <space-id> --title "<Board Title>" --json`, then project data from the Local Folder into the Board's `assets/data.json` via `python3 scripts/build_boards.py <local-folder-path> --board <board-name> --board-dir <space-work-root>/boards/<board-id>` (add `--overwrite-templates` on first assembly) and run `ducoro-cli board check` / `ducoro-cli board shot` before sharing links.
+   - Canonical data stays in the registered Local Folder (default `~/.ducoro/workspaces/content-ops`), while each Space Board lives under that Space's `boards/<board-id>/`. Create each Board with `ducoro-cli board new --space <space-id> --title "<Board Title>" --json`, then project data from the Local Folder into the Board's `assets/data.json` via `python3 scripts/build_boards.py <local-folder-path> --board <board-name> --board-dir <space-work-root>/boards/<board-id>` (add `--overwrite-templates` on first assembly) and verify layout/snapshots with `ducoro-cli render check --file <board-dir>/index.html --json` / `ducoro-cli render shot --file <board-dir>/index.html --json` before sharing links.
 
 ## Hard Guardrails
 

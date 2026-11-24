@@ -165,6 +165,7 @@
     }
 
     /* ===== Export Frame Canvas & Atmospheric Layers ===== */
+    /* Preview hairline uses outline (outside getBoundingClientRect) so `ducoro-cli render shot --file --all` clips zero border. */
     .card-frame {
       position: relative;
       overflow: hidden;
@@ -172,13 +173,13 @@
       color: var(--ink);
       display: flex;
       flex-direction: column;
-      border: var(--rule-width) solid var(--border);
+      outline: var(--rule-width) solid var(--border);
       isolation: isolate;
       flex-shrink: 0;
     }
 
     html[data-ducoro-render="shot"] .card-frame {
-      border: none;
+      outline: none;
     }
 
     /* Paper Studio: ultra-subtle tactile grain + warm top wash */
@@ -224,11 +225,41 @@
       z-index: 1;
     }
 
-    /* Exact Pixel Board Dimensions */
+    /* Exact Pixel Export Frame Dimensions */
     .frame-3x4          { width: 1080px; height: 1440px; padding: 68px 72px 60px; }
+    .frame-4x5          { width: 1080px; height: 1350px; padding: 62px 72px 54px; }
     .frame-16x9         { width: 1280px; height: 720px;  padding: 54px 68px 48px; }
     .frame-wechat-wide  { width: 900px;  height: 383px;  padding: 34px 44px 30px; }
     .frame-wechat-sq    { width: 1080px; height: 1080px; padding: 72px 72px 60px; }
+
+    /* Print / `ducoro-cli render pdf` pagination (exact one-frame-per-page, zero chrome) */
+    @page { size: 1080px 1440px; margin: 0; }
+    /* <!-- PRINT_PAGE_RULE --> */
+    @media print {
+      body {
+        padding: 0;
+        gap: 0;
+        background: transparent;
+      }
+      .studio-bar {
+        display: none !important;
+      }
+      .deck-canvas,
+      .pair-group {
+        display: block;
+        gap: 0;
+      }
+      .card-frame {
+        outline: none;
+        break-after: page;
+        page-break-after: always;
+        break-inside: avoid;
+      }
+      .card-frame:last-child {
+        break-after: auto;
+        page-break-after: auto;
+      }
+    }
 
     /* ===== Shared Header, Body, Footer Rhythm ===== */
     .card-head {
@@ -971,7 +1002,7 @@
   <header class="studio-bar" data-mark-ignore>
     <div class="studio-bar-meta">
       <strong>Visual Card Studio</strong>
-      <span>Exact-pixel export frames for <code>ducoro-cli board check</code> &amp; <code>board shot</code></span>
+      <span>Exact-pixel export frames for <code>ducoro-cli render check</code>, <code>render shot</code> &amp; <code>render pdf</code></span>
     </div>
     <div class="studio-controls">
       <label>
@@ -1008,10 +1039,10 @@
     <section
       id="card-01"
       class="card-frame frame-3x4 layout-cover-split"
-      data-ducoro-export-frame="card-01"
-      data-ducoro-export-width="1080"
-      data-ducoro-export-height="1440"
-      data-ducoro-export-label="3:4 Cover Card"
+      data-export-frame="card-01"
+      data-export-width="1080"
+      data-export-height="1440"
+      data-export-label="3:4 Cover Card"
       data-card="card-01"
       data-card-title="Card 01 — 3:4 Cover"
     >
@@ -1040,10 +1071,10 @@
     <section
       id="card-02"
       class="card-frame frame-3x4 layout-checklist"
-      data-ducoro-export-frame="card-02"
-      data-ducoro-export-width="1080"
-      data-ducoro-export-height="1440"
-      data-ducoro-export-label="3:4 Content Checklist"
+      data-export-frame="card-02"
+      data-export-width="1080"
+      data-export-height="1440"
+      data-export-label="3:4 Content Checklist"
       data-card="card-02"
       data-card-title="Card 02 — Key Checklist"
     >
@@ -1087,10 +1118,10 @@
     <section
       id="thumb-16x9"
       class="card-frame frame-16x9 layout-thesis"
-      data-ducoro-export-frame="thumb-16x9"
-      data-ducoro-export-width="1280"
-      data-ducoro-export-height="720"
-      data-ducoro-export-label="16:9 Video Thumbnail"
+      data-export-frame="thumb-16x9"
+      data-export-width="1280"
+      data-export-height="720"
+      data-export-label="16:9 Video Thumbnail"
       data-card="thumb-16x9"
       data-card-title="16:9 Video Thumbnail"
     >
@@ -1115,10 +1146,10 @@
       <section
         id="wechat-cover"
         class="card-frame frame-wechat-wide"
-        data-ducoro-export-frame="wechat-cover"
-        data-ducoro-export-width="900"
-        data-ducoro-export-height="383"
-        data-ducoro-export-label="WeChat 2.35:1 Primary Cover"
+        data-export-frame="wechat-cover"
+        data-export-width="900"
+        data-export-height="383"
+        data-export-label="WeChat 2.35:1 Primary Cover"
         data-card="wechat-cover"
         data-card-title="WeChat 2.35:1 Primary Cover"
       >
@@ -1139,10 +1170,10 @@
       <section
         id="wechat-square"
         class="card-frame frame-wechat-sq"
-        data-ducoro-export-frame="wechat-square"
-        data-ducoro-export-width="1080"
-        data-ducoro-export-height="1080"
-        data-ducoro-export-label="WeChat 1:1 Square Share Cover"
+        data-export-frame="wechat-square"
+        data-export-width="1080"
+        data-export-height="1080"
+        data-export-label="WeChat 1:1 Square Share Cover"
         data-card="wechat-square"
         data-card-title="WeChat 1:1 Square Share Cover"
       >
@@ -1224,14 +1255,14 @@
         sdk.board.commands({
           'focus-frame': {
             describe: 'Scroll a specific export frame into view for visual review.',
-            params: { frame: { type: 'string', required: true, description: 'data-ducoro-export-frame id' } },
+            params: { frame: { type: 'string', required: true, description: 'data-export-frame id' } },
             run: function (args) {
               var id = args && args.frame;
               var el = null;
               if (id) {
-                var nodes = document.querySelectorAll('[data-ducoro-export-frame]');
+                var nodes = document.querySelectorAll('[data-export-frame]');
                 for (var i = 0; i < nodes.length; i++) {
-                  if (nodes[i].getAttribute('data-ducoro-export-frame') === id) { el = nodes[i]; break; }
+                  if (nodes[i].getAttribute('data-export-frame') === id) { el = nodes[i]; break; }
                 }
               }
               if (!el) throw new Error('Unknown frame: ' + id);

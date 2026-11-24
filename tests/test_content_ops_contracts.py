@@ -91,11 +91,35 @@ class ContentOpsContractsTest(unittest.TestCase):
         template = SKILLS / 'shortform-social' / 'assets' / 'card-deck-template' / 'index.html'
         self.assertTrue(template.is_file(), 'Missing card-deck-template/index.html')
         html = template.read_text(encoding='utf-8')
-        frames = re.findall(r'data-ducoro-export-frame="([^"]+)"', html)
+        frames = re.findall(r'data-export-frame="([^"]+)"', html)
         self.assertEqual(frames, ['card-01', 'card-02', 'thumb-16x9', 'wechat-cover', 'wechat-square'])
+        self.assertNotIn('data-ducoro-export-frame', html)
+        self.assertIn('@media print', html)
+        self.assertIn('@page', html)
         self.assertIn('html[data-ducoro-render="shot"]', html)
         self.assertIn('data-mark-ignore', html)
         self.assertTrue((SKILLS / 'shortform-social' / 'assets' / 'card-deck-template' / 'README.md').is_file())
+
+    def test_no_legacy_board_render_contract_residuals(self):
+        legacy_patterns = (
+            re.compile(r'data-ducoro-export-'),
+            re.compile(r'\bboard\s+(?:shot|check|install-renderer)\b'),
+            re.compile(r'--query\s+(?:pack=all|frame=)'),
+        )
+        hits = []
+        for path in sorted(PLUGIN.rglob('*')):
+            if not path.is_file():
+                continue
+            raw = path.read_bytes()
+            if b'\x00' in raw:
+                continue
+            text = raw.decode('utf-8', errors='replace')
+            rel = path.relative_to(ROOT).as_posix()
+            for lineno, line in enumerate(text.splitlines(), start=1):
+                for pat in legacy_patterns:
+                    if pat.search(line):
+                        hits.append(f'{rel}:{lineno}: {line.strip()}')
+        self.assertEqual(hits, [], 'Found removed legacy board render contract references:\n' + '\n'.join(hits))
 
 
 if __name__ == '__main__':

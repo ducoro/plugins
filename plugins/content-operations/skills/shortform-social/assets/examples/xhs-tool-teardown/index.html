@@ -172,13 +172,13 @@
       color: var(--ink);
       display: flex;
       flex-direction: column;
-      border: var(--rule-width) solid var(--border);
+      outline: var(--rule-width) solid var(--border);
       isolation: isolate;
       flex-shrink: 0;
     }
 
     html[data-ducoro-render="shot"] .card-frame {
-      border: none;
+      outline: none;
     }
 
     /* Paper Studio: ultra-subtle tactile grain + warm top wash */
@@ -971,7 +971,7 @@
   <header class="studio-bar" data-mark-ignore>
     <div class="studio-bar-meta">
       <strong>Visual Card Studio</strong>
-      <span>Exact-pixel export frames for <code>ducoro-cli board check</code> &amp; <code>board shot</code></span>
+      <span>Exact-pixel export frames for <code>ducoro-cli render check</code>, <code>render shot</code> &amp; <code>render pdf</code></span>
     </div>
     <div class="studio-controls">
       <label>
@@ -1004,7 +1004,7 @@
   <main class="deck-canvas">
     <!-- FRAMES_START -->
 
-    <section id="card-01" class="card-frame frame-3x4 layout-cover-split" data-ducoro-export-frame="card-01" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Split Cover" data-card="card-01" data-card-title="Card 01 — 实测封面">
+    <section id="card-01" class="card-frame frame-3x4 layout-cover-split" data-export-frame="card-01" data-export-width="1080" data-export-height="1440" data-export-label="3:4 Split Cover" data-card="card-01" data-card-title="Card 01 — 实测封面">
       <div class="card-head">
         <span class="eyebrow-pill" data-mark-item="card-01-eyebrow" data-mark-label="Cover tag">WORKFLOW BENCHMARK</span>
         <span class="page-index">01 / 05</span>
@@ -1020,7 +1020,7 @@
       <footer class="card-foot"><span class="brand-mark">@OpsCraft</span><span>向右滑动看 8 周实测数据 →</span></footer>
     </section>
 
-    <section id="card-02" class="card-frame frame-3x4 layout-metric-hero" data-ducoro-export-frame="card-02" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Metric Evidence" data-card="card-02" data-card-title="Card 02 — 8 周耗时对比">
+    <section id="card-02" class="card-frame frame-3x4 layout-metric-hero" data-export-frame="card-02" data-export-width="1080" data-export-height="1440" data-export-label="3:4 Metric Evidence" data-card="card-02" data-card-title="Card 02 — 8 周耗时对比">
       <div class="card-head"><span class="eyebrow">8-WEEK MEASUREMENT</span><span class="page-index">02 / 05</span></div>
       <div class="card-body">
         <h2 class="title-slide" data-mark-item="card-02-title" data-mark-label="Metric slide title">耗时从 185 分钟压到 35 分钟</h2>
@@ -1038,7 +1038,7 @@
       <footer class="card-foot"><span class="brand-mark">@OpsCraft</span><span>含审校与同步时间</span></footer>
     </section>
 
-    <section id="card-03" class="card-frame frame-3x4 layout-compare-two" data-ducoro-export-frame="card-03" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Side-by-Side Comparison" data-card="card-03" data-card-title="Card 03 — 做法拆解对比">
+    <section id="card-03" class="card-frame frame-3x4 layout-compare-two" data-export-frame="card-03" data-export-width="1080" data-export-height="1440" data-export-label="3:4 Side-by-Side Comparison" data-card="card-03" data-card-title="Card 03 — 做法拆解对比">
       <div class="card-head"><span class="eyebrow">BEFORE / AFTER</span><span class="page-index">03 / 05</span></div>
       <div class="card-body">
         <h2 class="title-slide" data-mark-item="card-03-title" data-mark-label="Comparison title">为什么以前越写周报越烦？</h2>
@@ -1067,7 +1067,7 @@
       <footer class="card-foot"><span class="brand-mark">@OpsCraft</span><span>实测前后对比</span></footer>
     </section>
 
-    <section id="card-04" class="card-frame frame-3x4 layout-shot-stage" data-ducoro-export-frame="card-04" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Dashboard Screenshot" data-card="card-04" data-card-title="Card 04 — 自动看板实拍">
+    <section id="card-04" class="card-frame frame-3x4 layout-shot-stage" data-export-frame="card-04" data-export-width="1080" data-export-height="1440" data-export-label="3:4 Dashboard Screenshot" data-card="card-04" data-card-title="Card 04 — 自动看板实拍">
       <div class="card-head"><span class="eyebrow">LIVE ARTIFACT</span><span class="page-index">04 / 05</span></div>
       <div class="card-body">
         <h2 class="title-slide" data-mark-item="card-04-title" data-mark-label="Screenshot title">每周五自动生成的可审校看板</h2>
@@ -1087,7 +1087,7 @@
       <footer class="card-foot"><span class="brand-mark">@OpsCraft</span><span>看板自动生成样张</span></footer>
     </section>
 
-    <section id="card-05" class="card-frame frame-3x4 layout-closing-cta" data-ducoro-export-frame="card-05" data-ducoro-export-width="1080" data-ducoro-export-height="1440" data-ducoro-export-label="3:4 Closing Takeaway" data-card="card-05" data-card-title="Card 05 — 三步落地带走">
+    <section id="card-05" class="card-frame frame-3x4 layout-closing-cta" data-export-frame="card-05" data-export-width="1080" data-export-height="1440" data-export-label="3:4 Closing Takeaway" data-card="card-05" data-card-title="Card 05 — 三步落地带走">
       <div class="card-head"><span class="eyebrow-solid">ACTION PLAN</span><span class="page-index">05 / 05</span></div>
       <div class="card-body">
         <div class="closing-box" data-mark-item="card-05-box" data-mark-label="Closing box">
@@ -1166,14 +1166,14 @@
         sdk.board.commands({
           'focus-frame': {
             describe: 'Scroll a specific export frame into view for visual review.',
-            params: { frame: { type: 'string', required: true, description: 'data-ducoro-export-frame id' } },
+            params: { frame: { type: 'string', required: true, description: 'data-export-frame id' } },
             run: function (args) {
               var id = args && args.frame;
               var el = null;
               if (id) {
-                var nodes = document.querySelectorAll('[data-ducoro-export-frame]');
+                var nodes = document.querySelectorAll('[data-export-frame]');
                 for (var i = 0; i < nodes.length; i++) {
-                  if (nodes[i].getAttribute('data-ducoro-export-frame') === id) { el = nodes[i]; break; }
+                  if (nodes[i].getAttribute('data-export-frame') === id) { el = nodes[i]; break; }
                 }
               }
               if (!el) throw new Error('Unknown frame: ' + id);

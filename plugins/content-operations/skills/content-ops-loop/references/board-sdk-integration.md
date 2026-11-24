@@ -15,11 +15,12 @@ In Ducoro, keep canonical operational files in your registered global Local Fold
    python3 scripts/build_boards.py <local-folder-path> --board <board-name> --board-dir <space-work-root>/boards/<board-id> --overwrite-templates
    ```
    (For example, `<local-folder-path>` is `~/.ducoro/workspaces/content-ops` by default. Subsequent data refreshes omit `--overwrite-templates` so only `assets/data.json` changes and live sessions apply updates in place via `ducoro.board.revalidate` without reloading.)
-3. Verify layout, fonts, and capture before sharing the board link:
+3. Verify layout, fonts, and static capture via `ducoro-cli render` before sharing the board link:
    ```sh
-   ducoro-cli board check --space <space-id> --board boards/<board-id> --json
-   ducoro-cli board shot --space <space-id> --board boards/<board-id> --json
+   ducoro-cli render check --file <space-work-root>/boards/<board-id>/index.html --json
+   ducoro-cli render shot --file <space-work-root>/boards/<board-id>/index.html --json
    ```
+   (Rendering via `--file` delivers standalone static HTML without `window.ducoro` or `<html data-ducoro-render="shot">`; external read-only share links and loopback preview `--url` renders receive `<html data-ducoro-render="shot">` to hide interactive chrome.)
 
 ## UI Design System (`shared/board-ui.css` — `shadcn/ui` Paradigm)
 
@@ -36,4 +37,4 @@ All 5 boards share `runtime/board-ui.css` implementing the `shadcn/ui` semantic 
 - **Safe Composer staging**: all collaboration buttons use `ducoro.composer.draft(...)` with dynamic Lead resolution from `ducoro.space.onCastChange`.
 - **View-only `commands`**: every declared command validates arguments synchronously, lists valid values on error, and mutates only transient UI state.
 - **Single-owner `revalidate`**: refreshes `assets/data.json` in place, throws on fetch failure so the host offers Retry, and returns `reload-required` if HTML/runtime files or `scope === 'all'` changed.
-- **Shot & export frames**: `html[data-ducoro-render='shot']` hides chrome/actions; `prefers-reduced-motion: reduce` paints final state immediately; `[data-ducoro-export-frame]` marks each board's primary export canvas.
+- **Render & export frames**: `html[data-ducoro-render='shot']` hides chrome/actions on external share links and loopback preview renders; `prefers-reduced-motion: reduce` paints final state immediately; `[data-export-frame]` marks each board's primary export canvas for `ducoro-cli render check` / `render shot`.

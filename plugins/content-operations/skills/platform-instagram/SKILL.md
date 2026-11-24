@@ -18,7 +18,7 @@ Instagram operates as **four distinct surfaces under one profile**: **Reels** (n
 - **Specs (`references/specs.json`)**: Caption `<= 2200` chars (first ~125 chars visible before "more"); hashtags `<= 30` hard cap (`recommendations.maxTopicCount: 5` clean topical tags).
   - **Browser / App (default)**: up to **20 images** (`jpg/jpeg/png/webp`), Feed ratio `0.8` (`4:5` `1080x1350` maximizes screen height) to `1.91` (`1.91:1`); Reels & Stories `9:16` (`1080x1920`, exempt from Feed ratio when `options.media_type` is `REELS` or `STORIES`).
   - **Graph API (`--channel api`)**: `apiOverrides` enforces **JPEG-only** (`jpg/jpeg`) and **max 10 images** per carousel, fetched from public HTTPS URLs (`ducoro-cli media upload <path> --json`).
-- **Style spectrum**: Editorial/lifestyle photography, `4:5` visual carousels (`../shortform-social/scripts/card_deck.py --preset ig-carousel`), aesthetic photo dumps, Reels storytelling/tutorials/B-roll, and casual Stories behind-the-scenes.
+- **Style spectrum**: Editorial/lifestyle photography, `4:5` visual carousels (`../shortform-social/scripts/card_deck.py scaffold <draft>/deck --preset ig-carousel` exported via `ducoro-cli render shot --file <draft>/deck/index.html --all --format jpeg --quality 92 --out-dir <draft>/assets`), aesthetic photo dumps, Reels storytelling/tutorials/B-roll, and casual Stories behind-the-scenes.
 
 ## 3. Delivery & Verification (`references/protocol.md`)
 - Follow the shared browser / OpenAPI / Gate 2 workflow in `../content-ops-loop/references/channel-access-matrix.md` and `approval-gates.md`.

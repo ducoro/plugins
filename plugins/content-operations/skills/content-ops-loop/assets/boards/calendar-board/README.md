@@ -11,7 +11,7 @@ python3 scripts/build_boards.py <workspace>/content-ops --board calendar-board -
 Content identity conventions:
 - Day cards: `data-card="day-YYYY-MM-DD"` (example: `data-card="day-2026-01-16"`).
 - Schedule slots: `data-mark-item="slot-<slotId>"` (example: `data-mark-item="slot-slot-20260116-x-01"`).
-- Export frame for `board check` / `board shot`: `[data-ducoro-export-frame="calendar-overview"]`.
+- Export frame for `ducoro-cli render check` / `render shot`: `[data-export-frame="calendar-overview"]`.
 
 ## Declared View Commands
 - `setView` (`mode`: `"month"` or `"week"`): `board command setView --space <space-id> --board <board> --arg mode=week`
