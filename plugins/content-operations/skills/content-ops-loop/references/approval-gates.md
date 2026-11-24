@@ -18,7 +18,7 @@ Every action in the content operations loop falls into one of three authority ti
 
 ## Gate 1: Topic Commitment
 
-Before spending media or deep writing effort, present shortlisted topics with:
+Before spending media or deep writing effort, present shortlisted topics directly in conversation (or via a native Task routed to Inbox with `--human <human-id> --ask confirm --request-summary "..."`) with:
 1. Target audience and single core claim.
 2. Verified evidence vs. open fact gaps.
 3. Target platforms and planned format per platform.
@@ -26,7 +26,7 @@ Before spending media or deep writing effort, present shortlisted topics with:
 
 ## Gate 2: Publish Authorization
 
-Before any public publish (API or browser), verify all five checks:
+Before any public publish (Connector, API, or browser), verify all five checks and surface the confirmation directly to the human (never leave an approval silently buried in a local JSON file):
 1. **Fact freshness**: claims, versions, prices, and links are still true right now.
 2. **Spec pass**: `check_media_specs.py` passed with zero blocking issues for that platform.
 3. **Account match**: target `accountId` matches the intended brand/personal identity.

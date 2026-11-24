@@ -12,13 +12,11 @@ Run multi-platform content operations as a durable, file-backed loop rather than
 One installed plugin supports two topologies over the same `content-ops/` workspace directory:
 
 1. **Single-workspace end-to-end**: One agent runs all stages sequentially in one workspace.
-2. **Multi-workspace relay**: Dedicated workspaces (for example: trend monitoring, drafting, publishing, engagement) each load only the skills they need and hand off work through the shared `content-ops/` files (`inbox/`, `topics/`, `drafts/`, `calendar.json`, `publish-log.jsonl`, `engagement/`, `analytics/`).
-
-Load only the skills relevant to the current stage and target platform(s). Never load all 14 platform skills at once.
+2. **Multi-workspace relay**: Dedicated workspaces (monitoring, drafting, publishing, engagement) share `content-ops/` files (`inbox/`, `topics/`, `drafts/`, `calendar.json`, `publish-log.jsonl`, `engagement/`, `analytics/`).
 
 ## Skill Routing Table
 
-Load **only** the skills needed for the current region, content format, and target platform(s)—never load all 14 platform skills at once, and never mix WeChat long-form workflows into X/Twitter or short-video tasks.
+Load **only** the skills needed for the current region, format, and target platform(s)—never load all 14 platform skills at once.
 
 | Stage / Need | Load Skill |
 | --- | --- |
@@ -34,7 +32,7 @@ Shared deterministic utilities in `scripts/` (reused across regions and formats)
 
 ## Native Orchestration & Deterministic Boundaries
 
-- **Semantic judgment & fan-out belong to strong models and native runtime primitives**: check Ducoro Core Connectors first for any external platform interaction—intake, publish, engagement, or analytics (`ducoro-cli mcp catalog list` / `status <slug>` / `tools <slug>` / `call <slug> <tool> --args-file <path|->`)—shard high-volume raw feeds (`100–300+` items) across parallel subagents, schedule recurring `watchlist.json` delta scans with `ducoro-cli task create` (and persistent background runs via `ducoro-cli job`), and delegate cross-role handoffs via `ducoro-cli space send`.
+- **Semantic judgment, scheduling & fan-out belong to strong models and native Ducoro primitives**: check Ducoro Core Connectors first for any external platform interaction—intake, publish, engagement, or analytics (`ducoro-cli mcp catalog list` / `status <slug>` / `tools <slug>` / `call <slug> <tool> --args-file <path|->`)—schedule exact single- or multi-platform releases directly with `ducoro-cli task create --space <id> --at <iso-time> --timezone <tz>` (automatically projected onto Ducoro's top-level **Plan** calendar) and recurring rhythms with `--daily`/`--cron`, fan out parallel channel runs or heavy work via `ducoro-cli job dispatch` / `job start`, route human sign-offs into **Inbox** via `--human <id> --ask confirm --request-summary "..."`, and delegate cross-role handoffs via `ducoro-cli space send`.
 - **Hard invariants belong to deterministic scripts**: `scripts/signal_gate.py` enforces grounded `http(s)://` URLs, ISO timestamps, keep-richest URL dedupe, incremental `seen-signals.json` deltas, anti-hallucination URL verification, and honest `nothing_solid` empty states; `scripts/score_topics.py` adds `--import-gated` merging and annotate-only fuzzy repeat detection; `scripts/check_media_specs.py` checks objective platform limits (`--channel browser|api`) and unfinished placeholders; `scripts/validate_workspace.py --verify-slot <slotId>` enforces Gate 2 tamper-proof `variantHash` pinning and publish idempotency.
 
 Available platform skills (14):
@@ -54,15 +52,11 @@ Read on demand—do not recite from memory:
 
 ## Legitimate Execution Channels (Connector-First, Official Paths Only)
 
-Never extract session cookies, call reverse-engineered private web APIs, or bypass login/CAPTCHA challenges. Across publishing, engagement, and analytics, follow this exact priority order:
+Never extract cookies, call reverse-engineered private APIs, or bypass login/CAPTCHA. Priority order across publishing, engagement, and analytics (`references/channel-access-matrix.md`):
 
-1. **Connected Ducoro Core Connectors (Check First)**:
-   - Check `ducoro-cli mcp catalog list --json`, `ducoro-cli mcp catalog status <slug> --json`, and `ducoro-cli mcp catalog tools <slug> --json`. When an active Connector exposes the target platform's publish, comment, or analytics tool, use it first (always preserving Gate 2 human approval and `engagement_guard.py` rate/idempotency checks).
-2. **Default zero-config fallback — Official Creator Studio / Web App via Browser** (supported on **all 14 platforms**):
-   - Open the platform's official web publishing studio in the user's browser session. If login, QR scan, 2FA, or CAPTCHA appears, pause immediately and hand control to the human.
-   - Upload local media files directly from `drafts/<id>/assets/`, fill title/body/tags/cover, save as draft (`draft_saved`) or pause before the final Publish button until **Gate 2** is approved, then read back the verified live URL.
-3. **Optional advanced path — Official Platform OpenAPI** (available on **12 platforms** when the user already holds official developer credentials in environment variables, or needs deep API endpoints not exposed by a Connector):
-   - Call the platform's documented `scripts/client.py [--dry-run] <cmd>` using user-owned env vars. For Meta/Pinterest APIs that fetch from a public HTTPS URL, upload local files right before publish via `ducoro-cli media upload <path> --json` (5-hour temporary relay) or user-owned HTTPS storage.
+1. **Connected Ducoro Core Connectors (First)**: check `ducoro-cli mcp catalog list` / `status <slug>` / `tools <slug>`; invoke active Connector tools when available (still enforcing Gate 2 & `engagement_guard.py`).
+2. **Official Browser Creator Studio (Default fallback, all 14 platforms)**: upload local files from `drafts/<id>/assets/`, pause for login/CAPTCHA and Gate 2, then read back the live URL.
+3. **Official Platform OpenAPI (`scripts/client.py`, optional, 12 platforms)**: use user-owned env vars (plus `ducoro-cli media upload <path> --json` 5h relay for Meta/Pinterest URL-fetch APIs).
 
 ## Workflow
 
@@ -87,7 +81,7 @@ Never extract session cookies, call reverse-engineered private web APIs, or bypa
 2. **Execute the requested stage(s).**
    - **Intake & topics**: collect regional signals via Connectors (`ducoro-cli mcp catalog`), `topic-research-cn`, or `topic-research-global`, run `scripts/signal_gate.py ingest` + `gate --strict` (sharding large feeds across subagents), score and annotate fuzzy repeats via `scripts/score_topics.py`, and pause at **Approval Gate 1** (or stop honestly on `nothing_solid`).
    - **Production & adaptation**: load only the matching format workshop (`longform-writing`, `shortform-social`, or `video-production`) plus the target `platform-<name>` skill(s) to produce native `variants/<platform>.md` and media assets; validate every variant with `scripts/check_media_specs.py`.
-   - **Schedule & publish**: add entries to `calendar.json`, verify approval and tamper-proof live `variantHash` via `python3 scripts/validate_workspace.py <content-ops-path> --verify-slot <slotId>` at **Approval Gate 2**, execute via the platform's API client or browser workflow, and **read back** the live public URL and work ID into `publish-log.jsonl`. Never mark a post `published` without live verification.
+   - **Schedule & publish**: record slot metadata and tamper-proof `approvedVariantHash` in `calendar.json`, schedule exact release wake-ups (1 platform or N platforms alike) natively via `ducoro-cli task create --space <id> --at <iso-time> --timezone <tz>` (visible in Ducoro's top-level **Plan** calendar; use `ducoro-cli job dispatch` when fanning out parallel platforms), verify approval and live `variantHash` via `python3 scripts/validate_workspace.py <content-ops-path> --verify-slot <slotId>` at **Approval Gate 2**, execute via Connector / API client / browser workflow, and **read back** the live public URL and work ID into `publish-log.jsonl`. Never mark a post `published` without live verification.
    - **Engagement & analytics**: pull comments and metrics per `engagement-and-analytics`, triage comments into 4 tiers, respect rate limits, record 24h/72h/7d snapshots in `analytics/snapshots.jsonl`, and feed high-signal questions and retro findings back into `inbox/` and `topics/`.
 3. **Validate, diagnose, and refresh boards.**
    ```sh
@@ -99,11 +93,10 @@ Never extract session cookies, call reverse-engineered private web APIs, or bypa
 
 ## Hard Guardrails
 
-- **Silence is not approval.** Never publish externally, spend paid budget, or send commitment/dispute replies without explicit human confirmation unless a written standing rule in `brand-profile.md` authorizes that exact recurring slot.
-- **Legitimate channels only.** Use either the platform's official web Creator Studio in a real browser (default, zero API setup) or official OpenAPI endpoints with user-owned credentials. Never harvest cookies, call undocumented private endpoints, or bypass CAPTCHAs.
-- **No fabricated execution.** If a credential env var is missing or a platform requires browser login, fall back cleanly to the official browser Creator Studio path or pause at the verified draft/checklist state and report the exact prerequisite.
-- **Report real plugin defects (with consent).** When a built-in script crashes, a platform API/Studio layout changes, or spec rules drift from reality, follow `references/issue-reporting.md`: draft a redacted report tagged `[plugin:content-operations@<version>] [skill:<name>] [location:<where>]`, ask the user for approval, and send via `ducoro-cli feedback send`.
-- **Single source of truth.** Files in `content-ops/` are canonical state; boards are live projections of those files, never a second editable database.
+- **Silence is not approval.** Never publish externally, spend paid budget, or send commitment/dispute replies without explicit human confirmation unless a written standing rule in `brand-profile.md` authorizes that exact slot.
+- **No fabricated execution.** Missing credentials or login/CAPTCHA gates must fall back cleanly to the official browser path or pause and report exact prerequisites.
+- **Report real plugin defects (with consent).** Follow `references/issue-reporting.md` and submit via `ducoro-cli feedback send` with `[plugin:content-operations@<version>]`.
+- **Single source of truth.** Files in `content-ops/` are canonical state; boards are read-only live projections of those files.
 
 ## Done When
 
