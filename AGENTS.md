@@ -80,11 +80,12 @@ plugins/<plugin-name>/
 4. Keep `.mcp.json` only if the plugin declares MCP servers; otherwise delete `.mcp.json` and remove `"mcpServers"` from `plugin.json`.
 5. Register the plugin in `marketplace.json` (`source: { "source": "local", "path": "./plugins/<plugin-name>" }`).
 6. Add a row linking to `(plugins/<plugin-name>)` in both `README.md` and `README.zh-CN.md`.
-7. Run local validation, hygiene, and unit/orthogonality tests (must all pass with zero errors):
+7. Run local validation, hygiene, formal verification, and full unit test suites (must all pass with zero errors):
 
 ```sh
 python3 scripts/validate.py
 python3 scripts/check_hygiene.py --tracked
+python3 -m unittest discover -s tests -p "test_*_formal_verification.py" -v
 python3 -m unittest discover -s tests -v
 ```
 

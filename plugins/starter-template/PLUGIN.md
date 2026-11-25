@@ -1,6 +1,6 @@
 ## Domain
 
-Reference template domain role for verifying Ducoro plugin mounting, `<domain_roles>` injection, on-demand file reads, and optional MCP credential placeholder wiring, and for bootstrapping new official plugins.
+Reference template domain role for verifying Ducoro plugin mounting, domain-role injection, on-demand file reads, and optional MCP credential placeholder wiring, and for bootstrapping new official plugins.
 
 ## Activation & Boundaries
 

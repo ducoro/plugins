@@ -30,9 +30,9 @@ One cohesive Domain Role plugin (`PLUGIN.md` as level-1 entry + progressive leve
 | `video-production` | Neutral short & long video scripting, subtitles & packaging workshop (Douyin, TikTok, YouTube, Bilibili, WeChat Channels, Kuaishou): per-platform UI safe zones, `-14 LUFS` & `bt709` standards, `video_ops.py` (`probe --loudness`, `validate-srt`, `estimate-duration`, plus line-indexed long-to-short clipping via `index-transcript`, `plan-clips`, and `slice-clips`), code-driven video (Remotion/HyperFrames), and real footage packaging |
 | `engagement-and-analytics` | Cross-platform comment triage, deterministic anti-spam budget & idempotency guard (`engagement_guard.py`), 24h/72h/7d/30d metric snapshots, historical top-hook recall & human-approved breakout amplification triggers (`aggregate_metrics.py --stage-breakouts`), and weekly retro feedback paired with each platform's own north-star metrics |
 
-### Per-Platform Vertical Skills (14 Platforms)
+### Per-Platform Vertical Packages (14 Platforms)
 
-Each platform owns its own independent skill (`SKILL.md`), machine-readable spec limits (`references/specs.json` + `references/specs.md`), publishing/engagement/analytics protocol (`references/protocol.md`), and optional zero-dependency Python 3 reference client (`scripts/client.py`):
+Indexed by level-2 [`references/platforms.md`](references/platforms.md), each platform owns its own level-3 guide (`SKILL.md`), machine-readable spec limits (`references/specs.json` + `references/specs.md`), publishing/engagement/analytics protocol (`references/protocol.md`), and optional zero-dependency Python 3 reference client (`scripts/client.py`):
 
 - **CN Platforms**: `platform-xiaohongshu`, `platform-douyin`, `platform-bilibili`, `platform-wechat-official`, `platform-wechat-channels`, `platform-kuaishou`
 - **Global Platforms**: `platform-x-twitter`, `platform-youtube`, `platform-tiktok`, `platform-instagram`, `platform-facebook`, `platform-threads`, `platform-linkedin`, `platform-pinterest`
@@ -50,9 +50,9 @@ All boards run standalone as static HTML with local data and progressively enhan
 
 ## Quick Start
 
-1. Load `content-ops-loop`. Check `ducoro-cli local-folder list --json` first; if no workspace is registered yet, confirm with the user to initialize the default internal path `~/.ducoro/workspaces/content-ops` (or an external folder if the user explicitly prefers one) via `scripts/init_workspace.py`, then register it globally with `ducoro-cli local-folder register content-ops <path>` so every Space shares the same source of truth.
+1. Mount `content-operations` on your Bot; its root `PLUGIN.md` is injected into `<you><domain_roles>` as the level-1 operating loop and directory map. Follow `skills/content-ops-loop/SKILL.md` to check `ducoro-cli local-folder list --json`, confirm with the human before initializing `~/.ducoro/workspaces/content-ops` (or an external folder if requested) via `scripts/init_workspace.py`, and register it globally with `ducoro-cli local-folder register content-ops <path>` so every Space shares one source of truth.
 2. Fill in `brand-profile.md` and `accounts.json` (credentials stay in environment variables—never commit secrets).
-3. Load only the regional radar (`topic-research-cn` or `topic-research-global`), the matching format workshop (`longform-writing`, `shortform-social`, or `video-production`), and the target `platform-<name>` skill(s) for the current turn.
+3. Drill down on demand into only the regional radar (`topic-research-cn` or `topic-research-global`), matching format workshop (`longform-writing`, `shortform-social`, or `video-production`), and target platform package(s) listed in `references/platforms.md`.
 4. Refresh Space board snapshots from the Local Folder with `scripts/build_boards.py <workspace>` (or `--board <name> --board-dir <space-work-root>/boards/<board-id>`) and verify integrity with `scripts/validate_workspace.py <workspace>`.
 
 ## Problem Reporting

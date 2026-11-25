@@ -178,6 +178,11 @@ def validate_plugin_md(bundle: Path, plugin_name: str) -> tuple[int, dict]:
             not pattern.search(body),
             f'{plugin_name}: PLUGIN.md must not override global persona, language, or Agent profile rules ({pattern.pattern})',
         )
+    for tag in ('<domain_roles>', '</domain_roles>', '<domain_role', '</domain_role>'):
+        require(
+            tag not in body,
+            f'{plugin_name}: PLUGIN.md must not contain reserved prompt XML framing token "{tag}"',
+        )
     validate_plugin_md_paths(bundle, plugin_name, body)
     return chars, sections
 
