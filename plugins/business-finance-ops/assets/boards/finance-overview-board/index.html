@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Finance Overview &amp; Runway</title>
+  <link rel="stylesheet" href="./assets/board-ui.css" />
+</head>
+<body>
+  <main class="ui-shell" data-export-frame="main">
+    <header class="ui-header" data-mark-ignore>
+      <div>
+        <h1 class="ui-title">Finance Overview &amp; Cash Runway</h1>
+        <p class="ui-subtitle">Exact Decimal P&amp;L, category budgets, and statement-traced ledger rows.</p>
+      </div>
+      <div class="ui-toolbar">
+        <select id="cat-filter" class="ui-select" aria-label="Filter category">
+          <option value="all">All categories</option>
+        </select>
+        <button id="reconcile-btn" class="ui-btn ui-btn-primary" data-requires-sdk>Stage Weekly Close</button>
+      </div>
+    </header>
+
+    <div class="ui-alert" data-bridge-status hidden></div>
+
+    <section class="ui-kpi-grid" data-card="finance-kpis" data-card-title="Monthly P&amp;L &amp; Runway">
+      <article class="ui-kpi" data-mark-item="kpi-inflow" data-mark-label="Monthly inflow">
+        <span class="ui-kpi-label">Inflow (<span data-ccy>USD</span>)</span>
+        <span id="kpi-inflow" class="ui-kpi-value">0.00</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-outflow" data-mark-label="Monthly outflow">
+        <span class="ui-kpi-label">Outflow (<span data-ccy>USD</span>)</span>
+        <span id="kpi-outflow" class="ui-kpi-value">0.00</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-net" data-mark-label="Net cash flow">
+        <span class="ui-kpi-label">Net Cash Flow</span>
+        <span id="kpi-net" class="ui-kpi-value">0.00</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-margin" data-mark-label="Gross margin">
+        <span class="ui-kpi-label">Gross Margin</span>
+        <span id="kpi-margin" class="ui-kpi-value">—</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-runway" data-mark-label="Recurring cash runway">
+        <span class="ui-kpi-label">Recurring Runway</span>
+        <span id="kpi-runway" class="ui-kpi-value">CF+</span>
+      </article>
+    </section>
+
+    <section class="ui-section" data-card="runway-scenarios" data-card-title="Cash Runway Stress Scenarios">
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">Runway Stress Scenarios &amp; MoM Flux</h2>
+        <span id="flux-note" class="ui-muted"></span>
+      </div>
+      <div id="scenarios-grid" class="ui-kpi-grid"></div>
+    </section>
+
+    <section class="ui-section" data-card="budget-bars" data-card-title="Category Budgets">
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">Monthly Budgets</h2>
+        <span id="month-label" class="ui-muted"></span>
+      </div>
+      <div id="budgets-grid" class="ui-card-grid"></div>
+    </section>
+
+    <section class="ui-section" data-card="ledger-table" data-card-title="Traced Ledger Entries">
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">Statement-Traced Ledger</h2>
+        <span id="updated-at" class="ui-muted"></span>
+      </div>
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Merchant &amp; Description</th>
+              <th>Category</th>
+              <th class="is-num">Original</th>
+              <th class="is-num">Base</th>
+              <th>Source Trace</th>
+            </tr>
+          </thead>
+          <tbody id="tx-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script id="board-initial-data" type="application/json">{"generatedAt":"","month":"","baseCurrency":"USD","summary":{"inflowTotal":"0.00","outflowTotal":"0.00","netCashFlow":"0.00","totalCashBalance":"0.00","monthlyNetBurn":"0.00","runwayMonths":null,"transactionCount":0,"anomalyCount":0,"highAnomalyCount":0},"budgets":[],"transactions":[]}</script>
+  <script type="module">
+    import { createBoardBridge } from './assets/board-sdk-bridge.js';
+
+    const state = { data: null, category: 'all', focused: '' };
+    const catSel = document.getElementById('cat-filter');
+    const budgetsGrid = document.getElementById('budgets-grid');
+    const tbody = document.getElementById('tx-body');
+
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function render() {
+      const d = state.data || { summary: {}, budgets: [], transactions: [] };
+      const ccy = d.baseCurrency || 'USD';
+      for (const el of document.querySelectorAll('[data-ccy]')) el.textContent = ccy;
+      document.getElementById('kpi-inflow').textContent = d.summary?.inflowTotal ?? '0.00';
+      document.getElementById('kpi-outflow').textContent = d.summary?.outflowTotal ?? '0.00';
+      const netEl = document.getElementById('kpi-net');
+      netEl.textContent = d.summary?.netCashFlow ?? '0.00';
+      netEl.dataset.tone = String(d.summary?.netCashFlow || '').startsWith('-') ? 'warning' : '';
+      document.getElementById('kpi-margin').textContent = d.summary?.grossMarginPct != null ? `${d.summary.grossMarginPct}%` : '—';
+      const rwVal = d.scenarios?.recurringOnly?.runwayMonths ?? d.summary?.runwayMonths;
+      const rwEl = document.getElementById('kpi-runway');
+      rwEl.textContent = rwVal ? `${rwVal} mo` : 'CF+';
+      rwEl.dataset.tone = rwVal && Number(rwVal) < 6 ? 'destructive' : '';
+      document.getElementById('month-label').textContent = d.month ? `Period ${d.month} · Cash ${d.summary?.totalCashBalance ?? '0.00'} ${ccy}` : '';
+      document.getElementById('updated-at').textContent = d.generatedAt ? `Computed ${d.generatedAt}` : '';
+
+      const scGrid = document.getElementById('scenarios-grid');
+      const sc = d.scenarios || {};
+      const scCards = [
+        ['Base (All Inflow)', sc.base],
+        ['Recurring-Only (No Windfalls)', sc.recurringOnly],
+        ['Downside (-20% Rev)', sc.downsideRev20],
+        ...(sc.proposedExpansion ? [['Proposed Expansion', sc.proposedExpansion]] : []),
+      ].filter(([, v]) => v);
+      scGrid.innerHTML = scCards.length
+        ? scCards.map(([label, v]) => {
+            const tone = v.runwayMonths && Number(v.runwayMonths) < 6 ? 'destructive' : '';
+            return `<article class="ui-kpi"><span class="ui-kpi-label">${esc(label)}</span><span class="ui-kpi-value" data-tone="${tone}">${v.runwayMonths ? esc(v.runwayMonths) + ' mo' : 'CF+'}</span><span class="ui-muted ui-num">Burn ${esc(v.monthlyNetBurn)} ${esc(ccy)}/mo</span></article>`;
+          }).join('')
+        : '<div class="ui-empty">Run anomaly_and_runway.py to compute scenarios.</div>';
+
+      const materialFlux = (d.fluxAnalysis || []).filter((f) => f.isMaterial);
+      document.getElementById('flux-note').textContent = materialFlux.length
+        ? `Material MoM flux: ${materialFlux.slice(0, 3).map((f) => `${f.category} ${Number(f.delta) >= 0 ? '+' : ''}${f.delta} ${ccy}`).join(' · ')}`
+        : 'No material MoM expense variance';
+
+      const cats = [...new Set((d.transactions || []).map((t) => t.category).filter(Boolean))].sort();
+      catSel.innerHTML = '<option value="all">All categories</option>' + cats.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      catSel.value = cats.includes(state.category) ? state.category : 'all';
+
+      if (!(d.budgets || []).length) {
+        budgetsGrid.innerHTML = '<div class="ui-empty">No monthly category budgets configured in budgets.json.</div>';
+      } else {
+        budgetsGrid.innerHTML = d.budgets.map((b) => {
+          const tone = b.status === 'exceeded' ? 'destructive' : b.status === 'warning' ? 'warning' : '';
+          const pct = Math.min(100, Math.max(0, Number(b.utilizationPct || 0)));
+          return `<article class="ui-card" data-card="budget-${esc(b.category)}" data-card-title="Budget ${esc(b.category)}" data-mark-item="budget-${esc(b.category)}" data-mark-label="${esc(b.category)}">
+            <div class="ui-col-head"><span>${esc(b.category)}</span><span class="ui-num ui-muted">${esc(b.utilizationPct)}%</span></div>
+            <div class="ui-progress" data-tone="${tone}"><span style="width:${pct}%"></span></div>
+            <div class="ui-muted ui-num" style="margin-top:6px">${esc(b.spent)} / ${esc(b.budget)} ${esc(ccy)}</div>
+          </article>`;
+        }).join('');
+      }
+
+      const rows = (d.transactions || []).filter((t) => state.category === 'all' || t.category === state.category);
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="6"><div class="ui-empty-inline">No ledger rows match the current filter.</div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map((t) => {
+        const sign = t.direction === 'inflow' ? '+' : '-';
+        const focused = state.focused === t.txHash ? ' focused' : '';
+        return `<tr class="${focused}" data-card="tx-${esc(t.txHash)}" data-card-title="${esc(t.merchant)} ${sign}${esc(t.amount)}" data-mark-item="tx-${esc(t.txHash)}" data-mark-label="${esc(t.merchant)}">
+          <td class="ui-mono ui-num">${esc(t.date)}</td>
+          <td><div class="ui-item-title">${esc(t.merchant)}</div><div class="ui-muted">${esc(t.description)}</div></td>
+          <td><span class="ui-badge ui-badge-outline">${esc(t.category)}</span></td>
+          <td class="is-num ui-mono">${sign}${esc(t.amount)} ${esc(t.currency)}</td>
+          <td class="is-num ui-mono">${sign}${esc(t.baseAmount || t.amount)} ${esc(ccy)}</td>
+          <td class="ui-mono ui-muted">${esc(t.sourceFile)}:${esc(t.sourceLine)}</td>
+        </tr>`;
+      }).join('');
+      bridge.updateWriteControls();
+    }
+
+    const bridge = createBoardBridge({
+      boardId: 'finance-overview-board',
+      defaultView: { category: 'all' },
+      onData: (data) => { state.data = data; render(); },
+      onApplyView: (v) => { state.category = v.category || 'all'; render(); },
+      getView: () => ({ category: state.category }),
+      commands: {
+        filterCategory: {
+          describe: 'Filter ledger rows by category slug or all',
+          params: { category: 'string' },
+          run: ({ category }) => { if (typeof category !== 'string') throw new Error('category required'); state.category = category; render(); return { category }; },
+        },
+        focusTx: {
+          describe: 'Highlight a transaction row by txHash',
+          params: { txHash: 'string' },
+          run: ({ txHash }) => {
+            if (typeof txHash !== 'string' || !txHash.trim()) throw new Error('txHash required');
+            state.focused = txHash.trim(); render();
+            document.querySelector(`[data-card="tx-${CSS.escape(state.focused)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return { focused: state.focused };
+          },
+        },
+        resetFilters: {
+          describe: 'Reset category filter and row focus',
+          params: {},
+          run: () => { state.category = 'all'; state.focused = ''; render(); return { reset: true }; },
+        },
+      },
+    });
+
+    catSel.addEventListener('change', () => { state.category = catSel.value; render(); bridge.persistView(); });
+    document.getElementById('reconcile-btn').addEventListener('click', (e) => {
+      bridge.stageDraft('Run weekly business-finance-ops statement reconciliation, refresh ECB FX rates, and summarize any anomalies.', e.currentTarget);
+    });
+    bridge.start();
+  </script>
+</body>
+</html>

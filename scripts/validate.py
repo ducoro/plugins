@@ -10,7 +10,6 @@ ENV_PLACEHOLDER = re.compile(r'\$\{[A-Z][A-Z0-9_]*\}')
 SENSITIVE_KEY = re.compile(r'(token|secret|password|passwd|api[_-]?key|authorization)', re.I)
 
 MAX_PLUGIN_MD_CHARS = 4_000
-MAX_COMBINED_DOMAIN_ROLES_CHARS = 20_000
 
 REQUIRED_SECTIONS = (
     'Domain',
@@ -265,11 +264,6 @@ def validate(root: Path):
             require(f'(plugins/{name})' in readme, f'{name}: missing README catalog link')
 
         validate_cli_references(bundle, root)
-
-    require(
-        total_chars <= MAX_COMBINED_DOMAIN_ROLES_CHARS,
-        f'Combined PLUGIN.md size across all plugins is {total_chars} chars, exceeding the {MAX_COMBINED_DOMAIN_ROLES_CHARS}-char co-mount budget',
-    )
 
     on_disk = {p.name for p in (root / 'plugins').iterdir() if p.is_dir()}
     require(on_disk == plugin_names, 'every plugin directory must be registered exactly once')

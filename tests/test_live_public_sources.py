@@ -115,6 +115,63 @@ class LivePublicSourcesSmokeTest(unittest.TestCase):
             self.assertTrue(isinstance(seo, list) and len(seo) >= 1)
             self.assertGreater(len(seo[0].get('relatedKeywords', [])), 0)
 
+    def test_live_wave1_market_support_and_finance_public_sources(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tdir = Path(tmp)
+
+            # 1. market-intel live public sources
+            mi_ws = tdir / 'market-intel'
+            mi_scripts = ROOT / 'plugins/market-intel/scripts'
+            subprocess.run([sys.executable, str(mi_scripts / 'init_workspace.py'), str(mi_ws)], check=True, stdout=subprocess.DEVNULL)
+            (mi_ws / 'watchlist.json').write_text(json.dumps({
+                'schemaVersion': 'market-intel-watchlist/1',
+                'updatedAt': '2026-11-25T00:00:00Z',
+                'entities': [{
+                    'slug': 'live-check',
+                    'name': 'Live Check',
+                    'sources': [
+                        {'id': 'gh', 'kind': 'github_releases', 'repo': 'openai/codex', 'limit': 1},
+                        {'id': 'ios', 'kind': 'appstore_ios', 'appId': '618783545'},
+                        {'id': 'npm', 'kind': 'npm', 'package': 'next'},
+                        {'id': 'pypi', 'kind': 'pypi', 'package': 'pydantic'},
+                        {'id': 'jobs_gh', 'kind': 'greenhouse_jobs', 'boardToken': 'stripe'},
+                        {'id': 'jobs_ashby', 'kind': 'ashby_jobs', 'boardSlug': 'linear'},
+                        {'id': 'sec', 'kind': 'sec_edgar', 'cik': '0000320193', 'limit': 2},
+                        {'id': 'hn', 'kind': 'hn_algolia', 'query': 'stripe', 'limit': 2},
+                    ],
+                }],
+            }), encoding='utf-8')
+            mi_cap = json.loads(subprocess.run(
+                [sys.executable, str(mi_scripts / 'fetch_sources.py'), str(mi_ws)],
+                capture_output=True, text=True, check=True, timeout=60,
+            ).stdout)
+            self.assertEqual(mi_cap['okCount'], 8, f'Failed sources: {[r for r in mi_cap["records"] if not r["ok"]]}')
+
+            # 2. customer-support-ops live public source (GitHub Issues REST API; tolerates anonymous IP rate-limit)
+            cs_ws = tdir / 'customer-support-ops'
+            cs_scripts = ROOT / 'plugins/customer-support-ops/scripts'
+            subprocess.run([sys.executable, str(cs_scripts / 'init_workspace.py'), str(cs_ws)], check=True, stdout=subprocess.DEVNULL)
+            cs_proc = subprocess.run(
+                [sys.executable, str(cs_scripts / 'ingest_feedback.py'), str(cs_ws), '--github-repo', 'facebook/react'],
+                capture_output=True, text=True, timeout=30,
+            )
+            if cs_proc.returncode == 0:
+                cs_res = json.loads(cs_proc.stdout)
+                self.assertGreater(cs_res['added'], 0)
+            else:
+                self.assertIn('403', cs_proc.stderr, f'Unexpected GitHub Issues failure: {cs_proc.stderr}')
+
+            # 3. business-finance-ops live ECB FX rates
+            bf_ws = tdir / 'business-finance-ops'
+            bf_scripts = ROOT / 'plugins/business-finance-ops/scripts'
+            subprocess.run([sys.executable, str(bf_scripts / 'init_workspace.py'), str(bf_ws)], check=True, stdout=subprocess.DEVNULL)
+            fx_res = json.loads(subprocess.run(
+                [sys.executable, str(bf_scripts / 'fx_rates.py'), str(bf_ws), '--base', 'USD', '--symbols', 'CNY,EUR'],
+                capture_output=True, text=True, check=True, timeout=20,
+            ).stdout)
+            self.assertIn('CNY', fx_res['rates'])
+            self.assertIn('EUR', fx_res['rates'])
+
 
 if __name__ == '__main__':
     unittest.main()

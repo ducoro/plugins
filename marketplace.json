@@ -5,42 +5,6 @@
   },
   "plugins": [
     {
-      "name": "starter-template",
-      "source": {
-        "source": "local",
-        "path": "./plugins/starter-template"
-      },
-      "description": "Minimal reference plugin demonstrating PLUGIN.md domain role structure, on-demand references, and an MCP server declaration.",
-      "category": "Templates"
-    },
-    {
-      "name": "repo-research",
-      "source": {
-        "source": "local",
-        "path": "./plugins/repo-research"
-      },
-      "description": "Research any public GitHub repository through its AI-generated wiki: structure first, then targeted questions.",
-      "category": "Research"
-    },
-    {
-      "name": "docs-lookup",
-      "source": {
-        "source": "local",
-        "path": "./plugins/docs-lookup"
-      },
-      "description": "Look up current, version-accurate library and framework documentation instead of answering from memory.",
-      "category": "Research"
-    },
-    {
-      "name": "git-workflows",
-      "source": {
-        "source": "local",
-        "path": "./plugins/git-workflows"
-      },
-      "description": "Author AI-readable conventional commit messages and reviewable pull-request descriptions.",
-      "category": "Developer Tools"
-    },
-    {
       "name": "content-operations",
       "source": {
         "source": "local",
@@ -48,6 +12,33 @@
       },
       "description": "End-to-end multi-platform content operations role covering topic research, media production, 14 platform playbooks, engagement triage, analytics retrospectives, and interactive boards.",
       "category": "Content & Marketing"
+    },
+    {
+      "name": "market-intel",
+      "source": {
+        "source": "local",
+        "path": "./plugins/market-intel"
+      },
+      "description": "Continuous competitor, company, and sector intelligence with deterministic snapshot diffs, grounded evidence gates, real public source fetchers, and interactive radar/battlecard boards.",
+      "category": "Research & Strategy"
+    },
+    {
+      "name": "customer-support-ops",
+      "source": {
+        "source": "local",
+        "path": "./plugins/customer-support-ops"
+      },
+      "description": "Continuous customer feedback, ticket triage, SLA tracking, root-cause spike detection, and tamper-proof outbound reply guards with interactive support boards.",
+      "category": "Operations & Support"
+    },
+    {
+      "name": "business-finance-ops",
+      "source": {
+        "source": "local",
+        "path": "./plugins/business-finance-ops"
+      },
+      "description": "Deterministic Decimal bookkeeping, real bank/Stripe/Alipay/WeChat/OFX statement ingestion, ECB FX conversion, duplicate/burn/budget anomaly detection, and interactive finance boards.",
+      "category": "Finance & Ops"
     }
   ]
 }

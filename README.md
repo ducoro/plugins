@@ -10,11 +10,10 @@ Each plugin packages a **Domain Role** (`PLUGIN.md`), progressively disclosed on
 
 | Plugin | Domain role | Contents |
 | --- | --- | --- |
-| [Starter Template](plugins/starter-template) | Minimal reference plugin for testing and authoring new domain roles | `PLUGIN.md` + References + MCP example |
-| [Docs Lookup](plugins/docs-lookup) | Answer library and framework questions using current documentation | `PLUGIN.md` + Playbook (Context7) |
-| [Repo Research](plugins/repo-research) | Understand public GitHub repositories through their AI wiki | `PLUGIN.md` + Playbook (DeepWiki) |
-| [Git Workflows](plugins/git-workflows) | Author conventional commits and reviewable pull request descriptions | `PLUGIN.md` + Playbooks |
 | [Content Operations](plugins/content-operations) | Run a continuous multi-platform content loop across 14 platforms with interactive boards | `PLUGIN.md` + Playbooks + 14 Platforms + Scripts + Boards |
+| [Market Intel](plugins/market-intel) | Track competitor, company, and sector changes with objective snapshot diffs and grounded evidence gates | `PLUGIN.md` + Playbooks + Public Source Fetchers + Diff/Evidence Scripts + Boards |
+| [Customer Support Ops](plugins/customer-support-ops) | Triage tickets and reviews, enforce P0/SLA escalations, detect issue spikes, and lock outbound replies | `PLUGIN.md` + Playbooks + Channel Importers + Triage/Reply Guards + Boards |
+| [Business Finance Ops](plugins/business-finance-ops) | Reconcile real statements with exact Decimal math, ECB FX rates, anomaly detection, and runway boards | `PLUGIN.md` + Playbooks + Statement Parsers + Decimal Ledger/Audit Scripts + Boards |
 
 ## Use this marketplace
 
@@ -26,6 +25,8 @@ Any MCP server requiring credentials uses environment variable placeholders (for
 
 ```text
 marketplace.json                   # Marketplace index
+templates/
+  starter-template/                # Reference authoring blueprint (not published to marketplace)
 plugins/
   <plugin-name>/
     LICENSE

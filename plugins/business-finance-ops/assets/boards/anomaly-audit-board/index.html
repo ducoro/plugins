@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Financial Anomaly &amp; Subscription Audit</title>
+  <link rel="stylesheet" href="./assets/board-ui.css" />
+</head>
+<body>
+  <main class="ui-shell" data-export-frame="main">
+    <header class="ui-header" data-mark-ignore>
+      <div>
+        <h1 class="ui-title">Anomaly &amp; Subscription Audit</h1>
+        <p class="ui-subtitle">Deterministic duplicate charges, recurring vendor price hikes, budget breaches, and runway alerts.</p>
+      </div>
+      <div class="ui-toolbar">
+        <select id="sev-filter" class="ui-select" aria-label="Filter severity">
+          <option value="all">All severities</option>
+          <option value="high">High only</option>
+          <option value="medium">Medium</option>
+        </select>
+        <select id="type-filter" class="ui-select" aria-label="Filter alert type">
+          <option value="all">All types</option>
+          <option value="duplicate_charge">Duplicate charge</option>
+          <option value="vendor_price_hike">Vendor price hike</option>
+          <option value="budget_exceeded">Budget exceeded</option>
+          <option value="budget_warning">Budget warning</option>
+          <option value="low_runway">Low runway</option>
+        </select>
+      </div>
+    </header>
+
+    <div class="ui-alert" data-bridge-status hidden></div>
+
+    <section class="ui-kpi-grid" data-card="audit-kpis" data-card-title="Anomaly Summary">
+      <article class="ui-kpi" data-mark-item="kpi-alerts" data-mark-label="Total alerts">
+        <span class="ui-kpi-label">Active Alerts</span>
+        <span id="kpi-alerts" class="ui-kpi-value">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-high" data-mark-label="High severity alerts">
+        <span class="ui-kpi-label">High Severity</span>
+        <span id="kpi-high" class="ui-kpi-value" data-tone="destructive">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-dups" data-mark-label="Duplicate charges">
+        <span class="ui-kpi-label">Duplicate Charges</span>
+        <span id="kpi-dups" class="ui-kpi-value" data-tone="warning">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-hikes" data-mark-label="Vendor price hikes">
+        <span class="ui-kpi-label">Vendor Price Hikes</span>
+        <span id="kpi-hikes" class="ui-kpi-value">0</span>
+      </article>
+    </section>
+
+    <section class="ui-section" data-card="anomaly-table" data-card-title="Audit Findings">
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>Severity</th>
+              <th>Type</th>
+              <th>Merchant / Scope</th>
+              <th class="is-num">Amount</th>
+              <th>Evidence &amp; Finding</th>
+              <th data-shot-hide>Action</th>
+            </tr>
+          </thead>
+          <tbody id="alerts-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script id="board-initial-data" type="application/json">{"generatedAt":"","month":"","baseCurrency":"USD","summary":{"totalAlerts":0,"highCount":0,"duplicateCount":0,"hikeCount":0},"anomalies":[]}</script>
+  <script type="module">
+    import { createBoardBridge } from './assets/board-sdk-bridge.js';
+
+    const state = { data: null, severity: 'all', type: 'all', focused: '' };
+    const sevSel = document.getElementById('sev-filter');
+    const typeSel = document.getElementById('type-filter');
+    const tbody = document.getElementById('alerts-body');
+
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function render() {
+      const d = state.data || { summary: {}, anomalies: [] };
+      document.getElementById('kpi-alerts').textContent = d.summary?.totalAlerts ?? 0;
+      const hiEl = document.getElementById('kpi-high');
+      hiEl.textContent = d.summary?.highCount ?? 0;
+      hiEl.dataset.tone = (d.summary?.highCount ?? 0) > 0 ? 'destructive' : '';
+      const dupEl = document.getElementById('kpi-dups');
+      dupEl.textContent = d.summary?.duplicateCount ?? 0;
+      dupEl.dataset.tone = (d.summary?.duplicateCount ?? 0) > 0 ? 'warning' : '';
+      document.getElementById('kpi-hikes').textContent = d.summary?.hikeCount ?? 0;
+
+      const list = (d.anomalies || []).filter((a) => {
+        if (state.severity !== 'all' && a.severity !== state.severity) return false;
+        if (state.type !== 'all' && a.type !== state.type) return false;
+        return true;
+      });
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="6"><div class="ui-empty-inline">No anomalies detected for the selected filter.</div></td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map((a) => {
+        const badge = a.severity === 'high' ? 'ui-badge-destructive' : 'ui-badge-warning';
+        const trace = (a.evidence || []).map((e) => `${e.sourceFile}:${e.sourceLine} (${e.txHash})`).join(', ');
+        const focused = state.focused === a.alertId ? ' focused' : '';
+        return `<tr class="${focused}" data-card="alert-${esc(a.alertId)}" data-card-title="${esc(a.summary)}" data-mark-item="alert-${esc(a.alertId)}" data-mark-label="${esc(a.merchant)}">
+          <td><span class="ui-badge ${badge}">${esc(a.severity)}</span></td>
+          <td><span class="ui-badge ui-badge-outline">${esc(a.type)}</span></td>
+          <td><strong>${esc(a.merchant)}</strong></td>
+          <td class="is-num ui-mono">${esc(a.amount)} ${esc(a.currency)}</td>
+          <td><div class="ui-item-title">${esc(a.summary)}</div>${trace ? `<div class="ui-mono ui-muted">${esc(trace)}</div>` : ''}</td>
+          <td data-shot-hide><button class="ui-btn ui-btn-xs ui-btn-ghost" data-requires-sdk data-id="${esc(a.alertId)}">Investigate</button></td>
+        </tr>`;
+      }).join('');
+      bridge.updateWriteControls();
+    }
+
+    const bridge = createBoardBridge({
+      boardId: 'anomaly-audit-board',
+      defaultView: { severity: 'all', type: 'all' },
+      onData: (data) => { state.data = data; render(); },
+      onApplyView: (v) => { state.severity = v.severity || 'all'; state.type = v.type || 'all'; sevSel.value = state.severity; typeSel.value = state.type; render(); },
+      getView: () => ({ severity: state.severity, type: state.type }),
+      commands: {
+        filterSeverity: {
+          describe: 'Filter anomalies by severity (all|high|medium)',
+          params: { severity: 'string' },
+          run: ({ severity }) => { if (!['all', 'high', 'medium'].includes(severity)) throw new Error('Invalid severity'); state.severity = severity; sevSel.value = severity; render(); return { severity }; },
+        },
+        filterType: {
+          describe: 'Filter anomalies by alert type',
+          params: { type: 'string' },
+          run: ({ type }) => { if (typeof type !== 'string') throw new Error('type required'); state.type = type; typeSel.value = type; render(); return { type }; },
+        },
+        focusAlert: {
+          describe: 'Highlight an anomaly row by alertId',
+          params: { alertId: 'string' },
+          run: ({ alertId }) => {
+            if (typeof alertId !== 'string' || !alertId.trim()) throw new Error('alertId required');
+            state.focused = alertId.trim(); render();
+            document.querySelector(`[data-card="alert-${CSS.escape(state.focused)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return { focused: state.focused };
+          },
+        },
+        resetFilters: {
+          describe: 'Reset anomaly audit filters',
+          params: {},
+          run: () => { state.severity = 'all'; state.type = 'all'; state.focused = ''; sevSel.value = 'all'; typeSel.value = 'all'; render(); return { reset: true }; },
+        },
+      },
+    });
+
+    sevSel.addEventListener('change', () => { state.severity = sevSel.value; render(); bridge.persistView(); });
+    typeSel.addEventListener('change', () => { state.type = typeSel.value; render(); bridge.persistView(); });
+    tbody.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-id]');
+      if (btn) bridge.stageDraft(`Investigate financial anomaly ${btn.dataset.id} using the raw statement lines and propose next steps for my approval.`, btn);
+    });
+    bridge.start();
+  </script>
+</body>
+</html>

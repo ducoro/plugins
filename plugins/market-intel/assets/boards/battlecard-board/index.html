@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Market Intel Battlecards</title>
+  <link rel="stylesheet" href="./assets/board-ui.css" />
+</head>
+<body>
+  <main class="ui-shell" data-export-frame="main">
+    <header class="ui-header" data-mark-ignore>
+      <div>
+        <h1 class="ui-title">Competitor Battlecards</h1>
+        <p class="ui-subtitle">Side-by-side pricing, releases, hiring signals, and grounded differentiators.</p>
+      </div>
+      <div class="ui-toolbar">
+        <select id="category-filter" class="ui-select" aria-label="Filter category">
+          <option value="all">All categories</option>
+        </select>
+        <button id="update-btn" class="ui-btn ui-btn-primary" data-requires-sdk>Refresh Battlecards</button>
+      </div>
+    </header>
+
+    <div class="ui-alert" data-bridge-status hidden></div>
+
+    <section class="ui-kpi-grid" data-card="bc-kpis" data-card-title="Battlecard Coverage">
+      <article class="ui-kpi" data-mark-item="kpi-tracked" data-mark-label="Tracked entities">
+        <span class="ui-kpi-label">Tracked Entities</span>
+        <span id="kpi-tracked" class="ui-kpi-value">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-covered" data-mark-label="Active battlecards">
+        <span class="ui-kpi-label">Populated Battlecards</span>
+        <span id="kpi-covered" class="ui-kpi-value">0</span>
+      </article>
+    </section>
+
+    <section id="cards-grid" class="ui-card-grid" data-card="battlecard-matrix" data-card-title="Battlecard Matrix"></section>
+  </main>
+
+  <script id="board-initial-data" type="application/json">{"generatedAt":"","summary":{"entityCount":0,"battlecardCount":0},"cards":[]}</script>
+  <script type="module">
+    import { createBoardBridge } from './assets/board-sdk-bridge.js';
+
+    const state = { data: null, category: 'all', focused: '' };
+    const catSel = document.getElementById('category-filter');
+    const grid = document.getElementById('cards-grid');
+
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function render() {
+      const d = state.data || { summary: {}, cards: [] };
+      document.getElementById('kpi-tracked').textContent = d.summary?.entityCount ?? 0;
+      document.getElementById('kpi-covered').textContent = d.summary?.battlecardCount ?? 0;
+
+      const cats = [...new Set((d.cards || []).map((c) => c.category).filter(Boolean))];
+      catSel.innerHTML = '<option value="all">All categories</option>' + cats.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      catSel.value = cats.includes(state.category) ? state.category : 'all';
+
+      const list = (d.cards || []).filter((c) => state.category === 'all' || c.category === state.category);
+      if (!list.length) {
+        grid.innerHTML = '<div class="ui-empty">No battlecards yet. Add entities to watchlist.json and run a sweep.</div>';
+        return;
+      }
+
+      grid.innerHTML = list.map((c) => {
+        const focused = state.focused === c.slug ? ' focused' : '';
+        const threatClass = c.threatLevel === 'high' ? 'ui-badge-destructive' : c.threatLevel === 'medium' ? 'ui-badge-warning' : 'ui-badge-secondary';
+        const landmines = (c.landmines || []).map((s) => `<li>${esc(s)}</li>`).join('');
+        const objections = (c.objectionHandlers || []).map((o) => `<li><strong>${esc(o.objection)}</strong> → ${esc(o.response)}</li>`).join('');
+        return `<article class="ui-card${focused}" data-card="entity-${esc(c.slug)}" data-card-title="${esc(c.name)}" data-mark-item="entity-${esc(c.slug)}" data-mark-label="${esc(c.name)}">
+          <div class="ui-col-head">
+            <span>${esc(c.name)}</span>
+            <span class="ui-badge ${threatClass}">Threat: ${esc(c.threatLevel || 'medium')}</span>
+          </div>
+          ${c.oneLiner ? `<p class="ui-muted" style="margin:4px 0 8px">${esc(c.oneLiner)}</p>` : ''}
+          <div class="ui-meta-row">
+            <span class="ui-badge ui-badge-outline">${esc(c.category)}</span>
+            <span class="ui-badge ui-badge-secondary">Sources: ${esc(c.sourceCount)}</span>
+            <span class="ui-badge ui-badge-secondary">Events: ${esc(c.eventCount)}</span>
+          </div>
+          <p class="ui-muted"><strong>Pricing:</strong> ${esc(c.pricingSummary)}</p>
+          <p class="ui-muted"><strong>Latest release:</strong> ${esc(c.latestVersion)}</p>
+          <p class="ui-muted"><strong>Hiring:</strong> ${esc(c.hiringSignal)}</p>
+          ${c.whenWeWin ? `<p class="ui-muted"><strong>When we win:</strong> ${esc(c.whenWeWin)}</p>` : ''}
+          ${c.whenWeLose ? `<p class="ui-muted"><strong>When we lose:</strong> ${esc(c.whenWeLose)}</p>` : ''}
+          <div class="ui-quote">${esc(c.latestEvent)}</div>
+          ${landmines ? `<div class="ui-muted" style="margin-top:8px"><strong>Discovery Landmines</strong><ul style="margin:4px 0 0;padding-left:18px">${landmines}</ul></div>` : ''}
+          ${objections ? `<div class="ui-muted" style="margin-top:8px"><strong>Objection Handlers</strong><ul style="margin:4px 0 0;padding-left:18px">${objections}</ul></div>` : ''}
+          <div class="ui-actions" data-shot-hide>
+            <button class="ui-btn ui-btn-xs ui-btn-ghost" data-requires-sdk data-slug="${esc(c.slug)}">Update Card</button>
+          </div>
+        </article>`;
+      }).join('');
+      bridge.updateWriteControls();
+    }
+
+    const bridge = createBoardBridge({
+      boardId: 'battlecard-board',
+      defaultView: { category: 'all' },
+      onData: (data) => { state.data = data; render(); },
+      onApplyView: (v) => { state.category = v.category || 'all'; render(); },
+      getView: () => ({ category: state.category }),
+      commands: {
+        filterCategory: {
+          describe: 'Filter battlecards by entity category',
+          params: { category: 'string' },
+          run: ({ category }) => { if (typeof category !== 'string') throw new Error('category required'); state.category = category; render(); return { category }; },
+        },
+        focusEntity: {
+          describe: 'Highlight a battlecard by entity slug',
+          params: { slug: 'string' },
+          run: ({ slug }) => {
+            if (typeof slug !== 'string' || !slug.trim()) throw new Error('slug required');
+            state.focused = slug.trim();
+            render();
+            document.querySelector(`[data-card="entity-${CSS.escape(state.focused)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return { focused: state.focused };
+          },
+        },
+        resetFilters: {
+          describe: 'Reset category filter and focus',
+          params: {},
+          run: () => { state.category = 'all'; state.focused = ''; render(); return { reset: true }; },
+        },
+      },
+    });
+
+    catSel.addEventListener('change', () => { state.category = catSel.value; render(); bridge.persistView(); });
+    document.getElementById('update-btn').addEventListener('click', (e) => {
+      bridge.stageDraft('Update competitor battlecards from the latest verified market-intel events and snapshots.', e.currentTarget);
+    });
+    grid.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-slug]');
+      if (btn) bridge.stageDraft(`Refresh the battlecard for entity ${btn.dataset.slug} using grounded snapshots.`, btn);
+    });
+
+    bridge.start();
+  </script>
+</body>
+</html>

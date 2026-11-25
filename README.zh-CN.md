@@ -10,11 +10,10 @@
 
 | 插件 | 领域职能 | 包含内容 |
 | --- | --- | --- |
-| [Starter Template](plugins/starter-template) | 用于联调测试与新建领域插件的最小参考模板 | `PLUGIN.md` + 参考文档 + MCP 示例 |
-| [Docs Lookup](plugins/docs-lookup) | 根据最新文档回答库与框架相关问题 | `PLUGIN.md` + 操作手册（Context7） |
-| [Repo Research](plugins/repo-research) | 通过文档理解公开 GitHub 仓库 | `PLUGIN.md` + 操作手册（DeepWiki） |
-| [Git Workflows](plugins/git-workflows) | 编写清楚的提交信息和可审阅的 Pull Request 描述 | `PLUGIN.md` + 操作手册 |
 | [Content Operations](plugins/content-operations) | 覆盖 14 个平台的端到端内容运营闭环（选题、创作、分发、互动、复盘与展板） | `PLUGIN.md` + 环节手册 + 14 平台包 + 脚本 + 展板 |
+| [Market Intel](plugins/market-intel) | 持续追踪竞品、公司与赛道真实变化（客观快照 Diff、强溯源证据闸门与对比展板） | `PLUGIN.md` + 手册 + 公开源拉取器 + Diff/溯源脚本 + 展板 |
+| [Customer Support Ops](plugins/customer-support-ops) | 持续处理多渠道用户反馈、P0/SLA 升级、根因飙升检测与防篡改回复护栏 | `PLUGIN.md` + 手册 + 多渠道导入 + 分诊/安全锁脚本 + 展板 |
+| [Business Finance Ops](plugins/business-finance-ops) | 基于真实对账单与精确 `Decimal` 账本的经营对账、官方汇率、异常扣费与现金流跑道监控 | `PLUGIN.md` + 手册 + 账单解析器 + `Decimal` 核算/审计脚本 + 展板 |
 
 ## 使用方式
 
@@ -26,6 +25,8 @@
 
 ```text
 marketplace.json                   # 插件市场索引
+templates/
+  starter-template/                # 新插件开发参考模板（不上架至插件市场）
 plugins/
   <plugin-name>/
     LICENSE

@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Market Intel Radar</title>
+  <link rel="stylesheet" href="./assets/board-ui.css" />
+</head>
+<body>
+  <main class="ui-shell" data-export-frame="main">
+    <header class="ui-header" data-mark-ignore>
+      <div>
+        <h1 class="ui-title">Market Intel Radar</h1>
+        <p class="ui-subtitle">Grounded competitor, company, and sector changes backed by real source evidence.</p>
+      </div>
+      <div class="ui-toolbar">
+        <select id="entity-filter" class="ui-select" aria-label="Filter entity">
+          <option value="all">All entities</option>
+        </select>
+        <select id="severity-filter" class="ui-select" aria-label="Filter severity">
+          <option value="all">All severities</option>
+          <option value="high">High only</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+        <button id="refresh-btn" class="ui-btn ui-btn-primary" data-requires-sdk>Stage Sweep</button>
+      </div>
+    </header>
+
+    <div class="ui-alert" data-bridge-status hidden></div>
+
+    <section class="ui-kpi-grid" data-card="radar-kpis" data-card-title="Radar Summary">
+      <article class="ui-kpi" data-mark-item="kpi-entities" data-mark-label="Tracked entities">
+        <span class="ui-kpi-label">Tracked Entities</span>
+        <span id="kpi-entities" class="ui-kpi-value">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-sources" data-mark-label="Configured sources">
+        <span class="ui-kpi-label">Configured Sources</span>
+        <span id="kpi-sources" class="ui-kpi-value">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-events" data-mark-label="Verified changes">
+        <span class="ui-kpi-label">Verified Changes</span>
+        <span id="kpi-events" class="ui-kpi-value">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-high" data-mark-label="High severity changes">
+        <span class="ui-kpi-label">High Severity</span>
+        <span id="kpi-high" class="ui-kpi-value" data-tone="warning">0</span>
+      </article>
+    </section>
+
+    <section class="ui-section" data-card="radar-events" data-card-title="Verified Change Ledger">
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">Verified Changes</h2>
+        <span id="updated-at" class="ui-muted">Not loaded</span>
+      </div>
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>Observed</th>
+              <th>Entity</th>
+              <th>Category</th>
+              <th>Severity</th>
+              <th>Verified Change &amp; Quote</th>
+              <th>Evidence</th>
+              <th data-shot-hide>Action</th>
+            </tr>
+          </thead>
+          <tbody id="events-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script id="board-initial-data" type="application/json">{"generatedAt":"","summary":{"entityCount":0,"eventCount":0,"highSeverityCount":0,"sourceCount":0},"entities":[],"events":[]}</script>
+  <script type="module">
+    import { createBoardBridge } from './assets/board-sdk-bridge.js';
+
+    const state = { data: null, entity: 'all', severity: 'all', focused: '' };
+    const entitySel = document.getElementById('entity-filter');
+    const sevSel = document.getElementById('severity-filter');
+    const tbody = document.getElementById('events-body');
+
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function render() {
+      const d = state.data || { summary: {}, entities: [], events: [] };
+      document.getElementById('kpi-entities').textContent = d.summary?.entityCount ?? 0;
+      document.getElementById('kpi-sources').textContent = d.summary?.sourceCount ?? 0;
+      document.getElementById('kpi-events').textContent = d.summary?.eventCount ?? 0;
+      const highEl = document.getElementById('kpi-high');
+      const high = d.summary?.highSeverityCount ?? 0;
+      highEl.textContent = high;
+      highEl.dataset.tone = high > 0 ? 'warning' : '';
+      document.getElementById('updated-at').textContent = d.generatedAt ? `Updated ${d.generatedAt}` : 'Empty workspace';
+
+      const prevEntity = state.entity;
+      entitySel.innerHTML = '<option value="all">All entities</option>' +
+        (d.entities || []).map((e) => `<option value="${esc(e.slug)}">${esc(e.name)}</option>`).join('');
+      entitySel.value = [...entitySel.options].some((o) => o.value === prevEntity) ? prevEntity : 'all';
+
+      const filtered = (d.events || []).filter((ev) => {
+        if (state.entity !== 'all' && ev.entitySlug !== state.entity) return false;
+        if (state.severity !== 'all' && ev.severity !== state.severity) return false;
+        return true;
+      });
+
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="ui-empty-inline">No verified changes match the current filter.</div></td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((ev) => {
+        const badgeClass = ev.severity === 'high' ? 'ui-badge-destructive' : ev.severity === 'medium' ? 'ui-badge-warning' : 'ui-badge-secondary';
+        const urls = (ev.evidenceUrls || []).map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener">Source ${i + 1}</a>`).join(' · ');
+        const focused = state.focused === ev.eventId ? ' focused' : '';
+        return `<tr class="${focused}" data-card="event-${esc(ev.eventId)}" data-card-title="${esc(ev.entityName)}: ${esc(ev.summary)}" data-mark-item="event-${esc(ev.eventId)}" data-mark-label="${esc(ev.summary)}">
+          <td class="ui-mono ui-num">${esc((ev.observedAt || '').slice(0, 10))}</td>
+          <td><strong>${esc(ev.entityName || ev.entitySlug)}</strong></td>
+          <td><span class="ui-badge ui-badge-outline">${esc(ev.category)}</span></td>
+          <td><span class="ui-badge ${badgeClass}">${esc(ev.severity)}</span></td>
+          <td>
+            <div class="ui-item-title">${esc(ev.summary)}</div>
+            <div class="ui-muted">"${esc(ev.quote)}"</div>
+          </td>
+          <td>${urls || '—'}</td>
+          <td data-shot-hide><button class="ui-btn ui-btn-xs ui-btn-ghost" data-requires-sdk data-act="brief" data-id="${esc(ev.eventId)}">Discuss</button></td>
+        </tr>`;
+      }).join('');
+      bridge.updateWriteControls();
+    }
+
+    const bridge = createBoardBridge({
+      boardId: 'radar-board',
+      defaultView: { entity: 'all', severity: 'all' },
+      onData: (data) => { state.data = data; render(); },
+      onApplyView: (v) => {
+        state.entity = v.entity || 'all';
+        state.severity = v.severity || 'all';
+        sevSel.value = state.severity;
+        render();
+      },
+      getView: () => ({ entity: state.entity, severity: state.severity }),
+      commands: {
+        filterEntity: {
+          describe: 'Filter radar events by entity slug or all',
+          params: { entity: 'string' },
+          run: ({ entity }) => {
+            if (typeof entity !== 'string' || !entity.trim()) throw new Error('entity is required');
+            state.entity = entity.trim();
+            render();
+            return { entity: state.entity };
+          },
+        },
+        filterSeverity: {
+          describe: 'Filter radar events by severity (all|high|medium|low)',
+          params: { severity: 'string' },
+          run: ({ severity }) => {
+            if (!['all', 'high', 'medium', 'low'].includes(severity)) throw new Error('Invalid severity');
+            state.severity = severity;
+            sevSel.value = severity;
+            render();
+            return { severity };
+          },
+        },
+        focusEvent: {
+          describe: 'Highlight a verified change row by eventId',
+          params: { eventId: 'string' },
+          run: ({ eventId }) => {
+            if (typeof eventId !== 'string' || !eventId.trim()) throw new Error('eventId is required');
+            state.focused = eventId.trim();
+            render();
+            document.querySelector(`[data-card="event-${CSS.escape(state.focused)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return { focused: state.focused };
+          },
+        },
+        resetFilters: {
+          describe: 'Reset radar entity and severity filters',
+          params: {},
+          run: () => { state.entity = 'all'; state.severity = 'all'; state.focused = ''; sevSel.value = 'all'; render(); return { reset: true }; },
+        },
+      },
+    });
+
+    entitySel.addEventListener('change', () => { state.entity = entitySel.value; render(); bridge.persistView(); });
+    sevSel.addEventListener('change', () => { state.severity = sevSel.value; render(); bridge.persistView(); });
+    document.getElementById('refresh-btn').addEventListener('click', (e) => {
+      bridge.stageDraft('Run a fresh market-intel sweep across the watchlist and report only verified material changes.', e.currentTarget);
+    });
+    tbody.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-act="brief"]');
+      if (!btn) return;
+      const ev = (state.data?.events || []).find((x) => x.eventId === btn.dataset.id);
+      if (ev) bridge.stageDraft(`Analyze market-intel event ${ev.eventId} (${ev.entityName}: ${ev.summary}) and propose next actions.`, btn);
+    });
+
+    bridge.start();
+  </script>
+</body>
+</html>

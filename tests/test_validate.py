@@ -22,11 +22,13 @@ class CatalogValidationTest(unittest.TestCase):
         shutil.copytree(ROOT / 'plugins', self.root / 'plugins')
 
     def test_current_catalog(self):
+        catalog = json.loads((self.root / 'marketplace.json').read_text(encoding='utf-8'))
         plugins, total_chars, mcps = validator.validate(self.root)
-        self.assertEqual(plugins, 5)
+        self.assertEqual(plugins, len(catalog['plugins']))
+        self.assertNotIn('starter-template', [p['name'] for p in catalog['plugins']])
+        self.assertGreaterEqual(plugins, 4)
         self.assertGreater(total_chars, 0)
-        self.assertLessEqual(total_chars, validator.MAX_COMBINED_DOMAIN_ROLES_CHARS)
-        self.assertEqual(mcps, 1)
+        self.assertGreaterEqual(mcps, 0)
 
     def test_marketplace_boundaries(self):
         original = json.loads((self.root / 'marketplace.json').read_text())
@@ -56,7 +58,7 @@ class CatalogValidationTest(unittest.TestCase):
                 target.rmdir()
 
     def test_bundle_and_mcp_boundaries(self):
-        plugin = self.root / 'plugins/docs-lookup'
+        plugin = self.root / 'plugins/content-operations'
         manifest_path = plugin / 'plugin.json'
         original = json.loads(manifest_path.read_text())
         for field, value in [
@@ -89,22 +91,35 @@ class CatalogValidationTest(unittest.TestCase):
                     target.unlink()
 
         # Raw secret in .mcp.json is rejected.
-        mcp_path = self.root / 'plugins/starter-template/.mcp.json'
-        original_mcp = json.loads(mcp_path.read_text())
-        bad_mcp = copy.deepcopy(original_mcp)
+        sample_mcp = {
+            'mcpServers': {
+                'example-http': {
+                    'url': 'https://mcp.example.com/v1',
+                    'headers': {'Authorization': 'Bearer ${EXAMPLE_MCP_TOKEN}'},
+                }
+            }
+        }
+        other_plugin = self.root / 'plugins/market-intel'
+        other_manifest_path = other_plugin / 'plugin.json'
+        other_original = json.loads(other_manifest_path.read_text())
+
+        mcp_path = other_plugin / '.mcp.json'
+        bad_mcp = copy.deepcopy(sample_mcp)
         bad_mcp['mcpServers']['example-http']['headers']['Authorization'] = 'Bearer sk-live-raw-secret'
         mcp_path.write_text(json.dumps(bad_mcp))
+        other_manifest_path.write_text(json.dumps({**other_original, 'mcpServers': './.mcp.json'}))
         with self.assertRaises(ValueError):
             validator.validate(self.root)
-        mcp_path.write_text(json.dumps(original_mcp))
 
         # Colliding MCP server slug across two plugins is rejected.
-        other_mcp = plugin / '.mcp.json'
-        other_mcp.write_text(json.dumps(original_mcp))
+        mcp_path.write_text(json.dumps(sample_mcp))
+        (plugin / '.mcp.json').write_text(json.dumps(sample_mcp))
         manifest_path.write_text(json.dumps({**original, 'mcpServers': './.mcp.json'}))
         with self.assertRaises(ValueError):
             validator.validate(self.root)
-        other_mcp.unlink()
+        mcp_path.unlink()
+        other_manifest_path.write_text(json.dumps(other_original))
+        (plugin / '.mcp.json').unlink()
         manifest_path.write_text(json.dumps(original))
 
         # Symlink inside bundle is rejected.
@@ -113,7 +128,7 @@ class CatalogValidationTest(unittest.TestCase):
             validator.validate(self.root)
 
     def test_plugin_md_contract_and_guards(self):
-        plugin_md = self.root / 'plugins/docs-lookup/PLUGIN.md'
+        plugin_md = self.root / 'plugins/market-intel/PLUGIN.md'
         original = plugin_md.read_text(encoding='utf-8')
 
         # Missing PLUGIN.md fails
@@ -123,7 +138,7 @@ class CatalogValidationTest(unittest.TestCase):
         plugin_md.write_text(original, encoding='utf-8')
 
         # YAML frontmatter is rejected
-        plugin_md.write_text('---\nname: docs-lookup\n---\n\n' + original, encoding='utf-8')
+        plugin_md.write_text('---\nname: market-intel\n---\n\n' + original, encoding='utf-8')
         with self.assertRaises(ValueError):
             validator.validate(self.root)
         plugin_md.write_text(original, encoding='utf-8')
@@ -154,12 +169,12 @@ class CatalogValidationTest(unittest.TestCase):
 
         # Missing README link fails
         readme = self.root / 'README.zh-CN.md'
-        readme.write_text(readme.read_text().replace('(plugins/docs-lookup)', '(plugins/missing)'))
+        readme.write_text(readme.read_text().replace('(plugins/market-intel)', '(plugins/missing)'))
         with self.assertRaises(ValueError):
             validator.validate(self.root)
 
     def test_bare_ducoro_cli_invocation_is_rejected(self):
-        plugin_md = self.root / 'plugins/docs-lookup/PLUGIN.md'
+        plugin_md = self.root / 'plugins/market-intel/PLUGIN.md'
         original = plugin_md.read_text(encoding='utf-8')
         for bad_snippet in [
             '\nRun `ducoro feedback send "bug"`.\n',

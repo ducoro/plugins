@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Support Triage &amp; SLA Queue</title>
+  <link rel="stylesheet" href="./assets/board-ui.css" />
+</head>
+<body>
+  <main class="ui-shell" data-export-frame="main">
+    <header class="ui-header" data-mark-ignore>
+      <div>
+        <h1 class="ui-title">Support Triage &amp; SLA Queue</h1>
+        <p class="ui-subtitle">Deterministic risk escalations, SLA breaches, and approval-locked outbound drafts.</p>
+      </div>
+      <div class="ui-toolbar">
+        <select id="priority-filter" class="ui-select" aria-label="Filter priority">
+          <option value="all">All priorities</option>
+          <option value="P0">P0 Critical</option>
+          <option value="P1">P1 High</option>
+          <option value="P2">P2 Normal</option>
+          <option value="P3">P3 Low</option>
+        </select>
+        <label class="ui-check-pill"><input id="escalated-only" type="checkbox" /> Escalated only</label>
+        <button id="triage-btn" class="ui-btn ui-btn-primary" data-requires-sdk>Run Triage</button>
+      </div>
+    </header>
+
+    <div class="ui-alert" data-bridge-status hidden></div>
+
+    <section class="ui-kpi-grid" data-card="triage-kpis" data-card-title="Support Queue Summary">
+      <article class="ui-kpi" data-mark-item="kpi-open" data-mark-label="Open tickets">
+        <span class="ui-kpi-label">Open Tickets</span>
+        <span id="kpi-open" class="ui-kpi-value">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-escalations" data-mark-label="Needs human decision">
+        <span class="ui-kpi-label">Needs Human Yes</span>
+        <span id="kpi-escalations" class="ui-kpi-value" data-tone="warning">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-sla" data-mark-label="SLA breached">
+        <span class="ui-kpi-label">SLA Breached</span>
+        <span id="kpi-sla" class="ui-kpi-value" data-tone="destructive">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-drafts" data-mark-label="Pending reply drafts">
+        <span class="ui-kpi-label">Pending Drafts</span>
+        <span id="kpi-drafts" class="ui-kpi-value">0</span>
+      </article>
+    </section>
+
+    <section class="ui-section" data-card="ticket-table" data-card-title="Ticket Queue">
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">Tickets</h2>
+        <span id="updated-at" class="ui-muted">Not loaded</span>
+      </div>
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>Priority</th>
+              <th>Channel</th>
+              <th>Customer &amp; Subject</th>
+              <th>Risk / Escalation</th>
+              <th class="is-num">Age (h)</th>
+              <th>Status</th>
+              <th data-shot-hide>Action</th>
+            </tr>
+          </thead>
+          <tbody id="tickets-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script id="board-initial-data" type="application/json">{"generatedAt":"","summary":{"openCount":0,"escalationCount":0,"slaBreachCount":0,"pendingDraftCount":0,"spikeCount":0},"tickets":[]}</script>
+  <script type="module">
+    import { createBoardBridge } from './assets/board-sdk-bridge.js';
+
+    const state = { data: null, priority: 'all', escalatedOnly: false, focused: '' };
+    const priSel = document.getElementById('priority-filter');
+    const escChk = document.getElementById('escalated-only');
+    const tbody = document.getElementById('tickets-body');
+
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function render() {
+      const d = state.data || { summary: {}, tickets: [] };
+      document.getElementById('kpi-open').textContent = d.summary?.openCount ?? 0;
+      const escEl = document.getElementById('kpi-escalations');
+      escEl.textContent = d.summary?.escalationCount ?? 0;
+      escEl.dataset.tone = (d.summary?.escalationCount ?? 0) > 0 ? 'warning' : '';
+      const slaEl = document.getElementById('kpi-sla');
+      slaEl.textContent = d.summary?.slaBreachCount ?? 0;
+      slaEl.dataset.tone = (d.summary?.slaBreachCount ?? 0) > 0 ? 'destructive' : '';
+      document.getElementById('kpi-drafts').textContent = d.summary?.pendingDraftCount ?? 0;
+      document.getElementById('updated-at').textContent = d.generatedAt ? `Updated ${d.generatedAt}` : 'Empty queue';
+
+      const rows = (d.tickets || []).filter((t) => {
+        if (state.priority !== 'all' && t.priority !== state.priority) return false;
+        if (state.escalatedOnly && !t.requiresHumanApproval) return false;
+        return true;
+      });
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="ui-empty-inline">No tickets match the current filter.</div></td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map((t) => {
+        const pClass = t.priority === 'P0' ? 'ui-badge-destructive' : t.priority === 'P1' ? 'ui-badge-warning' : 'ui-badge-secondary';
+        const flags = (t.escalationReasons || []).map((r) => `<span class="ui-badge ${r === 'sla_breached' || r === 'p0_outage' || r === 'security_privacy' ? 'ui-badge-destructive' : 'ui-badge-warning'}">${esc(r)}</span>`).join(' ');
+        const titleHtml = t.url ? `<a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(t.subject)}</a>` : esc(t.subject);
+        const focused = state.focused === t.ticketId ? ' focused' : '';
+        return `<tr class="${focused}" data-card="ticket-${esc(t.ticketId)}" data-card-title="${esc(t.subject)}" data-mark-item="ticket-${esc(t.ticketId)}" data-mark-label="${esc(t.subject)}">
+          <td><span class="ui-badge ${pClass}">${esc(t.priority)}</span></td>
+          <td><span class="ui-badge ui-badge-outline">${esc(t.channel)}</span></td>
+          <td>
+            <div class="ui-item-title">${titleHtml}</div>
+            <div class="ui-muted">${esc(t.customer)} · <span class="ui-mono">${esc(t.ticketId)}</span></div>
+          </td>
+          <td><div class="ui-meta-row">${flags || '<span class="ui-muted">Routine</span>'}</div></td>
+          <td class="is-num ${t.slaBreached ? 'ui-status-destructive' : ''}">${esc(t.ageHours)}</td>
+          <td><span class="ui-status ui-status-neutral">${esc(t.draftStatus || t.status)}</span></td>
+          <td data-shot-hide><button class="ui-btn ui-btn-xs ui-btn-ghost" data-requires-sdk data-id="${esc(t.ticketId)}">Review</button></td>
+        </tr>`;
+      }).join('');
+      bridge.updateWriteControls();
+    }
+
+    const bridge = createBoardBridge({
+      boardId: 'triage-sla-board',
+      defaultView: { priority: 'all', escalatedOnly: false },
+      onData: (data) => { state.data = data; render(); },
+      onApplyView: (v) => {
+        state.priority = v.priority || 'all';
+        state.escalatedOnly = Boolean(v.escalatedOnly);
+        priSel.value = state.priority;
+        escChk.checked = state.escalatedOnly;
+        render();
+      },
+      getView: () => ({ priority: state.priority, escalatedOnly: state.escalatedOnly }),
+      commands: {
+        filterPriority: {
+          describe: 'Filter tickets by priority (all|P0|P1|P2|P3)',
+          params: { priority: 'string' },
+          run: ({ priority }) => {
+            if (!['all', 'P0', 'P1', 'P2', 'P3'].includes(priority)) throw new Error('Invalid priority');
+            state.priority = priority; priSel.value = priority; render(); return { priority };
+          },
+        },
+        filterEscalated: {
+          describe: 'Toggle escalated-only ticket filter',
+          params: { escalatedOnly: 'boolean' },
+          run: ({ escalatedOnly }) => {
+            state.escalatedOnly = Boolean(escalatedOnly); escChk.checked = state.escalatedOnly; render(); return { escalatedOnly: state.escalatedOnly };
+          },
+        },
+        focusTicket: {
+          describe: 'Highlight a ticket row by ticketId',
+          params: { ticketId: 'string' },
+          run: ({ ticketId }) => {
+            if (typeof ticketId !== 'string' || !ticketId.trim()) throw new Error('ticketId required');
+            state.focused = ticketId.trim(); render();
+            document.querySelector(`[data-card="ticket-${CSS.escape(state.focused)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return { focused: state.focused };
+          },
+        },
+        resetFilters: {
+          describe: 'Reset support queue filters',
+          params: {},
+          run: () => { state.priority = 'all'; state.escalatedOnly = false; state.focused = ''; priSel.value = 'all'; escChk.checked = false; render(); return { reset: true }; },
+        },
+      },
+    });
+
+    priSel.addEventListener('change', () => { state.priority = priSel.value; render(); bridge.persistView(); });
+    escChk.addEventListener('change', () => { state.escalatedOnly = escChk.checked; render(); bridge.persistView(); });
+    document.getElementById('triage-btn').addEventListener('click', (e) => {
+      bridge.stageDraft('Run customer-support-ops ingestion and deterministic triage, then report any P0/SLA escalations.', e.currentTarget);
+    });
+    tbody.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-id]');
+      if (btn) bridge.stageDraft(`Review ticket ${btn.dataset.id} and stage a guarded reply draft for my approval.`, btn);
+    });
+    bridge.start();
+  </script>
+</body>
+</html>

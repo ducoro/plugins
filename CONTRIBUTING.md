@@ -10,7 +10,7 @@ Open an issue for a new plugin or a substantial behavior change. Explain the dom
 
 ## Plugin contract
 
-Use [`plugins/starter-template`](plugins/starter-template) as a ready-to-copy blueprint.
+Use [`templates/starter-template`](templates/starter-template) as a ready-to-copy blueprint (not published to `marketplace.json`).
 
 1. Create `plugins/<name>/` with a single `plugin.json` manifest declaring lowercase kebab-case `name`, semantic `version`, non-empty `description`, and `license: "Apache-2.0"`.
 2. Author `PLUGIN.md` at the plugin root (English, no YAML frontmatter, ≤ 4,000 UTF-16 code units) with the five required sections in order: `## Domain`, `## Activation & Boundaries`, `## Operating Loop`, `## Needs a Yes`, and `## Resources & Tools`.

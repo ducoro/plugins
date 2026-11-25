@@ -4,7 +4,7 @@ End-to-end multi-platform content operations as a durable, file-backed loop acro
 
 ## Activation & Boundaries
 
-Activate for planning, researching, drafting, producing visuals or videos, scheduling, publishing, triaging comments, reviewing performance, or maintaining boards for social/editorial content operations. Stay inactive for software engineering, Git commits or pull requests (`git-workflows`), public GitHub codebase research (`repo-research`), library/SDK API documentation lookups (`docs-lookup`), and starter-template verification checks.
+Activate for planning, researching, drafting, producing visuals or videos, scheduling, publishing, triaging comments, reviewing performance, or maintaining boards for social/editorial content operations. Stay inactive for software engineering, Git commits or pull requests, competitive intelligence archiving, customer support ticketing, financial bookkeeping, sales CRM outreach, and recruiting pipelines.
 
 ## Operating Loop
 

@@ -55,7 +55,7 @@ Whenever a plugin ships or instructs an agent to build an interactive **Board** 
 
 ## Required Files for Every Plugin
 
-Use `plugins/starter-template/` as the reference blueprint. Every plugin directory `plugins/<plugin-name>/` must contain:
+Use `templates/starter-template/` as the reference blueprint. Every plugin directory `plugins/<plugin-name>/` must contain:
 
 ```text
 plugins/<plugin-name>/
@@ -75,7 +75,7 @@ plugins/<plugin-name>/
 ## Step-by-Step: Add a New Plugin
 
 1. Verify orthogonality against all existing plugins in `marketplace.json` (never create a second plugin for an already-covered domain).
-2. Copy `plugins/starter-template/` to `plugins/<plugin-name>/`.
+2. Copy `templates/starter-template/` to `plugins/<plugin-name>/`.
 3. Update `plugin.json` and author `PLUGIN.md` following the 5-section skeleton and 4,000-char budget, placing deeper material in level-2/level-3 subdirectories.
 4. Keep `.mcp.json` only if the plugin declares MCP servers; otherwise delete `.mcp.json` and remove `"mcpServers"` from `plugin.json`.
 5. Register the plugin in `marketplace.json` (`source: { "source": "local", "path": "./plugins/<plugin-name>" }`).

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Root-Cause &amp; Pain-Point Spikes</title>
+  <link rel="stylesheet" href="./assets/board-ui.css" />
+</head>
+<body>
+  <main class="ui-shell" data-export-frame="main">
+    <header class="ui-header" data-mark-ignore>
+      <div>
+        <h1 class="ui-title">Product Pain Points &amp; Root Causes</h1>
+        <p class="ui-subtitle">Week-over-week issue clustering backed by verbatim customer ticket citations.</p>
+      </div>
+      <div class="ui-toolbar">
+        <label class="ui-check-pill"><input id="spikes-only" type="checkbox" /> Spikes only</label>
+        <button id="handoff-btn" class="ui-btn ui-btn-primary" data-requires-sdk>Draft Product Brief</button>
+      </div>
+    </header>
+
+    <div class="ui-alert" data-bridge-status hidden></div>
+
+    <section class="ui-kpi-grid" data-card="rc-kpis" data-card-title="Root-Cause Summary">
+      <article class="ui-kpi" data-mark-item="kpi-clusters" data-mark-label="Root-cause clusters">
+        <span class="ui-kpi-label">Root-Cause Clusters</span>
+        <span id="kpi-clusters" class="ui-kpi-value">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-spikes" data-mark-label="Active spikes">
+        <span class="ui-kpi-label">Active Spikes (7d)</span>
+        <span id="kpi-spikes" class="ui-kpi-value" data-tone="warning">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-linked" data-mark-label="Linked tickets">
+        <span class="ui-kpi-label">Linked Tickets</span>
+        <span id="kpi-linked" class="ui-kpi-value">0</span>
+      </article>
+    </section>
+
+    <section id="issues-grid" class="ui-card-grid" data-card="issues-matrix" data-card-title="Root-Cause Clusters"></section>
+  </main>
+
+  <script id="board-initial-data" type="application/json">{"generatedAt":"","summary":{"clusterCount":0,"spikeCount":0,"linkedTickets":0},"issues":[]}</script>
+  <script type="module">
+    import { createBoardBridge } from './assets/board-sdk-bridge.js';
+
+    const state = { data: null, spikesOnly: false, focused: '' };
+    const spikeChk = document.getElementById('spikes-only');
+    const grid = document.getElementById('issues-grid');
+
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function render() {
+      const d = state.data || { summary: {}, issues: [] };
+      document.getElementById('kpi-clusters').textContent = d.summary?.clusterCount ?? 0;
+      const spEl = document.getElementById('kpi-spikes');
+      spEl.textContent = d.summary?.spikeCount ?? 0;
+      spEl.dataset.tone = (d.summary?.spikeCount ?? 0) > 0 ? 'warning' : '';
+      document.getElementById('kpi-linked').textContent = d.summary?.linkedTickets ?? 0;
+
+      const list = (d.issues || []).filter((i) => !state.spikesOnly || i.isSpiking);
+      if (!list.length) {
+        grid.innerHTML = '<div class="ui-empty">No clustered root causes match the current filter.</div>';
+        return;
+      }
+
+      grid.innerHTML = list.map((i) => {
+        const focused = state.focused === i.rootCauseId ? ' focused' : '';
+        const badge = i.isSpiking
+          ? `<span class="ui-badge ui-badge-destructive">Spike ${esc(i.spikeRatio)}x</span>`
+          : `<span class="ui-badge ui-badge-secondary">Steady</span>`;
+        const cites = (i.sampleQuotes || []).map((q) => {
+          const link = q.url ? `<a href="${esc(q.url)}" target="_blank" rel="noopener">${esc(q.subject)}</a>` : esc(q.subject);
+          return `<li>${link} <span class="ui-mono ui-muted">(${esc(q.ticketId)})</span></li>`;
+        }).join('');
+        const kbTag = i.kbDeflectionCandidate ? '<span class="ui-badge ui-badge-primary">KB Deflection Candidate</span>' : '';
+        return `<article class="ui-card${focused}" data-card="issue-${esc(i.rootCauseId)}" data-card-title="${esc(i.title)}" data-mark-item="issue-${esc(i.rootCauseId)}" data-mark-label="${esc(i.title)}">
+          <div class="ui-col-head"><span>${esc(i.title)}</span>${badge}</div>
+          <div class="ui-meta-row">
+            <span class="ui-badge ui-badge-outline">${esc(i.area)}</span>
+            ${kbTag}
+            <span class="ui-muted ui-num">${esc(i.uniqueCustomers ?? 0)} unique customers · 7d: ${esc(i.recent7dCount)} · prior 7d: ${esc(i.prior7dCount)}</span>
+          </div>
+          <ul class="ui-muted" style="margin:6px 0 0;padding-left:18px">${cites}</ul>
+          <div class="ui-actions" data-shot-hide>
+            <button class="ui-btn ui-btn-xs ui-btn-ghost" data-requires-sdk data-rc="${esc(i.rootCauseId)}">Escalate to Engineering</button>
+          </div>
+        </article>`;
+      }).join('');
+      bridge.updateWriteControls();
+    }
+
+    const bridge = createBoardBridge({
+      boardId: 'root-cause-board',
+      defaultView: { spikesOnly: false },
+      onData: (data) => { state.data = data; render(); },
+      onApplyView: (v) => { state.spikesOnly = Boolean(v.spikesOnly); spikeChk.checked = state.spikesOnly; render(); },
+      getView: () => ({ spikesOnly: state.spikesOnly }),
+      commands: {
+        filterSpikes: {
+          describe: 'Toggle spiking root causes only',
+          params: { spikesOnly: 'boolean' },
+          run: ({ spikesOnly }) => { state.spikesOnly = Boolean(spikesOnly); spikeChk.checked = state.spikesOnly; render(); return { spikesOnly: state.spikesOnly }; },
+        },
+        focusIssue: {
+          describe: 'Highlight a root-cause card by rootCauseId',
+          params: { rootCauseId: 'string' },
+          run: ({ rootCauseId }) => {
+            if (typeof rootCauseId !== 'string' || !rootCauseId.trim()) throw new Error('rootCauseId required');
+            state.focused = rootCauseId.trim(); render();
+            document.querySelector(`[data-card="issue-${CSS.escape(state.focused)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return { focused: state.focused };
+          },
+        },
+        resetFilters: {
+          describe: 'Reset root-cause filters',
+          params: {},
+          run: () => { state.spikesOnly = false; state.focused = ''; spikeChk.checked = false; render(); return { reset: true }; },
+        },
+      },
+    });
+
+    spikeChk.addEventListener('change', () => { state.spikesOnly = spikeChk.checked; render(); bridge.persistView(); });
+    document.getElementById('handoff-btn').addEventListener('click', (e) => {
+      bridge.stageDraft('Summarize the top spiking root causes with customer evidence for our weekly product review.', e.currentTarget);
+    });
+    grid.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-rc]');
+      if (btn) bridge.stageDraft(`Prepare a grounded engineering handoff for root cause ${btn.dataset.rc} with linked ticket evidence.`, btn);
+    });
+    bridge.start();
+  </script>
+</body>
+</html>
