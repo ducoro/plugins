@@ -40,7 +40,7 @@ Never put persona/voice rules, global response-formatting mandates, user-specifi
 
 Whenever a plugin ships or instructs an agent to build an interactive **Board** (dashboards, kanban pipelines, calendars, ledgers, inboxes, retrospective views, or monitoring panels), the Board MUST follow the **`shadcn/ui` design paradigm and semantic token system**—never ad-hoc per-page CSS or rainbow status pills:
 
-- **Single shared stylesheet per plugin**: Place shared tokens and component primitives in a shared `board-ui.css` (assembled into each board's `runtime/board-ui.css`) so every board stays zero-dependency, offline-runnable, and visually coherent.
+- **Single shared stylesheet per plugin**: Place shared tokens and component primitives in one shared `board-ui.css` referenced locally by each board so every board stays zero-dependency, offline-runnable, and visually coherent.
 - **Canonical shadcn/ui semantic tokens** (both light `:root` and dark `.dark` / `prefers-color-scheme: dark`):
   - Surfaces & text: `--background`, `--foreground`, `--card`, `--card-foreground`, `--popover`, `--popover-foreground`, `--muted`, `--muted-foreground`
   - Actions & chrome: `--primary`, `--primary-foreground`, `--secondary`, `--secondary-foreground`, `--accent`, `--accent-foreground`, `--destructive`, `--destructive-foreground`, `--border`, `--input`, `--ring`, `--radius` (`0.625rem`)

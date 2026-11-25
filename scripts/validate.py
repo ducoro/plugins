@@ -23,7 +23,7 @@ REQUIRED_SECTIONS = (
 FORBIDDEN_ROOT_ENTRIES = ['.agents', '.claude-plugin']
 FORBIDDEN_BUNDLE_ENTRIES = ['hooks', 'commands', 'agents', '.app.json', '.claude-plugin', '.codex-plugin']
 BARE_DUCORO_CLI = re.compile(
-    r'(?<![A-Za-z0-9_.-])ducoro\s+(?:board|render|feedback|media|local-folder|space|spaces|agent|agents|daemon|job|task|plan|plugin|skill|mcp|cli)\b|`ducoro`\s+CLI'
+    r'(?<![A-Za-z0-9_.-])ducoro\s+(?:board|render|feedback|media|local-folder|reference-material|space|spaces|agent|agents|daemon|job|task|plan|inbox|plugin|skill|mcp|cli)\b|`ducoro`\s+CLI'
 )
 DISALLOWED_PLUGIN_MD_OVERRIDES = (
     re.compile(r'\b(?:your persona is|your voice is|adopt a .+ tone)\b', re.I),

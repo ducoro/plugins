@@ -164,6 +164,8 @@ class CatalogValidationTest(unittest.TestCase):
         for bad_snippet in [
             '\nRun `ducoro feedback send "bug"`.\n',
             '\nRun `ducoro media upload file.jpg --json`.\n',
+            '\nRun `ducoro inbox list --json`.\n',
+            '\nRun `ducoro reference-material info docs --json`.\n',
             '\nWhen `ducoro` CLI is unavailable, print text.\n',
         ]:
             with self.subTest(snippet=bad_snippet.strip()):

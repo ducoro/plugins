@@ -57,4 +57,4 @@ All boards run standalone as static HTML with local data and progressively enhan
 
 ## Problem Reporting
 
-When a built-in script fails unexpectedly or an upstream platform API / Creator Studio layout changes, the agent follows `skills/content-ops-loop/references/issue-reporting.md`: drafts a redacted report tagged `[plugin:content-operations@<version>] [skill:<name>] [location:<file-or-step>]`, asks for user confirmation, and submits it through Ducoro's built-in `ducoro-cli feedback send` channel (no GitHub account required).
+When a built-in script fails unexpectedly or an upstream platform API / Creator Studio layout changes, the agent follows `skills/content-ops-loop/references/issue-reporting.md`: drafts a redacted report tagged `[plugin:content-operations@<version>] [module:<name>] [location:<file-or-step>]`, asks for user confirmation, and submits it through Ducoro's built-in `ducoro-cli feedback send` channel (no GitHub account required).
