@@ -11,13 +11,16 @@ A self-contained, zero-backend plugin for running a continuous, multi-platform c
 
 ## Architecture
 
-One cohesive plugin covers the entire content operations domain so a single agent installs it once and can run either:
-- **Single-workspace end-to-end mode** (one agent runs the whole loop in one workspace), or
-- **Split-workspace relay mode** (multiple specialized workspaces—e.g. monitoring, drafting, publishing, analytics—each loading only the relevant skills while sharing the same file-backed workspace contract).
+One cohesive Domain Role plugin (`PLUGIN.md` as level-1 entry + progressive level-2/level-3 on-demand playbooks and resources) covers the entire content operations domain so a single Bot mounts it once and can run either:
+- **Single-workspace end-to-end mode** (one Bot runs the whole loop in one Space), or
+- **Split-workspace relay mode** (multiple specialized Spaces—e.g. monitoring, drafting, publishing, analytics—each reading only the relevant level-2/level-3 playbooks while sharing the same file-backed workspace contract).
 
-### Core Skills
+### Level-1 Entry & Core Stage Playbooks
 
-| Skill | Responsibility |
+- `PLUGIN.md`: Level-1 domain role injected into `<you><domain_roles>` (domain goal, activation boundaries, operating loop, approval gates, and level-1 resource map).
+- `references/platforms.md`: Level-2 platform directory index pointing to all 14 level-3 platform packages.
+
+| Module | Responsibility |
 | --- | --- |
 | `content-ops-loop` | Orchestrator: shared workspace schema, readiness diagnostics (`diagnose.py`), hard provenance & signal-floor gate (`signal_gate.py`), customizable repeat-annotating topic scorer & importer (`score_topics.py`), channel-aware spec validator (`check_media_specs.py --channel browser\|api`), Gate 2 tamper-proof hash verifier (`validate_workspace.py --verify-slot`), shared image utilities (`image_ops.py`), 5 interactive boards, and routing index |
 | `topic-research-cn` | Neutral Chinese-market trend radar (Connectors, Weibo/Toutiao/Baidu live hot boards, general/keyword CN news, Baidu/360 autocomplete demand, platform-native discovery cues, subagent sharding, hard provenance/signal gate, CN seasonal calendar, Gate 1 brief authoring) |

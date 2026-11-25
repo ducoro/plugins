@@ -1,13 +1,12 @@
 {
   "name": "starter-template",
-  "version": "1.0.1",
-  "description": "Minimal reference plugin demonstrating a standard Skill and MCP server declaration.",
+  "version": "2.0.0",
+  "description": "Minimal reference plugin demonstrating PLUGIN.md domain role structure, on-demand references, and an MCP server declaration.",
   "license": "Apache-2.0",
   "keywords": [
     "template",
     "starter",
     "example"
   ],
-  "skills": "./skills/",
   "mcpServers": "./.mcp.json"
 }

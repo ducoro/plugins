@@ -1,4 +1,4 @@
-"""Validate the official Ducoro Skill + MCP plugin marketplace without third-party dependencies."""
+"""Validate the official Ducoro Domain Role plugin marketplace without third-party dependencies."""
 import json
 from pathlib import Path
 import re
@@ -8,11 +8,39 @@ NAME = re.compile(r'[a-z0-9]+(?:-[a-z0-9]+)*\Z')
 VERSION = re.compile(r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\Z')
 ENV_PLACEHOLDER = re.compile(r'\$\{[A-Z][A-Z0-9_]*\}')
 SENSITIVE_KEY = re.compile(r'(token|secret|password|passwd|api[_-]?key|authorization)', re.I)
+
+MAX_PLUGIN_MD_CHARS = 4_000
+MAX_COMBINED_DOMAIN_ROLES_CHARS = 20_000
+
+REQUIRED_SECTIONS = (
+    'Domain',
+    'Activation & Boundaries',
+    'Operating Loop',
+    'Needs a Yes',
+    'Resources & Tools',
+)
+
 FORBIDDEN_ROOT_ENTRIES = ['.agents', '.claude-plugin']
 FORBIDDEN_BUNDLE_ENTRIES = ['hooks', 'commands', 'agents', '.app.json', '.claude-plugin', '.codex-plugin']
 BARE_DUCORO_CLI = re.compile(
     r'(?<![A-Za-z0-9_.-])ducoro\s+(?:board|render|feedback|media|local-folder|space|spaces|agent|agents|daemon|job|task|plan|plugin|skill|mcp|cli)\b|`ducoro`\s+CLI'
 )
+DISALLOWED_PLUGIN_MD_OVERRIDES = (
+    re.compile(r'\b(?:your persona is|your voice is|adopt a .+ tone)\b', re.I),
+    re.compile(r'\b(?:always respond in|always reply in|always answer in)\b', re.I),
+    re.compile(r'\b(?:override|ignore)\s+(?:the\s+)?(?:agent\s+)?profile\b', re.I),
+    re.compile(r'\bignore\s+(?:all\s+)?other\s+plugins\b', re.I),
+    re.compile(r'\balways\s+format\s+every\s+response\b', re.I),
+)
+NEGATIVE_BOUNDARY_RE = re.compile(
+    r'\b(?:stay inactive|do not activate|never activate|out of scope|do not handle|do not use (?:this|for)|inactive for|leave .+ to|not for)\b',
+    re.I,
+)
+H2_RE = re.compile(r'^##[ \t]+(.+?)[ \t]*$', re.M)
+BACKTICK_REL_PATH_RE = re.compile(
+    r'`((?:\./)?(?:references|playbooks|platforms|scripts|assets|skills|docs)/[^`\s()]+)`'
+)
+MARKDOWN_LINK_RE = re.compile(r'\[[^\]]+\]\(([^)\s]+)\)')
 
 
 def require(condition, message):
@@ -20,7 +48,11 @@ def require(condition, message):
         raise ValueError(message)
 
 
-def read_object(path):
+def utf16_len(text: str) -> int:
+    return len(text.encode('utf-16-le')) // 2
+
+
+def read_object(path: Path):
     try:
         value = json.loads(path.read_text(encoding='utf-8'))
     except (OSError, ValueError) as error:
@@ -50,13 +82,16 @@ def extract_marketplace_plugins(catalog, label):
     return names
 
 
-def validate_mcp_file(mcp_path, plugin_name):
+def validate_mcp_file(mcp_path: Path, plugin_name: str, seen_mcp_slugs: dict):
     data = read_object(mcp_path)
     servers = data.get('mcpServers')
     require(isinstance(servers, dict) and servers, f'{plugin_name}: .mcp.json must define a non-empty mcpServers object')
     for server_id, spec in servers.items():
         require(isinstance(server_id, str) and NAME.fullmatch(server_id),
                 f'{plugin_name}: invalid MCP server id: {server_id}')
+        require(server_id not in seen_mcp_slugs,
+                f'{plugin_name}: MCP server id "{server_id}" collides with plugin "{seen_mcp_slugs.get(server_id)}"')
+        seen_mcp_slugs[server_id] = plugin_name
         require(isinstance(spec, dict), f'{plugin_name}/{server_id}: MCP server spec must be an object')
         has_command = isinstance(spec.get('command'), str) and spec['command'].strip()
         has_url = isinstance(spec.get('url'), str) and spec['url'].strip()
@@ -71,37 +106,83 @@ def validate_mcp_file(mcp_path, plugin_name):
                 if SENSITIVE_KEY.search(k):
                     require(ENV_PLACEHOLDER.search(v),
                             f'{plugin_name}/{server_id}: {container_key}.{k} must use an ${{ENV_VAR}} placeholder, never a raw secret')
+    return len(servers)
 
 
-def parse_yaml_single_line_scalar(raw_value, skill, field):
-    value = raw_value.strip()
-    require(value, f'{skill}: {field} is required')
-    if value.startswith('"'):
-        try:
-            parsed = json.loads(value)
-        except ValueError as error:
-            raise ValueError(f'{skill}: invalid double-quoted YAML {field}: {error}') from error
-        require(isinstance(parsed, str) and parsed.strip(), f'{skill}: {field} must be a non-empty string')
-        return parsed
-    if value.startswith("'"):
-        require(len(value) >= 2 and value.endswith("'"), f'{skill}: unterminated single-quoted YAML {field}')
-        inner = value[1:-1]
-        require("'" not in inner.replace("''", ''), f'{skill}: invalid single-quoted YAML {field}')
-        parsed = inner.replace("''", "'")
-        require(parsed.strip(), f'{skill}: {field} must be a non-empty string')
-        return parsed
-    # Unquoted YAML plain scalars break standard YAML parsers on ": ", trailing ":",
-    # inline " #" comments, or leading YAML syntax indicator characters.
-    require(': ' not in value and not value.endswith(':'),
-            f'{skill}: {field} contains ": " or trailing ":" and must be quoted in YAML frontmatter')
-    require(' #' not in value,
-            f'{skill}: {field} contains " #" comment sequence and must be quoted in YAML frontmatter')
-    require(value[0] not in '&*!|>%@`[{?#,',
-            f'{skill}: {field} starts with YAML syntax character "{value[0]}" and must be quoted')
-    return value
+def parse_plugin_md_sections(body: str, plugin_name: str) -> dict:
+    matches = list(H2_RE.finditer(body))
+    headings = [m.group(1).strip() for m in matches]
+    require(
+        tuple(headings) == REQUIRED_SECTIONS,
+        f'{plugin_name}: PLUGIN.md must contain exactly these ## sections in order: {list(REQUIRED_SECTIONS)} (got {headings})',
+    )
+    sections = {}
+    for idx, match in enumerate(matches):
+        start = match.end()
+        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(body)
+        content = body[start:end].strip()
+        heading = match.group(1).strip()
+        require(content, f'{plugin_name}: PLUGIN.md section "## {heading}" must not be empty')
+        sections[heading] = content
+    return sections
 
 
-def validate_cli_references(bundle, root):
+def validate_plugin_md_paths(bundle: Path, plugin_name: str, body: str):
+    bundle_resolved = bundle.resolve()
+    candidates = set(BACKTICK_REL_PATH_RE.findall(body))
+    for link_target in MARKDOWN_LINK_RE.findall(body):
+        if link_target.startswith(('http://', 'https://', 'mailto:', '#')):
+            continue
+        clean = link_target.split('#', 1)[0]
+        if clean:
+            candidates.add(clean)
+
+    for rel in sorted(candidates):
+        cleaned = rel.rstrip('.,;:')
+        require(not cleaned.startswith('/') and '..' not in Path(cleaned).parts,
+                f'{plugin_name}: PLUGIN.md path "{cleaned}" must stay inside the plugin root')
+        if '<' in cleaned or '*' in cleaned:
+            prefix = cleaned.split('<', 1)[0].split('*', 1)[0].rstrip('/')
+            if prefix:
+                target = (bundle_resolved / prefix).resolve()
+                require(target.is_relative_to(bundle_resolved) and target.exists(),
+                        f'{plugin_name}: PLUGIN.md template path "{cleaned}" base "{prefix}" does not exist')
+            continue
+        target = (bundle_resolved / cleaned).resolve()
+        require(target.is_relative_to(bundle_resolved) and target.exists(),
+                f'{plugin_name}: PLUGIN.md referenced path "{cleaned}" does not exist')
+
+
+def validate_plugin_md(bundle: Path, plugin_name: str) -> tuple[int, dict]:
+    md_path = bundle / 'PLUGIN.md'
+    require(md_path.is_file() and not md_path.is_symlink(), f'{plugin_name}: PLUGIN.md is required')
+    raw = md_path.read_text(encoding='utf-8')
+    body = raw.strip()
+    require(body, f'{plugin_name}: PLUGIN.md must not be empty')
+    require(
+        not body.startswith('---\n') and not body.startswith('---\r\n'),
+        f'{plugin_name}: PLUGIN.md must not include YAML frontmatter (metadata lives in plugin.json)',
+    )
+    chars = utf16_len(body)
+    require(
+        chars <= MAX_PLUGIN_MD_CHARS,
+        f'{plugin_name}: PLUGIN.md is {chars} UTF-16 code units, exceeding the {MAX_PLUGIN_MD_CHARS}-char budget',
+    )
+    sections = parse_plugin_md_sections(body, plugin_name)
+    require(
+        NEGATIVE_BOUNDARY_RE.search(sections['Activation & Boundaries']),
+        f'{plugin_name}: PLUGIN.md "## Activation & Boundaries" must explicitly state when to stay inactive / out of scope',
+    )
+    for pattern in DISALLOWED_PLUGIN_MD_OVERRIDES:
+        require(
+            not pattern.search(body),
+            f'{plugin_name}: PLUGIN.md must not override global persona, language, or Agent profile rules ({pattern.pattern})',
+        )
+    validate_plugin_md_paths(bundle, plugin_name, body)
+    return chars, sections
+
+
+def validate_cli_references(bundle: Path, root: Path):
     for file_path in sorted(bundle.rglob('*')):
         if not file_path.is_file():
             continue
@@ -116,7 +197,7 @@ def validate_cli_references(bundle, root):
             )
 
 
-def validate(root):
+def validate(root: Path):
     root = root.resolve()
     for path in root.rglob('*'):
         if '.git' in path.relative_to(root).parts:
@@ -136,8 +217,9 @@ def validate(root):
     require('(README.md)' in readmes[1], 'Chinese README must link to English')
 
     plugin_names = set(root_names)
-    total_skills = 0
+    total_chars = 0
     total_mcps = 0
+    seen_mcp_slugs = {}
 
     for name in root_names:
         bundle = root / 'plugins' / name
@@ -159,62 +241,40 @@ def validate(root):
                 f'{name} (plugin.json): description is required')
         require(manifest.get('license') == 'Apache-2.0', f'{name} (plugin.json): license must be Apache-2.0')
         require('apps' not in manifest, f'{name} (plugin.json): unsupported apps field is not allowed')
-        require(manifest.get('skills') == './skills/', f'{name} (plugin.json): skills must be ./skills/')
+        require('skills' not in manifest, f'{name} (plugin.json): legacy skills field is not allowed; use PLUGIN.md')
 
         mcp_file = bundle / '.mcp.json'
         has_mcp_file = mcp_file.is_file()
         if has_mcp_file:
             require(manifest.get('mcpServers') == './.mcp.json',
                     f'{name} (plugin.json): mcpServers must be "./.mcp.json" when .mcp.json is present')
-            validate_mcp_file(mcp_file, name)
-            total_mcps += len(read_object(mcp_file)['mcpServers'])
+            total_mcps += validate_mcp_file(mcp_file, name, seen_mcp_slugs)
         else:
             require('mcpServers' not in manifest,
                     f'{name} (plugin.json): mcpServers declared without .mcp.json')
 
-        skills = bundle / 'skills'
-        require(skills.is_dir(), f'{name}: missing skills directory')
-        directories = sorted(skills.iterdir())
-        require(directories, f'{name}: at least one skill is required')
-        plugin_skill_names = set()
-        for skill in directories:
-            require(skill.is_dir() and NAME.fullmatch(skill.name), f'{skill}: invalid skill directory')
-            require(skill.name not in plugin_skill_names, f'{name}: duplicate skill: {skill.name}')
-            require(not (skill / 'agents').exists(),
-                    f'{skill}: external host metadata directory "agents" is not allowed')
-            plugin_skill_names.add(skill.name)
-            total_skills += 1
-            try:
-                body = (skill / 'SKILL.md').read_text(encoding='utf-8')
-            except OSError as error:
-                raise ValueError(f'{skill}: missing SKILL.md') from error
-            parts = body.split('---', 2)
-            require(len(parts) == 3 and not parts[0].strip(), f'{skill}: missing YAML frontmatter')
-            name_match = re.search(r'^name:[ \t]*([^\r\n]*)$', parts[1], re.M)
-            require(name_match, f'{skill}: frontmatter name is required')
-            parsed_name = parse_yaml_single_line_scalar(name_match[1], skill, 'name')
-            require(parsed_name == skill.name, f'{skill}: frontmatter name must match directory')
-            description = re.search(r'^description:[ \t]*(\S[^\r\n]*)$', parts[1], re.M)
-            require(description, f'{skill}: description is required')
-            parsed_description = parse_yaml_single_line_scalar(description[1], skill, 'description')
-            require(len(parsed_description.encode('utf-16-le')) // 2 <= 300,
-                    f'{skill}: description must fit the 300 UTF-16-unit injection limit')
-            require(parts[2].strip(), f'{skill}: instructions are required')
+        chars, _sections = validate_plugin_md(bundle, name)
+        total_chars += chars
 
         for readme in readmes:
             require(f'(plugins/{name})' in readme, f'{name}: missing README catalog link')
 
         validate_cli_references(bundle, root)
 
+    require(
+        total_chars <= MAX_COMBINED_DOMAIN_ROLES_CHARS,
+        f'Combined PLUGIN.md size across all plugins is {total_chars} chars, exceeding the {MAX_COMBINED_DOMAIN_ROLES_CHARS}-char co-mount budget',
+    )
+
     on_disk = {p.name for p in (root / 'plugins').iterdir() if p.is_dir()}
     require(on_disk == plugin_names, 'every plugin directory must be registered exactly once')
-    return len(plugin_names), total_skills, total_mcps
+    return len(plugin_names), total_chars, total_mcps
 
 
 if __name__ == '__main__':
     try:
-        plugins, skills, mcps = validate(Path(__file__).resolve().parents[1])
+        plugins, total_chars, mcps = validate(Path(__file__).resolve().parents[1])
     except (ValueError, OSError) as error:
         print(f'Validation failed: {error}', file=sys.stderr)
         sys.exit(1)
-    print(f'Validated {plugins} plugins, {skills} skills, and {mcps} MCP server declaration(s).')
+    print(f'Validated {plugins} plugins ({total_chars} combined PLUGIN.md chars) and {mcps} MCP server declaration(s).')

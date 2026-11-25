@@ -1,12 +1,11 @@
 {
   "name": "git-workflows",
-  "version": "1.0.0",
-  "description": "Write AI-readable commit messages and actionable pull-request descriptions.",
+  "version": "2.0.0",
+  "description": "Author AI-readable conventional commit messages and reviewable pull-request descriptions.",
   "license": "Apache-2.0",
   "keywords": [
     "git",
     "commit",
     "pull-request"
-  ],
-  "skills": "./skills/"
+  ]
 }

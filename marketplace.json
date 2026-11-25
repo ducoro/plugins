@@ -10,7 +10,7 @@
         "source": "local",
         "path": "./plugins/starter-template"
       },
-      "description": "Minimal reference plugin demonstrating a standard Skill and MCP server declaration.",
+      "description": "Minimal reference plugin demonstrating PLUGIN.md domain role structure, on-demand references, and an MCP server declaration.",
       "category": "Templates"
     },
     {
@@ -37,7 +37,7 @@
         "source": "local",
         "path": "./plugins/git-workflows"
       },
-      "description": "Write AI-readable commit messages and actionable pull-request descriptions.",
+      "description": "Author AI-readable conventional commit messages and reviewable pull-request descriptions.",
       "category": "Developer Tools"
     },
     {
@@ -46,7 +46,7 @@
         "source": "local",
         "path": "./plugins/content-operations"
       },
-      "description": "End-to-end multi-platform content operations loop covering topic research, media production, per-platform playbooks and protocols, engagement triage, analytics retrospectives, and interactive boards.",
+      "description": "End-to-end multi-platform content operations role covering topic research, media production, 14 platform playbooks, engagement triage, analytics retrospectives, and interactive boards.",
       "category": "Content & Marketing"
     }
   ]

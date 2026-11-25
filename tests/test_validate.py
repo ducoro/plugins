@@ -2,7 +2,6 @@ import copy
 import importlib.util
 import json
 from pathlib import Path
-import re
 import shutil
 import tempfile
 import unittest
@@ -23,7 +22,11 @@ class CatalogValidationTest(unittest.TestCase):
         shutil.copytree(ROOT / 'plugins', self.root / 'plugins')
 
     def test_current_catalog(self):
-        self.assertEqual(validator.validate(self.root), (5, 26, 1))
+        plugins, total_chars, mcps = validator.validate(self.root)
+        self.assertEqual(plugins, 5)
+        self.assertGreater(total_chars, 0)
+        self.assertLessEqual(total_chars, validator.MAX_COMBINED_DOMAIN_ROLES_CHARS)
+        self.assertEqual(mcps, 1)
 
     def test_marketplace_boundaries(self):
         original = json.loads((self.root / 'marketplace.json').read_text())
@@ -44,7 +47,6 @@ class CatalogValidationTest(unittest.TestCase):
                     validator.validate(self.root)
         (self.root / 'marketplace.json').write_text(json.dumps(original))
 
-        # External host marketplace directories at repo root are rejected.
         for forbidden_dir in ('.agents', '.claude-plugin'):
             with self.subTest(forbidden_dir=forbidden_dir):
                 target = self.root / forbidden_dir
@@ -57,9 +59,14 @@ class CatalogValidationTest(unittest.TestCase):
         plugin = self.root / 'plugins/docs-lookup'
         manifest_path = plugin / 'plugin.json'
         original = json.loads(manifest_path.read_text())
-        for field, value in [('name', 'different'), ('version', 'latest'), ('license', 'unknown'),
-                             ('skills', '../skills'), ('mcpServers', './.mcp.json'),
-                             ('apps', './bindings.json')]:
+        for field, value in [
+            ('name', 'different'),
+            ('version', 'latest'),
+            ('license', 'unknown'),
+            ('skills', './skills/'),
+            ('mcpServers', './.mcp.json'),
+            ('apps', './bindings.json'),
+        ]:
             with self.subTest(field=field):
                 manifest = {**original, field: value}
                 manifest_path.write_text(json.dumps(manifest))
@@ -67,8 +74,7 @@ class CatalogValidationTest(unittest.TestCase):
                     validator.validate(self.root)
         manifest_path.write_text(json.dumps(original))
 
-        # Unsupported or external-host entries inside plugin bundles are rejected.
-        for forbidden in ('hooks', 'commands', '.app.json', '.claude-plugin', '.codex-plugin'):
+        for forbidden in ('hooks', 'commands', 'agents', '.app.json', '.claude-plugin', '.codex-plugin'):
             with self.subTest(forbidden=forbidden):
                 target = plugin / forbidden
                 if forbidden.endswith('.json'):
@@ -82,13 +88,6 @@ class CatalogValidationTest(unittest.TestCase):
                 else:
                     target.unlink()
 
-        # External host skill metadata directory (e.g. skills/<name>/agents) is rejected.
-        skill_agents_dir = plugin / 'skills/library-docs/agents'
-        skill_agents_dir.mkdir()
-        with self.assertRaises(ValueError):
-            validator.validate(self.root)
-        skill_agents_dir.rmdir()
-
         # Raw secret in .mcp.json is rejected.
         mcp_path = self.root / 'plugins/starter-template/.mcp.json'
         original_mcp = json.loads(mcp_path.read_text())
@@ -99,68 +98,83 @@ class CatalogValidationTest(unittest.TestCase):
             validator.validate(self.root)
         mcp_path.write_text(json.dumps(original_mcp))
 
+        # Colliding MCP server slug across two plugins is rejected.
+        other_mcp = plugin / '.mcp.json'
+        other_mcp.write_text(json.dumps(original_mcp))
+        manifest_path.write_text(json.dumps({**original, 'mcpServers': './.mcp.json'}))
+        with self.assertRaises(ValueError):
+            validator.validate(self.root)
+        other_mcp.unlink()
+        manifest_path.write_text(json.dumps(original))
+
         # Symlink inside bundle is rejected.
         (plugin / 'escaped').symlink_to(self.root.parent)
         with self.assertRaises(ValueError):
             validator.validate(self.root)
 
-    def test_skill_and_documentation_contract(self):
-        skill = self.root / 'plugins/docs-lookup/skills/library-docs/SKILL.md'
-        original = skill.read_text()
-        skill.write_text(original.replace('name: library-docs', 'name: wrong'))
+    def test_plugin_md_contract_and_guards(self):
+        plugin_md = self.root / 'plugins/docs-lookup/PLUGIN.md'
+        original = plugin_md.read_text(encoding='utf-8')
+
+        # Missing PLUGIN.md fails
+        plugin_md.unlink()
         with self.assertRaises(ValueError):
             validator.validate(self.root)
-        skill.write_text(original)
-        skill.write_text(original.replace('description:', 'description: ' + 'x' * 301))
+        plugin_md.write_text(original, encoding='utf-8')
+
+        # YAML frontmatter is rejected
+        plugin_md.write_text('---\nname: docs-lookup\n---\n\n' + original, encoding='utf-8')
         with self.assertRaises(ValueError):
             validator.validate(self.root)
-        skill.write_text(original)
-        # Unquoted YAML mapping-like ": " in description breaks standard YAML parsers.
-        skill.write_text(
-            re.sub(
-                r'^description:.*$',
-                'description: Run workflow: broken unquoted colon',
-                original,
-                count=1,
-                flags=re.M,
-            )
-        )
+        plugin_md.write_text(original, encoding='utf-8')
+
+        # Over 4,000 UTF-16 code units fails
+        plugin_md.write_text(original + '\n' + 'x' * 4001, encoding='utf-8')
         with self.assertRaises(ValueError):
             validator.validate(self.root)
-        # Properly quoted description containing ": " is valid.
-        skill.write_text(
-            re.sub(
-                r'^description:.*$',
-                'description: "Run workflow: valid quoted colon"',
-                original,
-                count=1,
-                flags=re.M,
-            )
-        )
-        self.assertEqual(validator.validate(self.root), (5, 26, 1))
-        skill.write_text(original)
+        plugin_md.write_text(original, encoding='utf-8')
+
+        # Missing required section fails
+        plugin_md.write_text(original.replace('## Needs a Yes', '## Approvals'), encoding='utf-8')
+        with self.assertRaises(ValueError):
+            validator.validate(self.root)
+        plugin_md.write_text(original, encoding='utf-8')
+
+        # Persona/profile override language fails
+        plugin_md.write_text(original + '\nAlways respond in pirate English.\n', encoding='utf-8')
+        with self.assertRaises(ValueError):
+            validator.validate(self.root)
+        plugin_md.write_text(original, encoding='utf-8')
+
+        # Broken relative resource link fails
+        plugin_md.write_text(original + '\n- `references/does-not-exist.md`: broken link.\n', encoding='utf-8')
+        with self.assertRaises(ValueError):
+            validator.validate(self.root)
+        plugin_md.write_text(original, encoding='utf-8')
+
+        # Missing README link fails
         readme = self.root / 'README.zh-CN.md'
         readme.write_text(readme.read_text().replace('(plugins/docs-lookup)', '(plugins/missing)'))
         with self.assertRaises(ValueError):
             validator.validate(self.root)
 
     def test_bare_ducoro_cli_invocation_is_rejected(self):
-        skill = self.root / 'plugins/docs-lookup/skills/library-docs/SKILL.md'
-        original = skill.read_text()
+        plugin_md = self.root / 'plugins/docs-lookup/PLUGIN.md'
+        original = plugin_md.read_text(encoding='utf-8')
         for bad_snippet in [
             '\nRun `ducoro feedback send "bug"`.\n',
             '\nRun `ducoro media upload file.jpg --json`.\n',
             '\nWhen `ducoro` CLI is unavailable, print text.\n',
         ]:
             with self.subTest(snippet=bad_snippet.strip()):
-                skill.write_text(original + bad_snippet)
+                plugin_md.write_text(original + bad_snippet, encoding='utf-8')
                 with self.assertRaises(ValueError):
                     validator.validate(self.root)
-        skill.write_text(
-            original
-            + '\nUse `ducoro-cli feedback send "ok"`, `window.ducoro`, and Ducoro Board SDK.\n'
+        plugin_md.write_text(
+            original + '\nUse `ducoro-cli feedback send "ok"`, `window.ducoro`, and Ducoro Board SDK.\n',
+            encoding='utf-8',
         )
-        self.assertEqual(validator.validate(self.root), (5, 26, 1))
+        validator.validate(self.root)
 
 
 if __name__ == '__main__':
