@@ -1,18 +1,22 @@
 # Customer Support Operating Loop
 
-## 1. Workspace Discovery & Bootstrap
+## 1. Directory Resolution (Workspace Is Fallback-Only)
 
 ```sh
-ducoro-cli local-folder list --json
 ducoro-cli space resources get <space-id> --json
+ducoro-cli local-folder list --json
 ```
-If slug `customer-support-ops` exists, reuse it. Otherwise ask the human before initializing `~/.ducoro/workspaces/customer-support-ops` (never inside `~/.ducoro/local-folders/`):
-```sh
-python3 scripts/init_workspace.py ~/.ducoro/workspaces/customer-support-ops
-ducoro-cli local-folder register customer-support-ops ~/.ducoro/workspaces/customer-support-ops \
-  --name "Customer Support Ops" --desc "Shared customer tickets, SLA tracking, root causes, and guarded reply logs"
-ducoro-cli local-folder inspect customer-support-ops
-```
+Follow this strict priority based on the human's actual setup:
+1. **Existing folder first**: If the human already keeps a support/feedback folder (or this Space already mounts one), use it directly—never create a second workspace.
+2. **Single-Space default**: If triage runs inside one Space without cross-Space file sharing, store files directly inside this Space's own `files/` (for example `files/support-ops/`). Run `python3 scripts/init_workspace.py <data-dir>` only when initializing the directory schema for the first time.
+3. **Cross-Space fallback only**: Only when multiple Spaces must share the same files and no existing folder exists yet, ask the human before creating a shared directory scoped to that product/team (e.g., `~/.ducoro/workspaces/<product-support-slug>`, never inside `~/.ducoro/local-folders/`) and registering it as a global Local Folder:
+   ```sh
+   python3 scripts/init_workspace.py ~/.ducoro/workspaces/<product-support-slug>
+   ducoro-cli local-folder register <product-support-slug> <resolved-absolute-path> \
+     --name "<Product Support Ops>" --desc "Shared customer tickets, SLA tracking, root causes, and guarded reply logs"
+   ducoro-cli local-folder inspect <product-support-slug>
+   ```
+   Multiple Bots working on the same product share that one directory—never create one workspace per Bot, and never merge unrelated products into one hardcoded slug.
 Outside Ducoro, fall back to `CUSTOMER_SUPPORT_OPS_ROOT`.
 
 ## 2. Single-Writer Ownership
@@ -44,5 +48,5 @@ Outside Ducoro, fall back to `CUSTOMER_SUPPORT_OPS_ROOT`.
 
 If a bundled script or upstream feed schema breaks, show the human a redacted summary first, then submit via:
 ```sh
-ducoro-cli feedback send "[plugin:customer-support-ops@1.0.0] [module:<module>] [location:<step>] <redacted details>"
+ducoro-cli feedback send "[plugin:customer-support-ops@1.1.1] [module:<module>] [location:<step>] <redacted details>"
 ```

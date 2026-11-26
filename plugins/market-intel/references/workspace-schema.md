@@ -1,6 +1,6 @@
-# Market Intel Workspace Schema
+# Market Intel Data Schema
 
-Default Local Folder path: `~/.ducoro/workspaces/market-intel` (slug: `market-intel`).
+This directory layout works inside the human's existing research folder, a single Space's `files/` directory, or an optional cross-Space Local Folder.
 
 ```text
 market-intel/

@@ -36,7 +36,7 @@ Stop and hand back to the human immediately (via Inbox / direct confirmation) wh
 ## Multi-Workspace Relay Handoff
 
 When separate Spaces or workspaces handle monitoring, drafting, publishing, and analytics:
-- **Shared root discovery**: register the canonical workspace once as a global Local Folder (recommended slug `content-ops`, default path `~/.ducoro/workspaces/content-ops`; use an external directory only if the user explicitly asks to store it outside `~/.ducoro/`). Every Space discovers its resolved path automatically via `ducoro-cli local-folder list --json` / `ducoro-cli space resources get <space-id> --json`.
+- **Shared root discovery (only when relaying across multiple Spaces)**: prefer the human's existing folder if one is already mounted; otherwise register a shared folder once per initiative as a global Local Folder (after human confirmation, never inside `~/.ducoro/local-folders/`). Every participating Space discovers its resolved path via `ducoro-cli space resources get <space-id> --json` / `ducoro-cli local-folder list --json`. Single-Space runs use the Space's own `files/` directly without creating a global Local Folder.
 - **Cross-Space handoff**: notify the downstream Space via `ducoro-cli space send` instead of relying on silent file polling.
 - **Single-writer ownership** (prevents lost updates on mutable JSON files):
   - **Monitoring / Engagement / Analytics workspace**: writes `inbox/*.md`, `engagement/inbox.json`, `analytics/snapshots.jsonl`, `analytics/retros/*.md`.

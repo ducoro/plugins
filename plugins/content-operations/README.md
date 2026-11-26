@@ -50,10 +50,10 @@ All boards run standalone as static HTML with local data and progressively enhan
 
 ## Quick Start
 
-1. Mount `content-operations` on your Bot; its root `PLUGIN.md` is injected into `<you><domain_roles>` as the level-1 operating loop and directory map. Follow `skills/content-ops-loop/SKILL.md` to check `ducoro-cli local-folder list --json`, confirm with the human before initializing `~/.ducoro/workspaces/content-ops` (or an external folder if requested) via `scripts/init_workspace.py`, and register it globally with `ducoro-cli local-folder register content-ops <path>` so every Space shares one source of truth.
+1. Mount `content-operations` on your Bot; its root `PLUGIN.md` is injected into `<you><domain_roles>` as a one-hop onboarding guide and level-1 directory map. Start directly in the human's existing marketing/content folder or the current Space's `files/`; only create and register a global Local Folder as a fallback when multiple Spaces need to share files and no existing folder fits.
 2. Fill in `brand-profile.md` and `accounts.json` (credentials stay in environment variables—never commit secrets).
 3. Drill down on demand into only the regional radar (`topic-research-cn` or `topic-research-global`), matching format workshop (`longform-writing`, `shortform-social`, or `video-production`), and target platform package(s) listed in `references/platforms.md`.
-4. Refresh Space board snapshots from the Local Folder with `scripts/build_boards.py <workspace>` (or `--board <name> --board-dir <space-work-root>/boards/<board-id>`) and verify integrity with `scripts/validate_workspace.py <workspace>`.
+4. Refresh Space board snapshots from the active data directory with `scripts/build_boards.py <data-dir>` (or `--board <name> --board-dir <space-work-root>/boards/<board-id>`) and verify integrity with `scripts/validate_workspace.py <data-dir>`.
 
 ## Problem Reporting
 

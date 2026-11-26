@@ -1,6 +1,6 @@
 {
   "name": "content-operations",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "End-to-end multi-platform content operations role covering topic research, media production, 14 platform playbooks, engagement triage, analytics retrospectives, and interactive boards.",
   "license": "Apache-2.0"
 }

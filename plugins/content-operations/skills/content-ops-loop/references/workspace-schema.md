@@ -1,6 +1,6 @@
-# Workspace Schema
+# Content Operations Data Schema
 
-The file-backed `content-ops/` directory is the single source of truth across sessions and split workspaces.
+This directory layout works inside the human's existing folder, a single Space's `files/` directory, or an optional cross-Space Local Folder.
 
 ## Directory Layout
 

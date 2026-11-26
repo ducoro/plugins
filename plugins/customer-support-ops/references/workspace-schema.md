@@ -1,6 +1,6 @@
-# Customer Support Ops Workspace Schema
+# Customer Support Ops Data Schema
 
-Default Local Folder path: `~/.ducoro/workspaces/customer-support-ops` (slug: `customer-support-ops`).
+This directory layout works inside the human's existing support folder, a single Space's `files/` directory, or an optional cross-Space Local Folder.
 
 ```text
 customer-support-ops/

@@ -9,17 +9,17 @@
 
 ## 2. Provisioning & One-Way Projection
 
-Business truth lives in the shared `market-intel` Local Folder. Each Ducoro Space board keeps its own isolated `assets/data.json` projected one-way from the workspace:
+Business truth lives in the chosen data directory (the human's existing folder, this Space's `files/`, or an optional cross-Space Local Folder). Each Ducoro Space board keeps its own isolated `assets/data.json` projected one-way from `<data-dir>`:
 
 ```sh
 # First-time setup in a Space board created via `ducoro-cli board new --title "Market Intel Radar"`
-python3 scripts/build_boards.py ~/.ducoro/workspaces/market-intel \
+python3 scripts/build_boards.py <data-dir> \
   --board radar-board \
   --board-dir <space-work-root>/boards/<board-id> \
   --overwrite-templates
 
 # Routine data refresh (updates only assets/data.json for flicker-free revalidate)
-python3 scripts/build_boards.py ~/.ducoro/workspaces/market-intel \
+python3 scripts/build_boards.py <data-dir> \
   --board radar-board \
   --board-dir <space-work-root>/boards/<board-id>
 ```

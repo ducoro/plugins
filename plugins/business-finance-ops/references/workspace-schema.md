@@ -1,6 +1,6 @@
-# Business Finance Ops Workspace Schema
+# Business Finance Ops Data Schema
 
-Default Local Folder path: `~/.ducoro/workspaces/business-finance-ops` (slug: `business-finance-ops`).
+This directory layout works inside the human's existing finance folder, a single Space's `files/` directory, or an optional cross-Space Local Folder.
 
 ```text
 business-finance-ops/

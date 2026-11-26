@@ -1,18 +1,22 @@
 # Finance Operating Loop
 
-## 1. Workspace Discovery & Bootstrap
+## 1. Directory Resolution (Workspace Is Fallback-Only)
 
 ```sh
-ducoro-cli local-folder list --json
 ducoro-cli space resources get <space-id> --json
+ducoro-cli local-folder list --json
 ```
-Reuse slug `business-finance-ops` if registered. Otherwise ask the human before initializing `~/.ducoro/workspaces/business-finance-ops` (never inside `~/.ducoro/local-folders/`):
-```sh
-python3 scripts/init_workspace.py ~/.ducoro/workspaces/business-finance-ops --base-currency USD
-ducoro-cli local-folder register business-finance-ops ~/.ducoro/workspaces/business-finance-ops \
-  --name "Business Finance Ops" --desc "Shared Decimal financial ledger, FX cache, budgets, and anomaly audits"
-ducoro-cli local-folder inspect business-finance-ops
-```
+Follow this strict priority based on the human's actual setup:
+1. **Existing folder first**: If the human already keeps a finance/accounting folder (or this Space already mounts one), use it directly—never create a second workspace.
+2. **Single-Space default**: If bookkeeping runs inside one Space without cross-Space file sharing, store files directly inside this Space's own `files/` (for example `files/finance/`). Run `python3 scripts/init_workspace.py <data-dir> --base-currency USD` only when initializing the ledger schema for the first time.
+3. **Cross-Space fallback only**: Only when multiple Spaces must share the same ledger files and no existing folder exists yet, ask the human before creating a shared directory scoped to that business entity (e.g., `~/.ducoro/workspaces/<entity-finance-slug>`, never inside `~/.ducoro/local-folders/`) and registering it as a global Local Folder:
+   ```sh
+   python3 scripts/init_workspace.py ~/.ducoro/workspaces/<entity-finance-slug> --base-currency USD
+   ducoro-cli local-folder register <entity-finance-slug> <resolved-absolute-path> \
+     --name "<Entity Finance>" --desc "Shared Decimal financial ledger, FX cache, budgets, and anomaly audits"
+   ducoro-cli local-folder inspect <entity-finance-slug>
+   ```
+   Multiple Bots working on the same entity share that one directory—never create one workspace per Bot, and never merge unrelated companies/entities into one hardcoded slug.
 Outside Ducoro, fall back to `BUSINESS_FINANCE_OPS_ROOT`.
 
 ## 2. Exact-Arithmetic Iron Rule
@@ -35,5 +39,5 @@ Outside Ducoro, fall back to `BUSINESS_FINANCE_OPS_ROOT`.
 - **No autonomous money movement**: Never initiate transfers, payments, refunds, or subscription cancellations without explicit human execution/approval.
 - Report script or parser format regressions (redacted, after human approval) via:
   ```sh
-  ducoro-cli feedback send "[plugin:business-finance-ops@1.0.0] [module:<module>] [location:<step>] <redacted details>"
+  ducoro-cli feedback send "[plugin:business-finance-ops@1.1.1] [module:<module>] [location:<step>] <redacted details>"
   ```

@@ -13,7 +13,7 @@ Continuous competitor, company, and sector intelligence plugin for Ducoro.
 
 - `PLUGIN.md` — Domain role contract and level-1 resource map.
 - `playbooks/` — Operational loop, verified source adapters, and board/battlecard workflows.
-- `references/workspace-schema.md` — Shared `market-intel` workspace file contracts.
+- `references/workspace-schema.md` — Data file contracts (`watchlist.json`, `events.jsonl`, snapshots, battlecards).
 - `scripts/` — Zero-dependency Python 3 stdlib scripts (`init_workspace.py`, `fetch_sources.py`, `snapshot_diff.py`, `evidence_gate.py`, `build_boards.py`).
 - `assets/boards/` — Standalone + Ducoro Board SDK interactive dashboards (`radar-board`, `battlecard-board`).
 

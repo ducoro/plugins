@@ -3,7 +3,7 @@
 ## 1. Running Exact P&L, Budget, Anomaly & Runway Analysis
 
 ```sh
-python3 scripts/anomaly_and_runway.py ~/.ducoro/workspaces/business-finance-ops \
+python3 scripts/anomaly_and_runway.py <data-dir> \
   --month 2026-11 \
   --write-report
 ```

@@ -60,24 +60,23 @@ Never extract cookies, call reverse-engineered private APIs, or bypass login/CAP
 
 ## Workflow
 
-1. **Locate or bootstrap the shared workspace (Ducoro Local Folder).**
-   - First check whether a content-operations Local Folder is already registered and reuse it:
+1. **Resolve the working directory (existing folder or Space `files/` first; global Workspace is fallback-only).**
+   - First inspect what the human and Space already have:
      ```sh
-     ducoro-cli local-folder list --json
      ducoro-cli space resources get <space-id> --json
+     ducoro-cli local-folder list --json
      ```
-   - If none exists yet, **ask the user before creating and registering it**:
-     - **Default & recommended location**: `~/.ducoro/workspaces/content-ops` (kept cleanly inside `~/.ducoro/workspaces/`, never inside `~/.ducoro/local-folders/` which stores folder registration metadata).
-     - **User-chosen external location**: only place the workspace outside `~/.ducoro/` if the user explicitly asks for another host directory (for example, a folder they prefer to browse directly in Finder).
-     - Explain that registering the directory as a global Local Folder (`content-ops`) makes it visible to every Space on this machine so single-Space and multi-Space relay workflows share the exact same source of truth.
-   - After the user confirms the path, initialize and register it:
-     ```sh
-     python3 scripts/init_workspace.py ~/.ducoro/workspaces/content-ops --timezone <IANA-tz>
-     ducoro-cli local-folder register content-ops <resolved-absolute-path> --name "Content Operations" --desc "Shared multi-platform content operations workspace (topics, drafts, calendar, publish log, analytics)"
-     ducoro-cli local-folder inspect content-ops
-     ```
-     (Replace `~/.ducoro/workspaces/content-ops` with the user's chosen path only if they requested an external folder.)
-   - Read `brand-profile.md` and `accounts.json`. Never hardcode credentials; `accounts.json` stores only environment variable names (e.g., `X_ACCESS_TOKEN`), never raw tokens.
+   - Follow this strict priority based on the human's actual setup:
+     1. **Human's existing folder (first choice)**: If the human already keeps a marketing/content folder (or this Space already mounts one), use it directly—never create a second workspace.
+     2. **Current Space `files/` (default for single-Space work)**: If this initiative runs inside one Space and does not need cross-Space file sharing, store operational files directly inside this Space's own `files/` (for example `files/content-ops/`). Run `python3 scripts/init_workspace.py <data-dir> --timezone <IANA-tz>` only when scaffolding the standard subfolders for the first time.
+     3. **Cross-Space fallback only**: Only when the human explicitly wants multiple Spaces to share the same files and has no existing folder yet, ask for confirmation before creating a shared folder scoped to that initiative/brand (e.g., `~/.ducoro/workspaces/<initiative-slug>`, never inside `~/.ducoro/local-folders/`) and registering it as a global Local Folder:
+        ```sh
+        python3 scripts/init_workspace.py ~/.ducoro/workspaces/<initiative-slug> --timezone <IANA-tz>
+        ducoro-cli local-folder register <initiative-slug> <resolved-absolute-path> --name "<Initiative Name>" --desc "Shared content operations folder for this initiative"
+        ducoro-cli local-folder inspect <initiative-slug>
+        ```
+        Multiple Bots working on the same initiative share that one directory—never create one workspace per Bot, and never merge unrelated brands into one hardcoded slug.
+   - Read `brand-profile.md` and `accounts.json` if present. Never hardcode credentials; `accounts.json` stores only environment variable names (e.g., `X_ACCESS_TOKEN`), never raw tokens.
 2. **Execute the requested stage(s).**
    - **Intake & topics**: collect regional signals via Connectors (`ducoro-cli mcp catalog`), `topic-research-cn`, or `topic-research-global`, run `scripts/signal_gate.py ingest` + `gate --strict` (sharding large feeds across subagents), score and annotate fuzzy repeats via `scripts/score_topics.py`, and pause at **Approval Gate 1** (or stop honestly on `nothing_solid`).
    - **Production & adaptation**: load only the matching format workshop (`longform-writing`, `shortform-social`, or `video-production`) plus the target `platform-<name>` skill(s) to produce native `variants/<platform>.md` and media assets; validate every variant with `scripts/check_media_specs.py`.
@@ -89,7 +88,7 @@ Never extract cookies, call reverse-engineered private APIs, or bypass login/CAP
    python3 scripts/diagnose.py --workspace <content-ops-path> --json
    python3 scripts/build_boards.py <content-ops-path>
    ```
-   - Canonical data stays in the registered Local Folder (default `~/.ducoro/workspaces/content-ops`), while each Space Board lives under that Space's `boards/<board-id>/`. Create each Board with `ducoro-cli board new --space <space-id> --title "<Board Title>" --json`, then project data from the Local Folder into the Board's `assets/data.json` via `python3 scripts/build_boards.py <local-folder-path> --board <board-name> --board-dir <space-work-root>/boards/<board-id>` (add `--overwrite-templates` on first assembly) and verify layout/snapshots with `ducoro-cli render check --file <board-dir>/index.html --json` / `ducoro-cli render shot --file <board-dir>/index.html --json` before sharing links.
+   - Canonical data stays in the chosen data directory (the human's existing folder, this Space's `files/`, or an optional cross-Space Local Folder), while each Space Board lives under that Space's `boards/<board-id>/`. Create each Board with `ducoro-cli board new --space <space-id> --title "<Board Title>" --json`, then project data into the Board's `assets/data.json` via `python3 scripts/build_boards.py <data-dir> --board <board-name> --board-dir <space-work-root>/boards/<board-id>` (add `--overwrite-templates` on first assembly) and verify layout/snapshots with `ducoro-cli render check --file <board-dir>/index.html --json` / `ducoro-cli render shot --file <board-dir>/index.html --json` before sharing links.
 
 ## Hard Guardrails
 

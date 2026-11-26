@@ -1,21 +1,24 @@
 # Intelligence Operating Loop
 
-## 1. Workspace Discovery & Bootstrap
+## 1. Directory Resolution (Workspace Is Fallback-Only)
 
-1. Inspect existing registrations first:
+1. Inspect existing Space resources and folders first:
    ```sh
-   ducoro-cli local-folder list --json
    ducoro-cli space resources get <space-id> --json
+   ducoro-cli local-folder list --json
    ```
-2. If slug `market-intel` already exists, reuse its resolved path.
-3. If absent, ask the human for confirmation before creating `~/.ducoro/workspaces/market-intel` (or a human-chosen directory; never write inside `~/.ducoro/local-folders/`), then initialize and register it:
-   ```sh
-   python3 scripts/init_workspace.py ~/.ducoro/workspaces/market-intel
-   ducoro-cli local-folder register market-intel ~/.ducoro/workspaces/market-intel \
-     --name "Market Intel" --desc "Shared competitor, company, and sector intelligence workspace"
-   ducoro-cli local-folder inspect market-intel
-   ```
-4. Outside Ducoro, fall back to `MARKET_INTEL_ROOT`.
+2. Follow this strict priority based on the human's actual setup:
+   - **Existing folder first**: If the human already keeps a research/intelligence folder (or this Space already mounts one), use it directly—never create a second workspace.
+   - **Single-Space default**: If tracking runs inside one Space without cross-Space file sharing, store files directly inside this Space's own `files/` (for example `files/market-intel/`). Run `python3 scripts/init_workspace.py <data-dir>` only when initializing the directory schema for the first time.
+   - **Cross-Space fallback only**: Only when multiple Spaces must share the same files and no existing folder exists yet, ask the human for confirmation before creating a shared directory scoped to that initiative (e.g., `~/.ducoro/workspaces/<initiative-slug>`, never inside `~/.ducoro/local-folders/`) and registering it as a global Local Folder:
+     ```sh
+     python3 scripts/init_workspace.py ~/.ducoro/workspaces/<initiative-slug>
+     ducoro-cli local-folder register <initiative-slug> <resolved-absolute-path> \
+       --name "<Initiative Intel>" --desc "Shared competitor and sector intelligence folder for this initiative"
+     ducoro-cli local-folder inspect <initiative-slug>
+     ```
+     Multiple Bots working on the same initiative share that one directory—never create one workspace per Bot, and never merge unrelated initiatives into one hardcoded slug.
+3. Outside Ducoro, fall back to `MARKET_INTEL_ROOT`.
 
 ## 2. Single-Writer Discipline (Multi-Space Safe)
 
@@ -57,5 +60,5 @@
 
 If a script crashes or an upstream public API schema changes (not local network outages), show the human a redacted report first and, once approved, submit via:
 ```sh
-ducoro-cli feedback send "[plugin:market-intel@1.0.0] [module:<module>] [location:<step>] <redacted details>"
+ducoro-cli feedback send "[plugin:market-intel@1.1.1] [module:<module>] [location:<step>] <redacted details>"
 ```
