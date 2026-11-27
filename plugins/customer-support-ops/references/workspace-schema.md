@@ -30,7 +30,7 @@ If `sla-policy.json` is absent, `triage_gate.py` and `reply_guard.py` fall back 
 ## Ticket Schema (`customer-support-ticket/1`)
 
 - `ticketId`: deterministic ID (`<channel>:<externalId>`)
-- `channel`: `"github_issues"` | `"appstore_ios"` | `"email"` | `"csv"` | `"connector"` | `"web"`
+- `channel`: e.g., `"github_issues"` | `"appstore_ios"` | `"email"` | `"discord"` | `"slack"` | `"csv"` | `"connector"` | `"computer_use"` | `"web"`
 - `externalId`: upstream ticket/issue/review/message ID
 - `customer`: sender/author identifier
 - `subject`: short title
