@@ -11,7 +11,7 @@
     <header class="ui-header" data-mark-ignore>
       <div>
         <h1 id="board-title" class="ui-title">Delivery &amp; Gate Board</h1>
-        <p id="board-subtitle" class="ui-subtitle">Real diff blast radius, objective gate checks, PR/CI status, and tamper-proof approval locks.</p>
+        <p id="board-subtitle" class="ui-subtitle">Real diff blast radius, objective gate checks, PR/CI status, and drift-proof SHA approval locks.</p>
       </div>
       <div class="ui-toolbar">
         <select id="kind-filter" class="ui-select" aria-label="Filter item kind">
@@ -68,7 +68,7 @@
 
     <section class="ui-section" data-card="approval-locks" data-card-title="SHA Approval Locks">
       <div class="ui-section-head">
-        <h2 class="ui-section-title">Tamper-Proof Approval Locks</h2>
+        <h2 class="ui-section-title">Drift-Proof SHA Approval Locks</h2>
         <span id="head-meta" class="ui-mono ui-muted">HEAD —</span>
       </div>
       <div class="ui-table-wrap">
@@ -145,8 +145,10 @@
         approvalsBody.innerHTML = approvals.map((ap) => {
           const tone = ap.status === 'valid' ? 'ui-badge-secondary' : 'ui-badge-destructive';
           const label = ap.status === 'valid' ? 'valid' : 'invalidated (changed)';
+          const riskTag = ap.risk ? ` <span class="ui-badge ui-badge-outline">${esc(ap.risk)}</span>` : '';
+          const waivedTag = ap.reviewWaived ? ' <span class="ui-badge ui-badge-warning">waived</span>' : '';
           return `<tr data-card="approval-${esc(ap.action)}" data-card-title="Approval: ${esc(ap.action)}" data-mark-item="approval-${esc(ap.action)}" data-mark-label="${esc(ap.action)} approval">
-            <td><strong>${esc(ap.action)}</strong></td>
+            <td><strong>${esc(ap.action)}</strong>${riskTag}${waivedTag}</td>
             <td>${esc(ap.approvedBy)}</td>
             <td class="ui-mono">${esc(ap.headSha)} / ${esc(ap.diffHash)}</td>
             <td><span class="ui-badge ${tone}">${esc(label)}</span></td>

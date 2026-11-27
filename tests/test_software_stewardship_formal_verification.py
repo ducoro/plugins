@@ -7,6 +7,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import importlib.util
 import itertools
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -34,8 +35,12 @@ repo_monitor = load_module('ss_repo_monitor', SCRIPTS / 'repo_monitor.py')
 build_boards = load_module('ss_build_boards', SCRIPTS / 'build_boards.py')
 
 
+GIT_ENV_STRIP = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES')
+
+
 def git(repo: Path, *args: str) -> str:
-    proc = subprocess.run(['git', '-C', str(repo), *args], capture_output=True, text=True, check=True)
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_STRIP}
+    proc = subprocess.run(['git', '-C', str(repo), *args], capture_output=True, text=True, env=env, check=True)
     return proc.stdout.strip()
 
 
@@ -444,7 +449,12 @@ class SoftwareStewardshipFormalTest(unittest.TestCase):
             # Without --waive-review at verify time, still blocked
             rc_waive_no, _ = change_gate.cmd_verify_release(repo, state_dir, 'release', 'main', risk='high')
             self.assertNotEqual(rc_waive_no, 0)
-            # With matching waiver at verify time, passes and records reviewWaived=True
+            # With a mismatched --waive-review reason, must stay blocked
+            rc_waive_mismatch, _ = change_gate.cmd_verify_release(
+                repo, state_dir, 'release', 'main', risk='high', waive_review='different reason',
+            )
+            self.assertNotEqual(rc_waive_mismatch, 0)
+            # With exact matching waiver at verify time, passes and records reviewWaived=True
             rc_waive_ok, waive_ok = change_gate.cmd_verify_release(
                 repo, state_dir, 'release', 'main', risk='high', waive_review='P0 outage hotfix',
             )
@@ -462,6 +472,110 @@ class SoftwareStewardshipFormalTest(unittest.TestCase):
             (repo / 'README.md').write_text('Never add `@ts-ignore` or `eslint-disable` in source files.\n', encoding='utf-8')
             clean_res = change_gate.scan_diff_blockers(repo, base='main')
             self.assertTrue(clean_res['ok'], clean_res)
+
+    def test_v1_1_regressions_untracked_dirs_lockfiles_trunk_base_monitor_and_board(self):
+        """Prove v1.1.0 fixes: nested untracked dir secrets, bun/yarn/uv/poetry locks, trunk main base, CI recovery, outages, revert regex, and board headSha fallback."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tdir = Path(tmp)
+            repo = tdir / 'trunk-repo'
+            state_dir = tdir / 'state'
+            init_sample_repo(repo)
+
+            # 1. Local trunk-only `main` (no origin/main) must auto-resolve to HEAD~1 rather than empty diff against `main`
+            (repo / 'src/feature.py').write_text('def revert_button():\n    return True\n', encoding='utf-8')
+            (repo / 'generated').mkdir()
+            (repo / 'generated/bundle.ts').write_text('\n'.join(f'export const v{i} = {i};' for i in range(600)) + '\n', encoding='utf-8')
+            git(repo, 'add', '.')
+            git(repo, 'commit', '-m', 'feat: add revert button in UI')
+            trunk_audit = repo_audit.audit_repo(repo)
+            self.assertEqual(trunk_audit['baseRef'], 'HEAD~1')
+            self.assertIn('src/feature.py', [f['path'] for f in trunk_audit['blastRadius']['files']])
+            # Generated output directories must not drown handwritten largeFiles
+            self.assertFalse(any(f['path'].startswith('generated/') for f in trunk_audit['largeFiles']))
+
+            # 2. Nested untracked directory containing a leaked secret MUST be caught by change_gate and counted by repo_audit
+            nested_dir = repo / 'brand_new_dir/sub'
+            nested_dir.mkdir(parents=True)
+            fake_aws = 'AKIA' + 'IOSFODNN7EXAMPLE'
+            (nested_dir / 'leak.py').write_text(f'KEY = "{fake_aws}"\n', encoding='utf-8')
+            diff_nested = change_gate.scan_diff_blockers(repo)
+            self.assertFalse(diff_nested['ok'])
+            self.assertTrue(any(b['rule'] == 'aws_access_key' and 'brand_new_dir/sub/leak.py' in b['file'] for b in diff_nested['blockers']))
+            audit_nested = repo_audit.audit_repo(repo)
+            self.assertIn('brand_new_dir/sub/leak.py', audit_nested['blastRadius']['untrackedFiles'])
+            (nested_dir / 'leak.py').unlink()
+
+            # 3. Board approval status must stay valid using gate-state.json alone (without audit.json or pulse.json)
+            rc_ev, _ = change_gate.cmd_record_evidence(repo, state_dir, 'true', exit_code=0)
+            self.assertEqual(rc_ev, 0)
+            rc_app, _ = change_gate.cmd_approve(repo, state_dir, 'release', 'commander', None, risk='low')
+            self.assertEqual(rc_app, 0)
+            delivery_only_gate = build_boards.build_delivery_payload(state_dir)
+            self.assertEqual(delivery_only_gate['approvals'][0]['status'], 'valid')
+            self.assertEqual(delivery_only_gate['approvals'][0]['risk'], 'low')
+
+            # 4. Multi-ecosystem lockfile parsers: bun.lock (JSONC + workspace skip), yarn.lock (v1+Berry), uv.lock (virtual skip), poetry.lock
+            (repo / 'bun.lock').write_text(
+                '{\n'
+                '  // Bun 1.2+ text lockfile with trailing commas\n'
+                '  "lockfileVersion": 1,\n'
+                '  "packages": {\n'
+                '    "lodash": ["lodash@4.17.21", "", {}, "sha512-abc"],\n'
+                '    "@scope/pkg": ["@scope/pkg@2.3.4", "", {}, "sha512-def"],\n'
+                '    "@internal/app": ["@internal/app@workspace:apps/web", "", {}],\n'
+                '  },\n'
+                '}\n',
+                encoding='utf-8',
+            )
+            (repo / 'yarn.lock').write_text(
+                '"chalk@^5.0.0":\n  version "5.3.0"\n\n'
+                '"@types/node@npm:^22.0.0":\n  version: 22.10.0\n',
+                encoding='utf-8',
+            )
+            (repo / 'uv.lock').write_text(
+                '[[package]]\nname = "demo-local"\nversion = "0.1.0"\nsource = { virtual = "." }\n\n'
+                '[[package]]\nname = "httpx"\nversion = "0.28.1"\nsource = { registry = "https://pypi.org/simple" }\n',
+                encoding='utf-8',
+            )
+            (repo / 'poetry.lock').write_text(
+                '[[package]]\nname = "pydantic"\nversion = "2.10.0"\n',
+                encoding='utf-8',
+            )
+            sc = supply_chain.run_supply_chain_check(repo, offline=True)
+            self.assertEqual(set(sc['lockfilesFound']), {'bun.lock', 'yarn.lock', 'uv.lock', 'poetry.lock'})
+            self.assertEqual(sc['dependencyCount'], 6)
+
+            # 5. repo_monitor: revert regex ignores "feat: add revert button"; latest-per-(workflow,branch) clears fixed CI;
+            #    network failure preserves last-known failingCiIds and returns CLI exit code 2
+            gh_json = tdir / 'gh.json'
+            gh_json.write_text(json.dumps({
+                'pullRequests': [{'number': 12, 'title': 'WIP', 'author': 'dev', 'draft': False}],
+                'ciRuns': [
+                    {'id': 100, 'name': 'CI', 'branch': 'main', 'status': 'completed', 'conclusion': 'failure', 'updatedAt': '2026-11-27T01:00:00Z'},
+                    {'id': 101, 'name': 'CI', 'branch': 'main', 'status': 'completed', 'conclusion': 'success', 'updatedAt': '2026-11-27T02:00:00Z'},
+                    {'id': 200, 'name': 'Lint', 'branch': 'main', 'status': 'completed', 'conclusion': 'failure', 'updatedAt': '2026-11-27T02:05:00Z'},
+                ],
+            }), encoding='utf-8')
+            p_ok = repo_monitor.monitor_repo(repo, state_dir, github_json=gh_json)
+            self.assertEqual(p_ok['git']['revertCount30d'], 0)
+            self.assertEqual(p_ok['remote']['status'], 'ok')
+            self.assertEqual(p_ok['remote']['failingCiCount'], 1)
+            self.assertEqual(p_ok['materialState']['failingCiIds'], [200])
+
+            # Simulated outage against closed localhost port -> preserves failingCiIds=[200] & CLI exits 2
+            proc_fail = subprocess.run(
+                [
+                    sys.executable, str(SCRIPTS / 'repo_monitor.py'),
+                    '--repo', str(repo), '--state-dir', str(state_dir),
+                    '--github-repo', 'acme/demo', '--api-base', 'http://127.0.0.1:1',
+                ],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(proc_fail.returncode, 2, proc_fail.stderr)
+            p_fail = json.loads(proc_fail.stdout)
+            self.assertEqual(p_fail['remote']['status'], 'query_failed')
+            self.assertEqual(p_fail['materialState']['failingCiIds'], [200])
+            self.assertEqual(p_fail['materialState']['openPrNumbers'], [12])
 
 
 if __name__ == '__main__':

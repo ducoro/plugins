@@ -43,7 +43,7 @@ Physically separate **writing** from **reviewing** (`playbooks/stewardship-loop.
 - **Broad multi-subsystem high risk**: Dispatch **parallel fresh, read-only reviewers** across the six lenses, then send findings to an **independent adversarial verifier** whose default stance is *"false until proven by real code or a failing command"* (seeing only the finding and repo snapshot—never the original reviewer's reasoning).
 
 ### Dispatch & Collection Contract
-1. Find an eligible seated reviewer in the current Space via `ducoro-cli space participant list <space-id> --json` (if no second agent is seated, ask the human before seating one or proceed only with explicit human awareness).
+1. Inspect seated Agents via `ducoro-cli space participant list <space-id> --json`. Because `ducoro-cli job dispatch` always runs in a **fresh native session** with zero conversation history, **single-Bot Spaces can dispatch blind review directly to the seated Lead Agent** (if multiple Agents or distinct models are seated, prefer a different Agent for perspective diversity).
 2. Dispatch a fresh session (`job dispatch` starts immediately—no separate start step):
    ```sh
    ducoro-cli job dispatch --space <space-id> --agent <reviewer-agent-id> --name "blind-review" "<brief>"

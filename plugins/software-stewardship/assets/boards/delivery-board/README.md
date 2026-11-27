@@ -1,6 +1,6 @@
 # Delivery & Gate Board
 
-Displays real Git blast radius, objective diff gate blockers, open PRs and CI runs, fresh command execution evidence, and tamper-proof `head_sha + diff_hash` approval locks projected from Space-local stewardship state.
+Displays real Git blast radius, objective diff gate blockers, open PRs and CI runs, fresh command execution evidence, and drift-proof `head_sha + diff_hash` approval locks projected from Space-local stewardship state.
 
 ## Semantic Location IDs
 

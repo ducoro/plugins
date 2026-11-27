@@ -4,7 +4,7 @@ Never guess third-party APIs or vulnerability status from model training memory.
 
 ## 1. Live Vulnerability & License Audit (`scripts/supply_chain_check.py`)
 
-Run against the target repository to parse root-level lockfiles (`package-lock.json`, `pnpm-lock.yaml`, `requirements.txt`, `pyproject.toml`, `Cargo.lock`, `go.mod`), query the keyless public **OSV.dev Batch API** (`https://api.osv.dev/v1/querybatch`), and scan for copyleft license declarations (`GPL-*`, `AGPL-*`, `SSPL-*`):
+Run against the target repository to parse root-level lockfiles (`package-lock.json`, `pnpm-lock.yaml`, `bun.lock`, `yarn.lock`, `requirements.txt`, `pyproject.toml`, `uv.lock`, `poetry.lock`, `Cargo.lock`, `go.mod`), query the keyless public **OSV.dev Batch API** (`https://api.osv.dev/v1/querybatch`), and scan for copyleft license declarations (`GPL-*`, `AGPL-*`, `SSPL-*`):
 
 ```sh
 python3 <plugin-root>/scripts/supply_chain_check.py --repo <repo-path> --out <state-dir>/supply-chain.json

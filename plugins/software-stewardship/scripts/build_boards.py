@@ -56,7 +56,7 @@ def build_delivery_payload(state_dir: Path) -> dict:
     prs = remote.get('pullRequests') or []
     ci_runs = remote.get('ciRuns') or []
 
-    head_sha = audit.get('headSha') or (pulse.get('git') or {}).get('headSha') or ''
+    head_sha = last_diff.get('headSha') or audit.get('headSha') or (pulse.get('git') or {}).get('headSha') or ''
     diff_hash = last_diff.get('diffHash') or ''
 
     approval_rows = []
@@ -66,8 +66,10 @@ def build_delivery_payload(state_dir: Path) -> dict:
         still_valid = bool(head_sha and diff_hash and rec.get('headSha') == head_sha and rec.get('diffHash') == diff_hash)
         approval_rows.append({
             'action': action,
+            'risk': rec.get('risk', 'low'),
             'approvedBy': rec.get('approvedBy', ''),
             'approvedAt': rec.get('approvedAt', ''),
+            'reviewWaived': bool((rec.get('reviewWaiverReason') or '').strip()),
             'headSha': (rec.get('headSha') or '')[:12],
             'diffHash': rec.get('diffHash', ''),
             'status': 'valid' if still_valid else 'stale_tampered',
@@ -201,6 +203,7 @@ def build_health_payload(state_dir: Path) -> dict:
         'generatedAt': utc_now(),
         'repoName': audit.get('repoName') or supply.get('repoName') or pulse.get('repoName') or 'Repository',
         'osvStatus': supply.get('osvStatus', 'not_run'),
+        'remoteStatus': (pulse.get('remote') or {}).get('status', 'not_run'),
         'pulseOutcome': pulse.get('outcome', 'not_run'),
         'summary': {
             'dependencyCount': supply.get('dependencyCount', 0),

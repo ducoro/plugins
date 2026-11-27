@@ -6,6 +6,7 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -42,8 +43,12 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
 
 
+GIT_ENV_STRIP = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES')
+
+
 def run_git(repo: Path, *args: str) -> tuple[int, str, str]:
-    proc = subprocess.run(['git', '-C', str(repo), *args], capture_output=True, text=True, check=False)
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_STRIP}
+    proc = subprocess.run(['git', '-C', str(repo), *args], capture_output=True, text=True, env=env, check=False)
     return proc.returncode, proc.stdout, proc.stderr
 
 
@@ -59,7 +64,16 @@ def resolve_base(repo: Path, requested: str | None) -> str | None:
     if requested:
         rc, _, _ = run_git(repo, 'rev-parse', '--verify', requested)
         return requested if rc == 0 else None
-    for cand in ('origin/main', 'main', 'master', 'HEAD~1'):
+    rc_u, up_out, _ = run_git(repo, 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}')
+    if rc_u == 0 and up_out.strip():
+        return up_out.strip()
+    _, branch_out, _ = run_git(repo, 'branch', '--show-current')
+    current_branch = branch_out.strip()
+    candidates = ['origin/main', 'origin/master']
+    if current_branch not in ('main', 'master'):
+        candidates.extend(['main', 'master'])
+    candidates.append('HEAD~1')
+    for cand in candidates:
         rc, _, _ = run_git(repo, 'rev-parse', '--verify', cand)
         if rc == 0:
             return cand
@@ -91,10 +105,10 @@ def compute_repo_fingerprint(repo: Path, base: str | None = None) -> dict:
     if rc_d != 0:
         combined_diff = ''
 
-    _, status_out, _ = run_git(repo, 'status', '--porcelain')
+    _, status_out, _ = run_git(repo, 'status', '--porcelain', '-uall')
     untracked_contents = []
     for line in sorted(status_out.splitlines()):
-        rel_check = line[3:].strip() if len(line) > 3 else ''
+        rel_check = line[3:].strip().strip('"') if len(line) > 3 else ''
         if line.startswith('?? ') and CACHE_NOISE_RE.search(rel_check):
             continue
         h.update((line + '\n').encode('utf-8'))
@@ -155,6 +169,8 @@ def scan_diff_blockers(repo: Path, base: str | None = None, *, allow_assertion_p
     for rel, content in fp['untrackedContents']:
         for body in content.splitlines():
             check_added_line(rel, body)
+            if TEST_FILE_RE.search(rel) and ASSERT_RE.search(body):
+                test_assert_added[rel] = test_assert_added.get(rel, 0) + 1
 
     if not allow_assertion_pruning:
         for tf, deleted_count in sorted(test_assert_deleted.items()):
@@ -350,7 +366,7 @@ def cmd_verify_release(
     waived_review = bool(
         waive_review.strip()
         and isinstance(approval, dict)
-        and approval.get('reviewWaiverReason', '').strip()
+        and approval.get('reviewWaiverReason', '').strip() == waive_review.strip()
         and approval.get('headSha') == diff_res['headSha']
         and approval.get('diffHash') == diff_res['diffHash']
     )

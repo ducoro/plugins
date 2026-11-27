@@ -14,7 +14,7 @@
 | [Market Intel](plugins/market-intel) | 持续追踪竞品、公司与赛道真实变化（客观快照 Diff、强溯源证据闸门与对比展板） | `PLUGIN.md` + 手册 + 公开源拉取器 + Diff/溯源脚本 + 展板 |
 | [Customer Support Ops](plugins/customer-support-ops) | 持续处理多渠道用户反馈、P0/SLA 升级、根因飙升检测与防篡改回复护栏 | `PLUGIN.md` + 手册 + 多渠道导入 + 分诊/安全锁脚本 + 展板 |
 | [Business Finance Ops](plugins/business-finance-ops) | 基于真实对账单与精确 `Decimal` 账本的经营对账、官方汇率、异常扣费与现金流跑道监控 | `PLUGIN.md` + 手册 + 账单解析器 + `Decimal` 核算/审计脚本 + 展板 |
-| [Software Stewardship](plugins/software-stewardship) | 面向长期软件仓库维护：真实 Git 体检、实时 OSV 漏洞与许可证扫描、防篡改 SHA 审批锁、发布平台硬规则与静默监控展板 | `PLUGIN.md` + 手册 + Git/OSV/门禁/脉搏脚本 + 展板 |
+| [Software Stewardship](plugins/software-stewardship) | 面向长期软件仓库维护：真实 Git 体检、实时 OSV 漏洞与许可证扫描、防漂移 SHA 审批锁、发布平台硬规则与静默监控展板 | `PLUGIN.md` + 手册 + Git/OSV/门禁/脉搏脚本 + 展板 |
 
 ## 使用方式
 

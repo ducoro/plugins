@@ -6,10 +6,13 @@ import argparse
 from collections import Counter
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
 import sys
+
+CACHE_NOISE_RE = re.compile(r'(?:^|/)(?:__pycache__|\.pytest_cache|\.mypy_cache|\.ruff_cache)(?:/|$)|\.pyc$')
 
 SENSITIVE_PATH_RULES = (
     ('auth_or_security', re.compile(r'(^|/)(auth|oauth|rbac|acl|security|crypto|jwt|session|permission)', re.I)),
@@ -19,7 +22,7 @@ SENSITIVE_PATH_RULES = (
     ('env_or_secrets_config', re.compile(r'(^|/)(\.env(\.|$)|wrangler\.toml|vercel\.json|fly\.toml)', re.I)),
 )
 
-SKIP_DIRS = {'.git', 'node_modules', 'dist', 'build', '.next', '.venv', 'venv', '__pycache__', 'target', 'vendor'}
+SKIP_DIRS = {'.git', 'node_modules', 'dist', 'build', '.next', '.venv', 'venv', '__pycache__', 'target', 'vendor', 'generated', '__generated__'}
 CONTAINER_ROOTS = {'src', 'packages', 'apps', 'plugins', 'services', 'libs', 'internal', 'cmd', 'crates'}
 DEP_MANIFEST_RE = re.compile(r'(^|/)(package\.json|pyproject\.toml|requirements\.txt|Cargo\.toml|go\.mod)$')
 CODE_EXTENSIONS = {
@@ -32,11 +35,16 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
 
 
+GIT_ENV_STRIP = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES')
+
+
 def run_git(repo: Path, *args: str, check: bool = False) -> tuple[int, str, str]:
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_STRIP}
     proc = subprocess.run(
         ['git', '-C', str(repo), *args],
         capture_output=True,
         text=True,
+        env=env,
         check=False,
     )
     if check and proc.returncode != 0:
@@ -50,7 +58,16 @@ def resolve_base_ref(repo: Path, requested: str | None) -> str | None:
         if rc == 0:
             return requested
         return None
-    for candidate in ('origin/main', 'main', 'master', 'HEAD~1'):
+    rc_u, up_out, _ = run_git(repo, 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}')
+    if rc_u == 0 and up_out.strip():
+        return up_out.strip()
+    _, branch_out, _ = run_git(repo, 'branch', '--show-current')
+    current_branch = branch_out.strip()
+    candidates = ['origin/main', 'origin/master']
+    if current_branch not in ('main', 'master'):
+        candidates.extend(['main', 'master'])
+    candidates.append('HEAD~1')
+    for candidate in candidates:
         rc, _, _ = run_git(repo, 'rev-parse', '--verify', candidate)
         if rc == 0:
             return candidate
@@ -71,16 +88,41 @@ def parse_numstat(output: str) -> dict[str, tuple[int, int]]:
     return stats
 
 
+def iter_candidate_code_files(repo: Path) -> list[Path]:
+    # Prefer git ls-files so .gitignore, node_modules, target, and .git are never traversed
+    rc, out, _ = run_git(repo, 'ls-files', '-co', '--exclude-standard', '-z')
+    if rc == 0:
+        files = []
+        for entry in out.split('\x00'):
+            if not entry:
+                continue
+            rel = Path(entry)
+            if any(part in SKIP_DIRS for part in rel.parts):
+                continue
+            if rel.suffix.lower() not in CODE_EXTENSIONS:
+                continue
+            full = repo / rel
+            if full.is_file() and not full.is_symlink():
+                files.append(full)
+        return files
+
+    files = []
+    for dirpath, dirnames, filenames in os.walk(repo):
+        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS)
+        base = Path(dirpath)
+        for name in sorted(filenames):
+            full = base / name
+            if full.suffix.lower() not in CODE_EXTENSIONS or full.is_symlink():
+                continue
+            if full.is_file():
+                files.append(full)
+    return files
+
+
 def scan_large_files(repo: Path, max_file_lines: int) -> list[dict]:
     large = []
-    for path in sorted(repo.rglob('*')):
-        if not path.is_file() or path.is_symlink():
-            continue
+    for path in iter_candidate_code_files(repo):
         rel = path.relative_to(repo)
-        if any(part in SKIP_DIRS for part in rel.parts):
-            continue
-        if path.suffix.lower() not in CODE_EXTENSIONS:
-            continue
         try:
             raw = path.read_bytes()
         except OSError:
@@ -98,7 +140,11 @@ def scan_churn_hotspots(repo: Path, days: int, min_touches: int) -> list[dict]:
     rc, out, _ = run_git(repo, 'log', f'--since={days} days ago', '--name-only', '--pretty=format:')
     if rc != 0:
         return []
-    counts = Counter(line.strip() for line in out.splitlines() if line.strip())
+    counts = Counter(
+        line.strip()
+        for line in out.splitlines()
+        if line.strip() and not any(part in SKIP_DIRS for part in Path(line.strip()).parts)
+    )
     hotspots = [
         {'path': path, 'touches': count, 'windowDays': days}
         for path, count in counts.most_common(25)
@@ -210,15 +256,18 @@ def audit_repo(
     if rc_ns == 0:
         stats.update(parse_numstat(out_ns))
 
-    _, status_out, _ = run_git(repo, 'status', '--porcelain')
+    _, status_out, _ = run_git(repo, 'status', '--porcelain', '-uall')
     untracked = []
     dirty_count = 0
     for line in status_out.splitlines():
         if not line.strip():
             continue
+        rel_check = line[3:].strip().strip('"') if len(line) > 3 else ''
+        if line.startswith('?? ') and CACHE_NOISE_RE.search(rel_check):
+            continue
         dirty_count += 1
         if line.startswith('?? '):
-            rel_path = line[3:].strip()
+            rel_path = rel_check
             untracked.append(rel_path)
             if rel_path not in stats:
                 full = repo / rel_path

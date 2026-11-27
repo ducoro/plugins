@@ -116,12 +116,168 @@ def parse_go_mod(path: Path) -> list[dict]:
     return deps
 
 
+def strip_jsonc(text: str) -> str:
+    """Remove // and /* */ comments plus trailing commas outside string literals."""
+    out = []
+    i = 0
+    n = len(text)
+    in_str = False
+    escape = False
+    while i < n:
+        ch = text[i]
+        if in_str:
+            out.append(ch)
+            if escape:
+                escape = False
+            elif ch == '\\':
+                escape = True
+            elif ch == '"':
+                in_str = False
+            i += 1
+            continue
+        if ch == '"':
+            in_str = True
+            out.append(ch)
+            i += 1
+            continue
+        if ch == '/' and i + 1 < n and text[i + 1] == '/':
+            i += 2
+            while i < n and text[i] != '\n':
+                i += 1
+            continue
+        if ch == '/' and i + 1 < n and text[i + 1] == '*':
+            i += 2
+            while i + 1 < n and not (text[i] == '*' and text[i + 1] == '/'):
+                i += 1
+            i += 2
+            continue
+        out.append(ch)
+        i += 1
+    no_comments = ''.join(out)
+    # Remove trailing commas before } or ] (safe outside strings via simple token scan)
+    cleaned = []
+    in_str = False
+    escape = False
+    j = 0
+    m = len(no_comments)
+    while j < m:
+        ch = no_comments[j]
+        if in_str:
+            cleaned.append(ch)
+            if escape:
+                escape = False
+            elif ch == '\\':
+                escape = True
+            elif ch == '"':
+                in_str = False
+            j += 1
+            continue
+        if ch == '"':
+            in_str = True
+            cleaned.append(ch)
+            j += 1
+            continue
+        if ch == ',':
+            k = j + 1
+            while k < m and no_comments[k] in ' \t\r\n':
+                k += 1
+            if k < m and no_comments[k] in '}]':
+                j += 1
+                continue
+        cleaned.append(ch)
+        j += 1
+    return ''.join(cleaned)
+
+
+def parse_bun_lock(path: Path) -> list[dict]:
+    deps = []
+    data = json.loads(strip_jsonc(path.read_text(encoding='utf-8')))
+    packages = data.get('packages')
+    if not isinstance(packages, dict):
+        return deps
+    for entry in packages.values():
+        if not isinstance(entry, list) or not entry or not isinstance(entry[0], str):
+            continue
+        spec = entry[0].strip()
+        at_idx = spec.rfind('@')
+        if at_idx <= 0:
+            continue
+        name = spec[:at_idx]
+        ver = spec[at_idx + 1:]
+        if not name or not ver or not re.match(r'^\d+\.\d+', ver):
+            continue
+        deps.append({'ecosystem': 'npm', 'name': name, 'version': ver, 'source': path.name})
+    return deps
+
+
+def parse_yarn_lock(path: Path) -> list[dict]:
+    deps = []
+    current_name: str | None = None
+    ver_re = re.compile(r'^\s+version(?::\s*|\s+)"?([^"\s]+)"?')
+    for line in path.read_text(encoding='utf-8', errors='replace').splitlines():
+        if not line or line.startswith('#'):
+            continue
+        if not line.startswith(' '):
+            current_name = None
+            if line.rstrip().endswith(':'):
+                header = line.rstrip()[:-1].split(',')[0].strip().strip('"').strip("'")
+                if header and not header.startswith('__metadata'):
+                    at_idx = header.rfind('@')
+                    if at_idx > 0:
+                        cand = header[:at_idx]
+                        # Yarn Berry uses name@npm:^1.0.0 -> strip @npm if nested
+                        if '@' in cand and not cand.startswith('@'):
+                            cand = cand.split('@', 1)[0]
+                        current_name = cand
+            continue
+        if current_name:
+            m = ver_re.match(line)
+            if m:
+                ver = m.group(1)
+                if re.match(r'^\d+\.\d+', ver) and 'use.local' not in ver:
+                    deps.append({'ecosystem': 'npm', 'name': current_name, 'version': ver, 'source': path.name})
+                current_name = None
+    return deps
+
+
+def parse_toml_pypi_lock(path: Path) -> list[dict]:
+    """Parse [[package]] tables from uv.lock or poetry.lock, skipping local virtual/editable roots."""
+    deps = []
+    name = None
+    version = None
+    is_local = False
+
+    def flush() -> None:
+        if name and version and not is_local:
+            deps.append({'ecosystem': 'PyPI', 'name': name, 'version': version, 'source': path.name})
+
+    for line in path.read_text(encoding='utf-8', errors='replace').splitlines():
+        stripped = line.strip()
+        if stripped == '[[package]]':
+            flush()
+            name = None
+            version = None
+            is_local = False
+        elif stripped.startswith('name = '):
+            name = stripped.split('=', 1)[1].strip().strip('"').strip("'")
+        elif stripped.startswith('version = '):
+            version = stripped.split('=', 1)[1].strip().strip('"').strip("'")
+        elif stripped.startswith('source = ') and any(tok in stripped for tok in ('virtual', 'editable', 'directory')):
+            is_local = True
+    flush()
+    return deps
+
+
 def discover_dependencies(repo: Path) -> tuple[list[dict], list[str]]:
     parsers = (
         ('package-lock.json', parse_package_lock),
         ('pnpm-lock.yaml', parse_pnpm_lock),
+        ('bun.lock', parse_bun_lock),
+        ('yarn.lock', parse_yarn_lock),
         ('requirements.txt', parse_requirements),
         ('pyproject.toml', parse_pyproject),
+        ('uv.lock', parse_toml_pypi_lock),
+        ('poetry.lock', parse_toml_pypi_lock),
         ('Cargo.lock', parse_cargo_lock),
         ('go.mod', parse_go_mod),
     )
@@ -191,7 +347,7 @@ def query_osv_batch(
     *,
     osv_url: str = DEFAULT_OSV_BATCH_URL,
     timeout: int = 20,
-    batch_size: int = 100,
+    batch_size: int = 250,
 ) -> tuple[str, list[dict], str | None]:
     if not dependencies:
         return 'no_dependencies', [], None
