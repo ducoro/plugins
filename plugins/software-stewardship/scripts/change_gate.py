@@ -11,6 +11,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 
 SECRET_PATTERNS = (
     ('aws_access_key', re.compile(r'\bAKIA[0-9A-Z]{16}\b')),
@@ -41,6 +42,28 @@ RISK_ORDER = {level: idx for idx, level in enumerate(RISK_LEVELS)}
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
+
+
+def redact_sensitive(text: str) -> str:
+    """Scrub secret values and local home paths so gate state and projected boards never leak raw credentials."""
+    redacted = text
+    for rule_id, pat in SECRET_PATTERNS:
+        redacted = pat.sub(f'[REDACTED:{rule_id}]', redacted)
+    redacted = LOCAL_PATH_RE.sub('[REDACTED:local_path]', redacted)
+    return redacted
+
+
+def atomic_write_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(prefix=f'.{path.name}.', suffix='.tmp', dir=str(path.parent))
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as fh:
+            fh.write(content)
+        os.replace(tmp_path, path)
+    except BaseException:
+        tmp_path.unlink(missing_ok=True)
+        raise
 
 
 GIT_ENV_STRIP = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES')
@@ -140,15 +163,16 @@ def scan_diff_blockers(repo: Path, base: str | None = None, *, allow_assertion_p
     test_assert_deleted: dict[str, int] = {}
 
     def check_added_line(file_path: str, text: str) -> None:
+        safe_snippet = redact_sensitive(text.strip())[:120]
         for rule_id, pat in SECRET_PATTERNS:
             if pat.search(text):
-                blockers.append({'rule': rule_id, 'file': file_path, 'snippet': text.strip()[:120]})
+                blockers.append({'rule': rule_id, 'file': file_path, 'snippet': safe_snippet})
         if LOCAL_PATH_RE.search(text):
-            blockers.append({'rule': 'local_path_leak', 'file': file_path, 'snippet': text.strip()[:120]})
+            blockers.append({'rule': 'local_path_leak', 'file': file_path, 'snippet': safe_snippet})
         if Path(file_path).suffix.lower() in CODE_SUFFIXES:
             for rule_id, pat in BYPASS_PATTERNS:
                 if pat.search(text):
-                    blockers.append({'rule': rule_id, 'file': file_path, 'snippet': text.strip()[:120]})
+                    blockers.append({'rule': rule_id, 'file': file_path, 'snippet': safe_snippet})
 
     for line in fp['combinedDiff'].splitlines():
         if line.startswith('+++ b/'):
@@ -210,9 +234,8 @@ def load_gate_state(state_dir: Path) -> dict:
 
 
 def save_gate_state(state_dir: Path, data: dict) -> Path:
-    state_dir.mkdir(parents=True, exist_ok=True)
     path = state_dir / 'gate-state.json'
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+    atomic_write_text(path, json.dumps(data, indent=2, ensure_ascii=False) + '\n')
     return path
 
 
@@ -237,12 +260,12 @@ def cmd_record_evidence(
 ) -> tuple[int, dict]:
     if kind not in EVIDENCE_KINDS:
         raise ValueError(f'Unknown evidence kind: {kind}')
-    output_tail = summary
+    output_tail = redact_sensitive(summary)
     if run_now:
         proc = subprocess.run(command, cwd=str(repo), shell=True, capture_output=True, text=True, check=False)
         actual_rc = proc.returncode
         combined = (proc.stdout + '\n' + proc.stderr).strip()
-        output_tail = combined[-400:] if combined else ''
+        output_tail = redact_sensitive(combined[-400:]) if combined else ''
     else:
         if exit_code is None:
             raise ValueError('Provide --run or explicit --exit-code')
@@ -253,7 +276,7 @@ def cmd_record_evidence(
 
     entry = {
         'kind': kind,
-        'command': command,
+        'command': redact_sensitive(command),
         'exitCode': actual_rc,
         'passed': passed,
         'headSha': fp['headSha'],
@@ -295,8 +318,8 @@ def cmd_approve(
         'action': action,
         'risk': risk,
         'allowAssertionPruning': allow_assertion_pruning,
-        'reviewWaiverReason': waive_review.strip(),
-        'summary': summary.strip(),
+        'reviewWaiverReason': redact_sensitive(waive_review.strip()),
+        'summary': redact_sensitive(summary.strip()),
         'approvedBy': approved_by.strip(),
         'approvedAt': utc_now(),
         'headSha': diff_res['headSha'],
@@ -366,7 +389,7 @@ def cmd_verify_release(
     waived_review = bool(
         waive_review.strip()
         and isinstance(approval, dict)
-        and approval.get('reviewWaiverReason', '').strip() == waive_review.strip()
+        and approval.get('reviewWaiverReason', '').strip() == redact_sensitive(waive_review.strip())
         and approval.get('headSha') == diff_res['headSha']
         and approval.get('diffHash') == diff_res['diffHash']
     )

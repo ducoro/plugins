@@ -11,15 +11,40 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.request
 
 REVERT_SUBJECT_RE = re.compile(r'^(?:revert\b|revert\(|revert:)', re.I)
 FAILING_CONCLUSIONS = ('failure', 'timed_out', 'cancelled')
+MAX_PULSE_HISTORY_ROWS = 500
 
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
+
+
+def atomic_write_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(prefix=f'.{path.name}.', suffix='.tmp', dir=str(path.parent))
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as fh:
+            fh.write(content)
+        os.replace(tmp_path, path)
+    except BaseException:
+        tmp_path.unlink(missing_ok=True)
+        raise
+
+
+def append_bounded_jsonl(path: Path, row: dict, *, max_rows: int = MAX_PULSE_HISTORY_ROWS) -> None:
+    existing: list[str] = []
+    if path.is_file():
+        existing = [ln for ln in path.read_text(encoding='utf-8').splitlines() if ln.strip()]
+    existing.append(json.dumps(row, ensure_ascii=False))
+    if max_rows > 0 and len(existing) > max_rows:
+        existing = existing[-max_rows:]
+    atomic_write_text(path, '\n'.join(existing) + '\n')
 
 
 GIT_ENV_STRIP = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES')
@@ -121,6 +146,7 @@ def monitor_repo(
     github_json: Path | None = None,
     github_repo: str | None = None,
     api_base: str = 'https://api.github.com',
+    max_history_rows: int = MAX_PULSE_HISTORY_ROWS,
 ) -> dict:
     repo = repo.expanduser().resolve()
     rc, top, err = run_git(repo, 'rev-parse', '--show-toplevel')
@@ -210,7 +236,7 @@ def monitor_repo(
         },
     }
 
-    (state_dir / 'pulse.json').write_text(json.dumps(pulse, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+    atomic_write_text(state_dir / 'pulse.json', json.dumps(pulse, indent=2, ensure_ascii=False) + '\n')
     if outcome in ('initial_baseline', 'material_change'):
         history_row = {
             'observedAt': pulse['generatedAt'],
@@ -222,8 +248,7 @@ def monitor_repo(
             'failingCiCount': len(failing_ci),
             'vulnerabilityCount': len(material_state['vulnerabilityIds']),
         }
-        with (state_dir / 'pulse-history.jsonl').open('a', encoding='utf-8') as fh:
-            fh.write(json.dumps(history_row, ensure_ascii=False) + '\n')
+        append_bounded_jsonl(state_dir / 'pulse-history.jsonl', history_row, max_rows=max_history_rows)
 
     return pulse
 

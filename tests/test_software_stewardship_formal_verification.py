@@ -577,6 +577,100 @@ class SoftwareStewardshipFormalTest(unittest.TestCase):
             self.assertEqual(p_fail['materialState']['failingCiIds'], [200])
             self.assertEqual(p_fail['materialState']['openPrNumbers'], [12])
 
+    def test_v1_1_1_long_running_hygiene_redaction_bounds_and_private_exclusions(self):
+        """Prove zero secret/path echo into gate-state/boards, bounded pulse-history rotation, and private OSV prefix exclusion."""
+        seen_osv_pkgs: list[str] = []
+
+        class _CaptureOsvHandler(BaseHTTPRequestHandler):
+            def log_message(self, format, *args):  # noqa: A002
+                return
+
+            def do_POST(self):  # noqa: N802
+                length = int(self.headers.get('Content-Length', '0'))
+                body = json.loads(self.rfile.read(length).decode('utf-8'))
+                results = []
+                for q in body.get('queries', []):
+                    pkg = (q.get('package') or {}).get('name', '')
+                    seen_osv_pkgs.append(pkg)
+                    results.append({})
+                raw = json.dumps({'results': results}).encode('utf-8')
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(raw)))
+                self.end_headers()
+                self.wfile.write(raw)
+
+        server = ThreadingHTTPServer(('127.0.0.1', 0), _CaptureOsvHandler)
+        port = server.server_address[1]
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                tdir = Path(tmp)
+                repo = tdir / 'hygiene-repo'
+                state_dir = tdir / 'state'
+                init_sample_repo(repo)
+                git(repo, 'checkout', '-b', 'feat/hygiene')
+
+                # 1. Trigger secret + local path blockers and prove raw credentials NEVER enter gate-state.json or delivery-board
+                raw_aws = 'AKIA' + 'IOSFODNN7EXAMPLE'
+                raw_gh = 'ghp' + '_1234567890abcdefghij1234567890abcd'
+                raw_home = '/Us' + 'ers/alice/secrets/id_rsa'
+                (repo / 'src/leak.py').write_text(
+                    f'A = "{raw_aws}"\nB = "{raw_gh}"\nP = "{raw_home}"\n',
+                    encoding='utf-8',
+                )
+                rc_diff, diff_payload = change_gate.cmd_check_diff(repo, state_dir, 'main')
+                self.assertEqual(rc_diff, 2)
+                self.assertGreaterEqual(diff_payload['blockerCount'], 3)
+
+                # Also run a failing command that prints a secret to stderr -> evidence summary must scrub it
+                cmd_leak = f'{sys.executable} -c "import sys; sys.stderr.write(\\"{raw_gh}\\n\\"); sys.exit(1)"'
+                rc_ev, _ = change_gate.cmd_record_evidence(repo, state_dir, cmd_leak, base='main', run_now=True)
+                self.assertEqual(rc_ev, 2)
+
+                board_data_path = build_boards.project_board(state_dir, 'delivery-board', tdir / 'board', overwrite_templates=True)
+                gate_text = (state_dir / 'gate-state.json').read_text(encoding='utf-8')
+                board_text = board_data_path.read_text(encoding='utf-8')
+                for leaked in (raw_aws, raw_gh, raw_home):
+                    self.assertNotIn(leaked, gate_text, f'Raw sensitive string leaked into gate-state.json: {leaked}')
+                    self.assertNotIn(leaked, board_text, f'Raw sensitive string leaked into delivery-board data.json: {leaked}')
+                self.assertIn('[REDACTED:aws_access_key]', gate_text)
+                self.assertIn('[REDACTED:github_token]', gate_text)
+                self.assertIn('[REDACTED:local_path]', gate_text)
+                (repo / 'src/leak.py').unlink()
+
+                # 2. Bounded pulse-history.jsonl rotation: 8 material changes with max_history_rows=5 -> strictly 5 rows kept
+                for idx in range(8):
+                    (repo / 'src/app.py').write_text(f'def add(a, b):\n    return a + b + {idx}\n', encoding='utf-8')
+                    git(repo, 'commit', '-am', f'feat: step {idx}')
+                    repo_monitor.monitor_repo(repo, state_dir, max_history_rows=5)
+                hist_lines = [ln for ln in (state_dir / 'pulse-history.jsonl').read_text(encoding='utf-8').splitlines() if ln.strip()]
+                self.assertEqual(len(hist_lines), 5)
+                latest_head = git(repo, 'rev-parse', 'HEAD')
+                self.assertEqual(json.loads(hist_lines[-1])['headSha'], latest_head)
+
+                # 3. Private package prefix exclusion keeps internal package names out of public OSV requests
+                (repo / 'bun.lock').write_text(
+                    '{"lockfileVersion":1,"packages":{'
+                    '"@acme-internal/vault":["@acme-internal/vault@1.0.0","",{}],'
+                    '"lodash":["lodash@4.17.21","",{}]'
+                    '}}\n',
+                    encoding='utf-8',
+                )
+                sc = supply_chain.run_supply_chain_check(
+                    repo,
+                    osv_url=f'http://127.0.0.1:{port}/v1/querybatch',
+                    exclude_prefixes=['@acme-internal/'],
+                )
+                self.assertEqual(sc['osvStatus'], 'ok')
+                self.assertEqual(sc['dependencyCount'], 1)
+                self.assertEqual(sc['excludedDependencyCount'], 1)
+                self.assertEqual(seen_osv_pkgs, ['lodash'])
+        finally:
+            server.shutdown()
+            server.server_close()
+
 
 if __name__ == '__main__':
     unittest.main()

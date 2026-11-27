@@ -13,6 +13,7 @@ python3 <plugin-root>/scripts/supply_chain_check.py --repo <repo-path> --out <st
 - **Honest scope & limitations**:
   - Lockfile discovery currently scans the **repository root** (for monorepos with nested lockfiles, inspect subpackages explicitly or use native package-manager audit tools alongside).
   - License scanning inspects dependency entries in root `package-lock.json` plus root `package.json`, `pyproject.toml`, and `Cargo.toml` manifest declarations (it does not fetch transitive license metadata from registries; ignore self-license alerts if the repository itself is intentionally copyleft open source).
+- **Private package name hygiene**: Public OSV queries send external package names and versions. For repositories using private registries (non-`workspace:` internal scopes), pass repeatable `--exclude-prefix <prefix>` (e.g., `--exclude-prefix @my-company/`) so internal package names are never sent to OSV.dev; excluded counts are reported honestly in `excludedDependencyCount`.
 - **Offline & network failure behavior**:
   - Use `--offline` only in air-gapped environments or unit tests (explicitly marks `"osvStatus": "skipped_offline"`—never claim zero vulnerabilities when offline).
   - Running online without network access sets `"osvStatus": "query_failed"` and exits with code `2`—report the vulnerability state as **unverified/unknown**, never clean.

@@ -5,8 +5,10 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import shutil
+import tempfile
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 BOARDS_SRC = SCRIPT_DIR.parent / 'assets/boards'
@@ -239,7 +241,16 @@ def project_board(state_dir: Path, board_name: str, board_dir: Path, *, overwrit
 
     payload = build_delivery_payload(state_dir) if board_name == 'delivery-board' else build_health_payload(state_dir)
     data_path = assets_dir / 'data.json'
-    data_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+    rendered = json.dumps(payload, indent=2, ensure_ascii=False) + '\n'
+    fd, tmp_name = tempfile.mkstemp(prefix='.data.json.', suffix='.tmp', dir=str(assets_dir))
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as fh:
+            fh.write(rendered)
+        os.replace(tmp_path, data_path)
+    except BaseException:
+        tmp_path.unlink(missing_ok=True)
+        raise
     return data_path
 
 

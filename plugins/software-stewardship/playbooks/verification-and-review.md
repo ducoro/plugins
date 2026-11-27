@@ -16,9 +16,9 @@ When the same context writes both the implementation and the checks, "it compile
 Anchor tests on independently falsifiable **proof obligations** (which real bug turns this check red?) across the surfaces your change touches—especially cross-producer external inputs, authority/state transitions, retries/concurrency (using controllable clocks/signals, not blind sleeps), persistence recovery, real downstream consumers, and error recoverability.
 
 - **Prove new or edited guards can fail red**: Before trusting a new guard on medium/high-risk changes:
-  1. Back up the target production file (never use `git checkout --` to discard uncommitted edits);
+  1. Back up the target production file into `<state-dir>/tmp/` (never inside the target repo, and never use `git checkout --` to discard uncommitted edits);
   2. Deliberately break or revert the guarded production line and run the check to confirm a **non-zero exit**;
-  3. **Restore the backed-up file first** (so `diffHash` matches the clean working tree, not the broken variant);
+  3. **Restore the backed-up file first** (so `diffHash` matches the clean working tree, not the broken variant) and delete the temporary backup from `<state-dir>/tmp/`;
   4. Record the audit trail entry using the full command in `playbooks/prevention-and-repo-memory.md` (`--kind fault-injection-red`, which passes **only** on non-zero `--exit-code` and serves as audit evidence—it does not substitute for passing `--kind verification`).
 
 ## 3. Formal Verification & Human-Readable Statecharts
@@ -48,7 +48,7 @@ Physically separate **writing** from **reviewing** (`playbooks/stewardship-loop.
    ```sh
    ducoro-cli job dispatch --space <space-id> --agent <reviewer-agent-id> --name "blind-review" "<brief>"
    ```
-   Pass only the original human requirement, confirmed scope, and repo path / commit or diff reference (write large diffs to `<state-dir>/review.diff` instead of stuffing shell args)—never pass the author's excuses or self-check conclusions. Explicitly instruct the reviewer to stay **strictly read-only** (no file edits, no commits).
+   Pass only the original human requirement, confirmed scope, and repo path / commit or diff reference (write large diffs to `<state-dir>/review.diff` instead of stuffing shell args, and delete `<state-dir>/review.diff` once review finishes)—never pass the author's excuses or self-check conclusions. Explicitly instruct the reviewer to stay **strictly read-only** (no file edits, no commits).
 3. Collect completion and report via `ducoro-cli job status <job-id> --json` and `ducoro-cli job log <job-id>`.
 
 ### Six Orthogonal Lenses

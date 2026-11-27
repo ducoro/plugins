@@ -1,6 +1,6 @@
 {
   "name": "software-stewardship",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Long-term software repository stewardship combining fast Git blast-radius audits, live OSV supply-chain checks across Bun/npm/Yarn/pnpm/Python/Rust/Go lockfiles, drift-proof SHA approval gates, external release platform protocols, and quiet monitoring boards.",
   "license": "Apache-2.0"
 }

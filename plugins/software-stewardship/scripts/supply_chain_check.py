@@ -5,9 +5,11 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import re
 import sys
+import tempfile
 import urllib.error
 import urllib.request
 
@@ -400,12 +402,21 @@ def run_supply_chain_check(
     offline: bool = False,
     osv_url: str = DEFAULT_OSV_BATCH_URL,
     timeout: int = 20,
+    exclude_prefixes: list[str] | tuple[str, ...] = (),
 ) -> dict:
     repo = repo.expanduser().resolve()
     if not repo.is_dir():
         raise ValueError(f'{repo}: repository directory does not exist')
 
-    deps, lockfiles = discover_dependencies(repo)
+    all_deps, lockfiles = discover_dependencies(repo)
+    norm_prefixes = tuple(p.strip().lower() for p in exclude_prefixes if p and p.strip())
+    if norm_prefixes:
+        deps = [d for d in all_deps if not d['name'].lower().startswith(norm_prefixes)]
+        excluded_count = len(all_deps) - len(deps)
+    else:
+        deps = all_deps
+        excluded_count = 0
+
     license_alerts = scan_copyleft_licenses(repo)
 
     if offline:
@@ -419,6 +430,7 @@ def run_supply_chain_check(
         'repoName': repo.name,
         'lockfilesFound': lockfiles,
         'dependencyCount': len(deps),
+        'excludedDependencyCount': excluded_count,
         'osvStatus': osv_status,
         'osvError': osv_error,
         'vulnerabilityCount': len(vulns),
@@ -434,13 +446,20 @@ def main() -> int:
     parser.add_argument('--offline', action='store_true', help='Skip live OSV network query (honestly marked skipped_offline)')
     parser.add_argument('--osv-url', default=DEFAULT_OSV_BATCH_URL, help='Override OSV batch API endpoint')
     parser.add_argument('--timeout', type=int, default=20)
+    parser.add_argument('--exclude-prefix', action='append', default=[], help='Repeatable package name prefix to exclude from public OSV queries (e.g., @my-company/)')
     parser.add_argument('--fail-on-vuln', action='store_true')
     parser.add_argument('--fail-on-copyleft', action='store_true')
     parser.add_argument('--out', default=None, help='Optional output JSON path inside Space files/')
     args = parser.parse_args()
 
     try:
-        report = run_supply_chain_check(Path(args.repo), offline=args.offline, osv_url=args.osv_url, timeout=args.timeout)
+        report = run_supply_chain_check(
+            Path(args.repo),
+            offline=args.offline,
+            osv_url=args.osv_url,
+            timeout=args.timeout,
+            exclude_prefixes=args.exclude_prefix,
+        )
     except ValueError as err:
         print(json.dumps({'ok': False, 'error': str(err)}, indent=2), file=sys.stderr)
         return 1
@@ -449,7 +468,15 @@ def main() -> int:
     if args.out:
         out_path = Path(args.out).expanduser().resolve()
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(rendered, encoding='utf-8')
+        fd, tmp_name = tempfile.mkstemp(prefix=f'.{out_path.name}.', suffix='.tmp', dir=str(out_path.parent))
+        tmp_path = Path(tmp_name)
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as fh:
+                fh.write(rendered)
+            os.replace(tmp_path, out_path)
+        except BaseException:
+            tmp_path.unlink(missing_ok=True)
+            raise
     print(rendered, end='')
 
     if report['osvStatus'] == 'query_failed':

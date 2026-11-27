@@ -11,6 +11,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 
 CACHE_NOISE_RE = re.compile(r'(?:^|/)(?:__pycache__|\.pytest_cache|\.mypy_cache|\.ruff_cache)(?:/|$)|\.pyc$')
 
@@ -387,7 +388,15 @@ def main() -> int:
     if args.out:
         out_path = Path(args.out).expanduser().resolve()
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(rendered, encoding='utf-8')
+        fd, tmp_name = tempfile.mkstemp(prefix=f'.{out_path.name}.', suffix='.tmp', dir=str(out_path.parent))
+        tmp_path = Path(tmp_name)
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as fh:
+                fh.write(rendered)
+            os.replace(tmp_path, out_path)
+        except BaseException:
+            tmp_path.unlink(missing_ok=True)
+            raise
     print(rendered, end='')
     return 0
 

@@ -8,7 +8,7 @@ Probabilistic execution still carries a non-zero risk of last-minute drift—a f
 
 Never claim tests passed, a review cleared, or a release lock holds from memory. (`gate-state.json` is Space-local audit state that prevents post-approval byte drift and skipped checks; human authorization itself always comes from the conversation or Inbox confirmation.)
 
-1. **Objective diff guard**: Scan the net diff from `git merge-base <base> HEAD` to the current working tree (including untracked files inside new subdirectories via `git status --porcelain -uall`) for objective blockers—leaked secrets/tokens, hardcoded local home paths, newly added test skips (`.skip`, `xit`, `@unittest.skip`) or lint/type bypasses (`@ts-ignore`, `eslint-disable`, `# noqa`) in code files, and net-deleted test assertions:
+1. **Objective diff guard**: Scan the net diff from `git merge-base <base> HEAD` to the current working tree (including untracked files inside new subdirectories via `git status --porcelain -uall`) for objective blockers—leaked secrets/tokens, hardcoded local home paths, newly added test skips (`.skip`, `xit`, `@unittest.skip`) or lint/type bypasses (`@ts-ignore`, `eslint-disable`, `# noqa`) in code files, and net-deleted test assertions. All matched secrets and local home paths are automatically scrubbed to `[REDACTED:...]` before persisting to `gate-state.json` or projecting to Boards:
    ```sh
    python3 <plugin-root>/scripts/change_gate.py --repo <repo-path> --state-dir <state-dir> check-diff [--base <base-ref>]
    ```
@@ -43,7 +43,7 @@ Never claim tests passed, a review cleared, or a release lock holds from memory.
 
 ## 2. Append-Only Decision Trail (Long or Multi-Phase Runs)
 
-For multi-phase or unattended work, maintain `<state-dir>/decisions.tsv` (`ts\tphase\tdecision\twhy\tevidence\tresult`, never committed to the target repo unless requested). Log decision forks, verified milestones, pivots/reverts, blockers, and waivers using plain reasons and concrete pointers (`commit SHA`, `file:line`, output/screenshot paths). Never edit or delete earlier rows—supersede mistakes with a new row, and spot-check claims against real git history before handing back.
+For multi-phase or unattended work, maintain `<state-dir>/decisions.tsv` (`ts\tphase\tdecision\twhy\tevidence\tresult`, never committed to the target repo unless requested). Log decision forks, verified milestones, pivots/reverts, blockers, and waivers using plain reasons and concrete pointers (`commit SHA`, `file:line`, output/screenshot paths). Never edit or delete earlier rows—supersede mistakes with a new row, spot-check claims against real git history before handing back, and on long-lived repos read only the tail (~50 rows) into context (archiving into `decisions-YYYY.tsv` once a file grows past ~500 rows).
 
 ## 3. Encode Lessons Back Into the Target Repository
 
