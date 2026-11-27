@@ -160,8 +160,9 @@ def validate_variant(
     if allowed_modes and mode not in allowed_modes:
         issues.append({'code': 'unsupported_content_mode', 'message': f'Mode "{mode}" not in {allowed_modes} ({eff_channel} channel)'})
 
-    # Apply mode-specific hard limits (WeChat newspic / YouTube shorts)
+    # Apply mode-specific hard limits (WeChat newspic / YouTube shorts / X article)
     min_images = 0
+    min_title = 0
     if mode == 'newspic' and isinstance(limits.get('newspicLimits'), dict):
         nl = limits['newspicLimits']
         limits = {**limits, **{k: v for k, v in nl.items() if k in ('maxTitleLength', 'maxBodyLength', 'maxImages')}}
@@ -170,8 +171,17 @@ def validate_variant(
         sl = limits['shortsLimits']
         if 'maxVideoDurationSec' in sl:
             media_rules = {**media_rules, 'maxVideoDurationSec': sl['maxVideoDurationSec']}
+    elif mode == 'article' and isinstance(limits.get('articleLimits'), dict):
+        al = limits['articleLimits']
+        limits = {
+            **limits,
+            **{k: v for k, v in al.items() if k in ('maxTitleLength', 'maxBodyLength', 'maxTotalTextLength', 'maxImages')},
+        }
+        min_title = int(al.get('minTitleLength', 0))
 
     title = str(meta.get('title', '') or '')
+    if min_title > 0 and len(title.strip()) < min_title:
+        issues.append({'code': 'required', 'field': 'title', 'message': f'{mode} mode requires a non-empty title (min {min_title} char)'})
     max_title = limits.get('maxTitleLength')
     if max_title is not None and len(title) > max_title:
         issues.append({'code': 'too_big', 'field': 'title', 'message': f'Title length {len(title)} exceeds max {max_title}'})
@@ -203,7 +213,7 @@ def validate_variant(
     elif platform in ('x-twitter', 'threads') and re.search(r'\n---\s*\n', norm_body):
         thread_parts = [p.strip() for p in re.split(r'\n---\s*\n', norm_body) if p.strip()]
 
-    skip_x_280 = platform == 'x-twitter' and bool(options.get('long_post'))
+    skip_x_280 = platform == 'x-twitter' and (bool(options.get('long_post')) or mode == 'article')
     max_body = None if skip_x_280 else limits.get('maxBodyLength')
     max_total = None if skip_x_280 else limits.get('maxTotalTextLength')
     if thread_parts:
@@ -323,7 +333,7 @@ def validate_variant(
                 issues.append({'code': 'unsupported_format', 'field': 'cover', 'message': f'{cover_rel}: detected format "{cext}" not in {sorted(allowed_img_fmts)}'})
             if max_img_bytes and cinfo['sizeBytes'] > max_img_bytes:
                 issues.append({'code': 'too_big', 'field': 'cover', 'message': f'{cover_rel}: {cinfo["sizeBytes"]} bytes exceeds max {max_img_bytes}'})
-            cov_ar = recs.get('coverAspectRatio')
+            cov_ar = recs.get('articleCoverAspectRatio') if (mode == 'article' and recs.get('articleCoverAspectRatio')) else recs.get('coverAspectRatio')
             if cov_ar and cinfo['aspectRatio'] is not None:
                 if cinfo['aspectRatio'] < cov_ar['min'] or cinfo['aspectRatio'] > cov_ar['max']:
                     warnings.append({'code': 'cover_ratio_advisory', 'field': 'cover', 'message': f'{cover_rel}: ratio {cinfo["aspectRatio"]} outside recommended {cov_ar["min"]}..{cov_ar["max"]}'})

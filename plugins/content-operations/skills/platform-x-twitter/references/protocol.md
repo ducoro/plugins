@@ -41,3 +41,14 @@ When no X Developer API credentials are configured (or when using Premium long p
 1. Open `https://x.com/compose/post` in the user's browser session (pause if sign-in/2FA/CAPTCHA appears—never harvest cookies).
 2. Enter post text (or click `+` to build a multi-post thread), attach local images/GIF/video directly from `drafts/<id>/assets/`, and add alt text.
 3. Save draft (`draft_saved`) or pause before clicking **Post** until Gate 2 approval is explicit; afterward, if `options.firstReply` is present, reply to the newly published root post with the approved `firstReply` text and record the verified `https://x.com/i/status/<id>` into `publish-log.jsonl`.
+
+## X Articles (Long-Form Composer & Readback)
+X Articles are web-composer only (not supported by X API v2 `POST /2/tweets`; `check_media_specs.py --channel api` rejects `mode: "article"`):
+1. **Variant contract**: Set `"mode": "article"`, a non-empty `"title"` (`<= 120` chars), `"cover": {"path": "assets/<banner>.png"}` at **5:2** aspect ratio (recommended `2000×800` or `1600×640`), and optional inline images in `"media"` (`<= 25`). Inline links are allowed directly in article body without triggering `outbound_link_in_root`.
+2. **Drafting & upload (`https://x.com/compose/articles`)**:
+   - Confirm the active logged-in account has X Articles access (Premium+ / eligible org). If unavailable, deliver the approved local draft and images and report the account-tier blocker explicitly.
+   - Upload the 5:2 top banner and inspect crop/readability in the live header preview.
+   - Paste/enter title and structured body (headings, bold emphasis, blockquotes, links), insert inline images at their matching paragraphs, and verify section order.
+3. **Draft readback & Gate 2 publish**:
+   - Save as an unpublished Article draft first and read back the saved draft (distinguishing original copy from browser auto-translation) to verify text, bolding, and inline image placement.
+   - After explicit Gate 2 approval, publish and read back the live public Article URL and timestamp into `publish-log.jsonl`.

@@ -395,6 +395,78 @@ class XTwitterCapabilitiesTest(unittest.TestCase):
             self.assertEqual(len(payload['benchmarkAccounts']), 2)
             self.assertEqual(len(payload['outboundQueue']), 1)
 
+    def test_x_article_mode_validation_channel_gate_and_cover_ratio(self):
+        """X Article mode requires a title, allows long body & >4 inline images on browser/Computer Use, advises on non-5:2 cover, and blocks API channel."""
+        import struct
+        import zlib
+
+        def make_png(path: Path, width: int, height: int) -> None:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            ihdr = struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0)
+            def chunk(tag: bytes, data: bytes) -> bytes:
+                return struct.pack('>I', len(data)) + tag + data + struct.pack('>I', zlib.crc32(tag + data) & 0xFFFFFFFF)
+            # Minimal valid PNG header (probe_image_stdlib only parses IHDR width/height + PNG signature)
+            raw = b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', ihdr) + chunk(b'IEND', b'')
+            path.write_bytes(raw)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            draft_dir = Path(tmp) / 'drf-x-article'
+            (draft_dir / 'variants').mkdir(parents=True)
+            make_png(draft_dir / 'assets' / 'banner-5x2.png', 2000, 800)
+            make_png(draft_dir / 'assets' / 'banner-1x1.png', 800, 800)
+            inline_imgs = []
+            for i in range(6):
+                rel = f'assets/fig-{i + 1}.png'
+                make_png(draft_dir / rel, 1200, 675)
+                inline_imgs.append({'type': 'image', 'path': rel})
+
+            long_body = ('Long-form architectural breakdown with primary link https://example.com/report.\n\n' * 20).strip()
+            vpath = draft_dir / 'variants' / 'x-twitter.md'
+
+            # 1. Valid X Article on browser/Computer Use channel (long body, 6 inline images, 5:2 banner, links ok)
+            meta_ok = {
+                'platform': 'x-twitter',
+                'mode': 'article',
+                'title': 'Why File-Backed Agent Loops Outlast Ad-Hoc Chats',
+                'topics': ['AI'],
+                'cover': {'path': 'assets/banner-5x2.png'},
+                'media': inline_imgs,
+                'options': {},
+            }
+            vpath.write_text(f'```json\n{json.dumps(meta_ok)}\n```\n{long_body}\n', encoding='utf-8')
+            res_ok = SPECS_MOD.validate_variant(draft_dir, vpath, channel='browser')
+            self.assertEqual(res_ok['specStatus'], 'pass', f'Expected valid X Article to pass: {res_ok}')
+            warn_codes_ok = {w['code'] for w in res_ok['warnings']}
+            self.assertNotIn('outbound_link_in_root', warn_codes_ok)
+            self.assertNotIn('cover_ratio_advisory', warn_codes_ok)
+
+            # 2. Missing title MUST fail closed
+            meta_no_title = {**meta_ok, 'title': ''}
+            vpath.write_text(f'```json\n{json.dumps(meta_no_title)}\n```\n{long_body}\n', encoding='utf-8')
+            res_no_title = SPECS_MOD.validate_variant(draft_dir, vpath, channel='browser')
+            self.assertEqual(res_no_title['specStatus'], 'fail')
+            self.assertTrue(any(i.get('field') == 'title' for i in res_no_title['issues']))
+
+            # 3. Non-5:2 cover triggers cover_ratio_advisory warning (still passes hard spec)
+            meta_sq_cover = {**meta_ok, 'cover': {'path': 'assets/banner-1x1.png'}}
+            vpath.write_text(f'```json\n{json.dumps(meta_sq_cover)}\n```\n{long_body}\n', encoding='utf-8')
+            res_sq = SPECS_MOD.validate_variant(draft_dir, vpath, channel='browser')
+            self.assertEqual(res_sq['specStatus'], 'pass')
+            self.assertIn('cover_ratio_advisory', {w['code'] for w in res_sq['warnings']})
+
+            # 4. API channel MUST reject mode="article" (browser / Computer Use only)
+            vpath.write_text(f'```json\n{json.dumps(meta_ok)}\n```\n{long_body}\n', encoding='utf-8')
+            res_api = SPECS_MOD.validate_variant(draft_dir, vpath, channel='api')
+            self.assertEqual(res_api['specStatus'], 'fail')
+            self.assertTrue(any(i.get('code') == 'unsupported_content_mode' for i in res_api['issues']))
+
+        # 5. Universal Computer Use fallback declared centrally in channel-access-matrix, and X Article documented in X protocol
+        matrix_md = (SKILLS / 'content-ops-loop' / 'references' / 'channel-access-matrix.md').read_text(encoding='utf-8')
+        x_proto_md = (SKILLS / 'platform-x-twitter' / 'references' / 'protocol.md').read_text(encoding='utf-8')
+        self.assertIn('Computer Use', matrix_md)
+        self.assertIn('https://x.com/compose/articles', x_proto_md)
+        self.assertIn('5:2', x_proto_md)
+
 
 if __name__ == '__main__':
     unittest.main()

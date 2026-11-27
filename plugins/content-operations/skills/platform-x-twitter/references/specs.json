@@ -3,14 +3,34 @@
   "displayName": "X (Twitter)",
   "authType": "oauth2",
   "contentLimits": {
-    "modes": ["text", "image_text", "video"],
+    "modes": ["text", "image_text", "video", "article"],
     "maxTitleLength": 0,
     "maxBodyLength": 280,
     "maxTotalTextLength": 280,
     "tcoUrlLength": 23,
     "maxImages": 4,
     "maxVideos": 1,
-    "allowMixedMedia": false
+    "allowMixedMedia": false,
+    "articleLimits": {
+      "minTitleLength": 1,
+      "maxTitleLength": 120,
+      "maxBodyLength": 100000,
+      "maxTotalTextLength": 100000,
+      "maxImages": 25,
+      "coverRatio": "5:2",
+      "recommendedCoverPx": [2000, 800]
+    }
+  },
+  "recommendations": {
+    "articleCoverAspectRatio": {
+      "min": 2.2,
+      "max": 2.8
+    }
+  },
+  "apiOverrides": {
+    "contentLimits": {
+      "modes": ["text", "image_text", "video"]
+    }
   },
   "mediaRules": {
     "imageFormats": ["jpg", "jpeg", "png", "gif", "webp"],

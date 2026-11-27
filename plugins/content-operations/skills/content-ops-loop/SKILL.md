@@ -34,8 +34,8 @@ Shared deterministic scripts in `scripts/`: `init_workspace.py`, `validate_works
 
 - **Legitimate 3-tier channel priority** (`references/channel-access-matrix.md`; never extract cookies, call private APIs, or bypass login/CAPTCHA):
   1. **Ducoro Core Connectors (first)**: `ducoro-cli mcp catalog list` / `status <slug>` / `tools <slug>` / `call <slug> <tool> --args-file <path|-> --json`.
-  2. **Official Browser Creator Studio (default zero-config, all 14 platforms)**: upload local files from `drafts/<id>/assets/`, pause for login/CAPTCHA and Gate 2, read back live URL.
-  3. **Official Platform OpenAPI (`scripts/client.py`, optional, 12 platforms)**: user-owned env vars (plus `ducoro-cli media upload <path> --json` 5h relay for Meta/Pinterest).
+  2. **Official Platform OpenAPI (`scripts/client.py`, optional user-owned credentials, 12 platforms)**: when the user provides official developer tokens/API keys (plus `ducoro-cli media upload <path> --json` 5h relay for Meta/Pinterest).
+  3. **Universal Fallback — Official Browser / Ducoro Computer Use (all platforms, zero API setup)**: whenever no Connector and no user API key exist—or a capability is web/Studio-only (e.g., X Articles, personalized feeds, CN Creator Studios)—operate inside the user's logged-in browser/desktop session via Computer Use, uploading directly from `drafts/<id>/assets/`, pausing for login/CAPTCHA and Gate 2, and reading back live URLs. Declared once centrally in `references/channel-access-matrix.md` for all platforms.
 - **Ducoro orchestration primitives**:
   - **Space & identity**: `ducoro-cli space info <space-id> --json` (`<space-work-root>`, `files/`) and `ducoro-cli identity get --json` (`<human-id>`).
   - **Scheduling & Inbox sign-off**: `ducoro-cli task create --space <id> --at <iso>|--daily <HH:MM>|--cron "<expr>" --timezone <tz> --title "..." --instruction "..."` (Plan); immediate human sign-off via `--manual --human <human-id> --ask confirm --request-summary "..."` + `ducoro-cli task fire <task-id> --space <id> --json`; inspect/halt stale or failing tasks via `ducoro-cli task list|disable|rm`.
