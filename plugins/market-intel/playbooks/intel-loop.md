@@ -48,7 +48,7 @@ Rule precedence at every step: **Human live instructions > Bot `PROFILE.md` / pr
    ducoro-cli job status <job-id> --json
    ducoro-cli job log <job-id>
    ```
-4. Merge all completed entity shards (and any Connector/browser capture files) on the single writer into `captures/latest.json`, then run `snapshot_diff.py` and `evidence_gate.py` once:
+4. Merge all completed entity shards (and any Connector/Computer Use/browser capture files) on the single writer into `captures/latest.json`, then run `snapshot_diff.py` and `evidence_gate.py` once:
    ```sh
    python3 scripts/fetch_sources.py <data-dir> \
      --merge <data-dir>/captures/<slug-a>.json <data-dir>/captures/<slug-b>.json \
@@ -58,35 +58,53 @@ Rule precedence at every step: **Human live instructions > Bot `PROFILE.md` / pr
 ## 3. End-to-End Durable Sweep
 
 1. **Collect real data** (see `playbooks/source-adapters.md`):
-   - Check `ducoro-cli mcp catalog list --json` first for connected SaaS/social sources.
-   - For sequential runs, pull keyless public sources directly:
+   - Check `ducoro-cli mcp catalog list --json` first for connected SaaS/social sources (e.g., Reddit, X, GitHub).
+   - Pull public sources directly:
      ```sh
      python3 scripts/fetch_sources.py <data-dir> --out <data-dir>/captures/latest.json
      ```
-   - Append Priority 1 Connector or Priority 3 browser/web_fetch/local-doc observations in `market-intel-signal/1` record format (or merge via `--merge`) so `evidence_gate.py` verifies all three tiers uniformly.
-2. **Run deterministic diff & branch on outcome**:
+   - Append Priority 1 Connector or Priority 3 Computer Use / browser / web_fetch observations in `market-intel-signal/1` record format (or merge via `--merge`) so `evidence_gate.py` verifies all three tiers uniformly.
+2. **Run deterministic diff & branch on `outcome`, `errorKind`, and `changeKind`**:
    ```sh
    python3 scripts/snapshot_diff.py <data-dir> \
      --capture <data-dir>/captures/latest.json \
      --out <data-dir>/captures/diff.json
    ```
-   - **`outcome == "capture_failed"` (`failedCount > 0` and `okCount == 0`)**: **Never stay silent.** Alert the human immediately with the failed source IDs and error reasons, check network reachability / URL changes / rate limits / upstream schema drift, fall back to a Connector or visible browser check if appropriate, and propose a redacted `ducoro-cli feedback send` report only if an adapter schema broke upstream.
-   - **`partialFailure == true`**: Continue diffing and gating all healthy sources, but explicitly list failed sources and blind spots in the run note or brief so partial outages are never hidden.
+   - **`outcome == "capture_failed"` (`failedCount > 0` and `okCount == 0`)**: **Never stay silent.** Alert the human immediately with failed source IDs and their structured `errorKind`.
+   - **`partialFailure == true`**: Continue diffing healthy sources (failed sources never erase existing snapshots), and list every failed or skipped Computer Use source explicitly in the brief so blind spots are never hidden.
+   - **Actionable `errorKind` recovery table**:
+
+     | `errorKind` | Meaning (Do Not Over-Claim) | Correct Action |
+     |---|---|---|
+     | `rate_limited` | HTTP 429 or API quota exhaustion | Stop hitting that endpoint immediately; respect cooldown; use optional token (`GITHUB_TOKEN`) or Connector on next window |
+     | `auth_required` | HTTP 401 unauthenticated / expired token | Pause that source; check credential or Connector status; ask human before re-authenticating |
+     | `access_denied` | HTTP 403 of unknown cause (not proven account ban) | Stop blind retries; do not rotate accounts; switch to Connector or Computer Use fallback when appropriate |
+     | `challenge` | CAPTCHA, Cloudflare, or anti-bot gate | Stop immediately; never bypass; fall back to Computer Use with human verification or pause |
+     | `network_timeout` | Transient DNS/TLS/socket timeout | Keep prior baseline intact; retry on next scheduled window |
+     | `parse_error` | Upstream HTML/JSON schema changed or incomplete parse (e.g., partial Trending page) | Keep prior baseline intact (never emit fake drops); inspect raw page and propose `ducoro-cli feedback send` if upstream changed |
+
+   - **Actionable `changeKind` handling**:
+     - `content_changed` (in `materialChanges`): Substantive content/release/commit/issue/ranking shift → synthesize, red-team if high impact, gate via `evidence_gate.py`.
+     - `discussion_active` (in `discussionUpdates`): Existing thread/issue gained comments without changing the core item → revisit when tracking user sentiment; never report an old thread as brand-new.
+     - `engagement_only` (in `engagementOnly`): Only votes/stars/points jittered → stay quiet during scheduled sweeps (`no_material_change`).
+     - `coverage_expanded` (in `coverageExpanded`): Wider fetch limit exposed older trailing items while the prefix stayed identical → update baseline silently; never frame older items as today's news.
    - **`outcome == "no_material_change"`**:
-     - **Scheduled sweep**: Log a brief quiet run note and do **not** wake the human or pad filler reports.
-     - **Direct human query**: Always reply concisely—state which entities and sources were checked, the check timestamp, and confirm that no material changes were observed.
-   - **`outcome == "baseline_initialized"` / `"material_change"`**: Proceed to synthesis and gating.
-3. **Independent Red-Team Review for High-Impact Calls**:
-   - Before publishing `high`-severity shifts, pricing/positioning strategy calls, or major battlecard rewrites, dispatch an isolated read-only reviewer via `ducoro-cli job dispatch` giving only raw `captures/diff.json`, `captures/latest.json` (plus relevant `local-docs/`), and the draft conclusion—without the drafting conversation history. See `playbooks/methodology-and-triangulation.md` for the orthogonal review checklist.
-4. **Gate claims before publishing briefs or appending events**:
+     - **Scheduled sweep**: Log a brief quiet run note and do **not** wake the human or pad filler reports (unless `partialFailure` or skipped Computer Use coverage must be reported).
+     - **Direct human query**: Always reply concisely—state which entities and sources were checked, the check timestamp, and confirm no material changes were observed.
+3. **Sector-Radar Discovery → Entity Promotion**:
+   - Register broad discovery boards (such as GitHub Trending daily/weekly/monthly or Product Hunt daily) as `watchlist.json` entries with `"category": "sector-radar"`.
+   - Gate discovery highlights with `"category": "discovery"`; `radar-board` surfaces them while `battlecard-board` automatically excludes `sector-radar` entries so competitor battlecards stay clean.
+   - When a newly discovered project merits ongoing tracking, propose promoting it to a dedicated entity in `watchlist.json` and wait for human confirmation.
+4. **Independent Red-Team Review for High-Impact Calls**:
+   - Before publishing `high`-severity shifts, pricing/positioning strategy calls, or major battlecard rewrites, dispatch an isolated read-only reviewer via `ducoro-cli job dispatch` giving only raw `captures/diff.json`, `captures/latest.json` (plus relevant `local-docs/`), and the draft conclusion—without the drafting conversation history. See `playbooks/methodology-and-triangulation.md`.
+5. **Gate claims before publishing briefs or appending events**:
    ```sh
    python3 scripts/evidence_gate.py <data-dir> \
      --capture <data-dir>/captures/latest.json \
      --candidates <data-dir>/captures/candidates.json \
      --commit-events
    ```
-   - `evidence_gate.py` enforces non-empty `watchlist.json`, per-entity URL isolation (entity A cannot borrow entity B's URL), verified `evidenceUrls` and/or existing `<data-dir>` `localRef`, valid ISO `observedAt`, and normalized `quote` presence inside the referenced capture record or `localRef` file. Exit code `0` means all candidates passed; exit code `2` means one or more candidates were rejected.
-5. **Refresh Space boards**:
+6. **Refresh Space boards**:
    ```sh
    ducoro-cli board list --space <space-id> --json
    python3 scripts/build_boards.py <data-dir> --board radar-board --board-dir <space-work-root>/boards/<board-id>
@@ -95,12 +113,14 @@ Rule precedence at every step: **Human live instructions > Bot `PROFILE.md` / pr
 
 ## 4. Native Ducoro Scheduling, Inbox Escalation & Cross-Space Relay
 
-- **Recurring sweeps (auto-lands in Plan)**:
+- **Automated Priority 1/2 sweeps (auto-lands in Plan)**:
   ```sh
   ducoro-cli task create --space <space-id> --daily 08:30 --timezone <IANA-tz> \
     --title "Market Intel Sweep" \
     --instruction "Run fetch_sources.py, snapshot_diff.py, and evidence_gate.py on <data-dir>; stay quiet on no_material_change, alert immediately on capture_failed."
   ```
+- **Computer Use fallback sweeps (interactive / unlocked-desktop windows)**:
+  Schedule gated-site checks (e.g., paywalled Medium, login-only communities, Product Hunt deep reviews) separately during active desktop hours or run on demand. If the desktop is locked or Computer Use is disabled, report the exact uncovered sources rather than reporting `no_material_change`.
 - **Immediate Inbox escalation for material shifts requiring human judgment**:
   ```sh
   ducoro-cli identity get --json
@@ -115,12 +135,12 @@ Rule precedence at every step: **Human live instructions > Bot `PROFILE.md` / pr
   ```sh
   ducoro-cli space mail send <recipient> \
     --subject "Verified Market Intel Shift: <entity>" \
-    --body "<concise grounded summary with eventId, confidence, and evidence URLs>"
+    --body "<concise grounded summary with eventId, confidence, evidence URLs, and recommended next action>"
   ```
 
 ## 5. Reporting Plugin or Source Breakage
 
-If a script crashes or an upstream public API schema changes (not transient local network outages), show the human a redacted report first and, once approved, submit via:
+If a script crashes or an upstream public API/HTML schema changes (such as `parse_error` on a previously healthy endpoint, not transient local network outages), show the human a redacted report first and, once approved, submit via:
 ```sh
 ducoro-cli feedback send "[plugin:market-intel@<version>] [module:<module>] [location:<step>] <redacted details>"
 # Read <version> from <plugin-root>/plugin.json

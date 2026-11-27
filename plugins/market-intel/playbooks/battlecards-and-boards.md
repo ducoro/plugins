@@ -4,8 +4,8 @@
 
 | Board | Purpose | Commands Exposed to Agent |
 |---|---|---|
-| `radar-board` | Chronological ledger of verified material changes with severity, confidence (`triangulated` vs `single_source`), source kinds, quotes, and clickable evidence links | `filterEntity`, `filterSeverity`, `focusEvent`, `resetFilters` |
-| `battlecard-board` | Side-by-side entity comparison matrix (pricing, releases, hiring signals, strengths, gaps, discovery landmines, objection handlers, evidence links) | `focusEntity`, `filterCategory`, `resetFilters` |
+| `radar-board` | Chronological ledger of verified material changes (including `sector-radar` discovery events) with severity, confidence (`triangulated` vs `single_source`), source kinds, quotes, and clickable evidence links | `filterEntity`, `filterSeverity`, `focusEvent`, `resetFilters` |
+| `battlecard-board` | Side-by-side competitor comparison matrix (pricing, releases, hiring signals, strengths, gaps, discovery landmines, objection handlers, evidence links); automatically excludes `sector-radar` entries | `focusEntity`, `filterCategory`, `resetFilters` |
 
 ## 2. Provisioning, Linking & One-Way Projection
 

@@ -1,6 +1,6 @@
 {
   "name": "market-intel",
-  "version": "1.1.3",
-  "description": "Continuous competitor, company, and sector intelligence with deterministic snapshot diffs, grounded evidence gates, real public source fetchers, and interactive radar/battlecard boards.",
+  "version": "1.2.0",
+  "description": "Continuous competitor, company, and sector intelligence with deterministic snapshot diffs, semantic change classification, grounded evidence gates, real public source fetchers (including GitHub activity/trending and Product Hunt), Computer Use fallback guidance, and interactive radar/battlecard boards.",
   "license": "Apache-2.0"
 }

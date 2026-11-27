@@ -9,9 +9,15 @@ A single website edit can be cosmetic noise or an A/B test. High-confidence stra
 | Signal Quadrant | Primary Real Sources | What Alone Looks Ambiguous | What Cross-Source Triangulation Proves |
 |---|---|---|---|
 | **Commercial & Packaging** | Pricing page diffs, terms/limits pages | Tier renamed or starter price nudged | Paired with Enterprise AE hiring + SSO release = deliberate upmarket pivot |
-| **Product & Delivery Velocity** | GitHub Releases, npm, PyPI, App Store Lookup, Statuspage | Quiet blog for 6 weeks | Paired with steady minor bugfix releases + zero new feature hires = maintenance phase |
+| **Product & Delivery Velocity** | GitHub Releases, Repo Activity (commits/issues/PRs), File diffs, npm, PyPI, App Store Lookup, Statuspage | Quiet blog for 6 weeks or high commit count alone | Paired with external user issues resolved in merged PRs + shipped release tag = genuine delivery velocity |
 | **Resource & Talent Bets** | Greenhouse, Ashby, Lever public job boards | One exploratory AI engineer role | 4+ roles in one new department or region = funded 6–12 month roadmap commitment |
-| **Market & Financial Reality** | HN Algolia discussions, SEC EDGAR 10-K/10-Q/8-K, local filings | Vocal single user complaint | Repeated migration complaints across threads + rising risk disclosures in filings = exploitable vulnerability |
+| **Market & Financial Reality** | HN Algolia, Reddit Connector, GitHub Trending, Product Hunt, SEC EDGAR, Computer Use notes, local filings | Vocal single user complaint or one-day star spike | Repeated migration complaints across threads + rising risk disclosures or sustained multi-week adoption = exploitable trend |
+
+### Open-Source Delivery Substantiveness & Ranking Neutrality
+- **Separate real shipping from noise**: High commit or issue counts do not equal user value. Distinguish substantive code/test delivery from README copy edits (`github_file`), bot/mirror syncs, or marketing updates.
+- **Separate external users from maintainers**: `github_repo_activity` separates `issues` from `prs` and preserves `authorAssociation`. Never count maintainer PRs or bot transcripts as independent user demand, and never assume distinct usernames equal unique paying users.
+- **Track resolution stages honestly**: Distinguish *user reported* → *maintainer acknowledged* → *PR merged* → *released* → *user verified*. Closing an issue does not prove a fix, and merging a PR does not prove it shipped.
+- **Keep discovery rankings neutral before recommending**: When reporting full boards such as `github_trending` or `producthunt`, present the objective ordered board and rank deltas first—never silently filter out entries—and place relevance-based recommendations in a separate section.
 
 ### Confidence Discipline (Enforced by `scripts/evidence_gate.py`)
 - **`triangulated`**: Backed by `>= 2` distinct `sourceKinds` captured for **the same entity** (e.g., `webpage` + `ashby_jobs`, `github_releases` + `hn_algolia`, or `webpage` + `local_doc`). Cross-entity URL borrowing is blocked.

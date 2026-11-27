@@ -97,6 +97,8 @@ def build_battlecard_payload(workspace: Path) -> dict:
     for e in watchlist.get('entities', []):
         if not isinstance(e, dict) or not e.get('slug'):
             continue
+        if str(e.get('category', '')).strip().lower() == 'sector-radar':
+            continue
         slug = e['slug']
         profile = read_json(workspace / 'entities' / slug / 'profile.json', {})
         bc = read_json(workspace / 'battlecards' / f'{slug}.json', {})

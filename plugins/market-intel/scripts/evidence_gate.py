@@ -12,7 +12,7 @@ import sys
 import urllib.parse
 
 ALLOWED_SEVERITIES = {'high', 'medium', 'low'}
-ALLOWED_CATEGORIES = {'pricing', 'release', 'hiring', 'filing', 'outage', 'positioning', 'community'}
+ALLOWED_CATEGORIES = {'pricing', 'release', 'hiring', 'filing', 'outage', 'positioning', 'community', 'discovery'}
 TRACKING_PARAMS = {'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'ref', 'fbclid', 'gclid'}
 _URL_KEYS = {'url', 'hnUrl', 'homepage'}
 _META_SKIP_KEYS = {'entitySlug', 'sourceId', 'kind', 'ok', 'observedAt', 'error'}

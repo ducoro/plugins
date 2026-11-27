@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Fetch live public intelligence from verified keyless sources into market-intel-signal/1."""
+"""Fetch live public intelligence from verified public sources into market-intel-signal/1."""
 from __future__ import annotations
 
 import argparse
+import base64
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 import json
@@ -17,12 +18,33 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 
-DEFAULT_UA = 'DucoroMarketIntel/1.0 (+https://ducoro.ai)'
+DEFAULT_UA = 'DucoroMarketIntel/1.1 (+https://ducoro.ai)'
 SEC_UA = 'DucoroMarketIntel contact@ducoro.ai'
 SUPPORTED_KINDS = {
-    'webpage', 'rss', 'github_releases', 'appstore_ios', 'npm', 'pypi',
+    'webpage', 'rss', 'github_releases', 'github_repo_activity', 'github_file',
+    'github_trending', 'producthunt', 'appstore_ios', 'npm', 'pypi',
     'greenhouse_jobs', 'ashby_jobs', 'lever_jobs', 'sec_edgar', 'hn_algolia',
 }
+
+_PRODUCTHUNT_GRAPHQL_QUERY = """
+query($first: Int!) {
+  posts(first: $first, order: RANKING) {
+    edges {
+      node {
+        id
+        name
+        tagline
+        url
+        votesCount
+        commentsCount
+        reviewsCount
+        reviewsRating
+        createdAt
+      }
+    }
+  }
+}
+""".strip()
 
 
 def utc_now() -> str:
@@ -64,6 +86,135 @@ class _TextExtractor(HTMLParser):
         self.lines.append(cleaned)
 
 
+class _GitHubTrendingParser(HTMLParser):
+    """Parse GitHub Trending <article class="Box-row"> rows with completeness tracking."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.expected_count = 0
+        self.entries: list[dict] = []
+        self._in_row = False
+        self._row_depth = 0
+        self._in_h2 = False
+        self._in_p = False
+        self._in_lang = False
+        self._in_stars = False
+        self._in_span = False
+        self._cur: dict | None = None
+        self._buf: list[str] = []
+
+    def _flush_text(self) -> str:
+        text = re.sub(r'\s+', ' ', ''.join(self._buf)).strip()
+        self._buf.clear()
+        return text
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        t = tag.lower()
+        attr_map = dict(attrs)
+        cls = attr_map.get('class', '')
+        if t == 'article' and 'Box-row' in cls.split():
+            self.expected_count += 1
+            self._in_row = True
+            self._row_depth = 1
+            self._cur = {
+                'repo': '', 'url': '', 'description': '', 'language': '',
+                'stars': None, 'periodStars': None, 'periodLabel': '',
+            }
+            return
+        if not self._in_row or self._cur is None:
+            return
+        self._row_depth += 1
+        if t == 'h2':
+            self._in_h2 = True
+        elif t == 'a':
+            href = (attr_map.get('href') or '').strip()
+            if self._in_h2 and href.startswith('/') and not self._cur['repo']:
+                parts = [p for p in href.strip('/').split('/') if p]
+                if len(parts) == 2:
+                    repo = f'{parts[0]}/{parts[1]}'
+                    self._cur['repo'] = repo
+                    self._cur['url'] = f'https://github.com/{repo}'
+            elif href.endswith('/stargazers') and self._cur['stars'] is None:
+                self._in_stars = True
+                self._buf.clear()
+        elif t == 'p' and not self._cur['description']:
+            self._in_p = True
+            self._buf.clear()
+        elif t == 'span':
+            if attr_map.get('itemprop') == 'programmingLanguage':
+                self._in_lang = True
+                self._buf.clear()
+            else:
+                self._in_span = True
+                self._buf.clear()
+
+    def handle_endtag(self, tag: str) -> None:
+        if not self._in_row or self._cur is None:
+            return
+        t = tag.lower()
+        if t == 'h2':
+            self._in_h2 = False
+        elif t == 'p' and self._in_p:
+            self._cur['description'] = self._flush_text()
+            self._in_p = False
+        elif t == 'a' and self._in_stars:
+            num = re.sub(r'[^0-9]', '', self._flush_text())
+            self._cur['stars'] = int(num) if num else None
+            self._in_stars = False
+        elif t == 'span':
+            if self._in_lang:
+                self._cur['language'] = self._flush_text()
+                self._in_lang = False
+            elif self._in_span:
+                text = self._flush_text()
+                if 'star' in text.lower() and self._cur['periodStars'] is None:
+                    m = re.search(r'([0-9][0-9,]*)\s+stars?', text, re.I)
+                    if m:
+                        self._cur['periodStars'] = int(m.group(1).replace(',', ''))
+                        self._cur['periodLabel'] = text
+                self._in_span = False
+        self._row_depth -= 1
+        if self._row_depth <= 0:
+            if self._cur['repo']:
+                self._cur['rank'] = len(self.entries) + 1
+                self.entries.append(self._cur)
+            self._in_row = False
+            self._cur = None
+
+    def handle_data(self, data: str) -> None:
+        if self._in_p or self._in_lang or self._in_stars or self._in_span:
+            self._buf.append(data)
+
+
+def classify_error(exc: Exception) -> tuple[str, int | None]:
+    """Classify fetch errors into actionable operational categories without over-claiming account bans."""
+    msg = str(exc).lower()
+    if isinstance(exc, urllib.error.HTTPError):
+        code = int(exc.code)
+        reason = str(getattr(exc, 'reason', '') or '').lower()
+        combined = f'{reason} {msg}'
+        if code == 429:
+            return 'rate_limited', code
+        if code == 401:
+            return 'auth_required', code
+        if code == 403:
+            if any(tok in combined for tok in ('rate limit', 'too many requests', 'quota', 'secondary rate')):
+                return 'rate_limited', code
+            if any(tok in combined for tok in ('captcha', 'cloudflare', 'challenge', 'verify')):
+                return 'challenge', code
+            return 'access_denied', code
+        if any(tok in combined for tok in ('captcha', 'cloudflare', 'challenge', 'verify')):
+            return 'challenge', code
+        return 'http_error', code
+    if any(tok in msg for tok in ('captcha', 'cloudflare', 'risk_control', 'challenge', 'verification required')):
+        return 'challenge', None
+    if isinstance(exc, (TimeoutError, ssl.SSLError, urllib.error.URLError, OSError)):
+        return 'network_timeout', None
+    if isinstance(exc, (ET.ParseError, json.JSONDecodeError, ValueError, KeyError)):
+        return 'parse_error', None
+    return 'unknown', None
+
+
 def http_get(url: str, *, sec: bool = False, extra_headers: dict[str, str] | None = None, timeout: int = 15) -> tuple[int, str]:
     headers = {'User-Agent': SEC_UA if sec else DEFAULT_UA, 'Accept': '*/*'}
     if extra_headers:
@@ -84,6 +235,18 @@ def http_get(url: str, *, sec: bool = False, extra_headers: dict[str, str] | Non
                 time.sleep(0.5)
     assert last_exc is not None
     raise last_exc
+
+
+def http_post_json(url: str, payload: dict, *, extra_headers: dict[str, str] | None = None, timeout: int = 15) -> tuple[int, str]:
+    headers = {'User-Agent': DEFAULT_UA, 'Accept': 'application/json', 'Content-Type': 'application/json'}
+    if extra_headers:
+        headers.update(extra_headers)
+    body_bytes = json.dumps(payload).encode('utf-8')
+    req = urllib.request.Request(url, data=body_bytes, headers=headers, method='POST')
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        raw = resp.read(2_000_000)
+        charset = resp.headers.get_content_charset() or 'utf-8'
+        return resp.status, raw.decode(charset, errors='replace')
 
 
 def _strip_ns(tag: str) -> str:
@@ -119,6 +282,11 @@ def parse_rss_or_atom(xml_text: str, limit: int = 10) -> list[dict]:
     return items
 
 
+def _github_headers() -> dict[str, str] | None:
+    token = os.environ.get('GITHUB_TOKEN', '').strip()
+    return {'Authorization': f'Bearer {token}', 'Accept': 'application/vnd.github+json'} if token else None
+
+
 def fetch_single_source(entity_slug: str, source: dict, timeout: int = 15) -> dict:
     kind = source.get('kind', '')
     source_id = source.get('id') or kind
@@ -126,7 +294,8 @@ def fetch_single_source(entity_slug: str, source: dict, timeout: int = 15) -> di
     if kind not in SUPPORTED_KINDS:
         return {
             'entitySlug': entity_slug, 'sourceId': source_id, 'kind': kind,
-            'ok': False, 'error': f'Unsupported source kind: {kind}', 'observedAt': observed_at,
+            'ok': False, 'errorKind': 'unsupported_kind',
+            'error': f'Unsupported source kind: {kind}', 'observedAt': observed_at,
         }
 
     try:
@@ -156,7 +325,7 @@ def fetch_single_source(entity_slug: str, source: dict, timeout: int = 15) -> di
             repo = source['repo']
             limit = int(source.get('limit', 5))
             url = source.get('apiUrl') or f'https://api.github.com/repos/{repo}/releases?per_page={limit}'
-            gh_headers = {'Authorization': f'Bearer {os.environ["GITHUB_TOKEN"]}'} if os.environ.get('GITHUB_TOKEN') else None
+            gh_headers = _github_headers()
             try:
                 _, body = http_get(url, extra_headers=gh_headers, timeout=timeout)
                 releases = [
@@ -172,7 +341,6 @@ def fetch_single_source(entity_slug: str, source: dict, timeout: int = 15) -> di
             except urllib.error.HTTPError as exc:
                 if exc.code != 403 or source.get('apiUrl'):
                     raise
-                # Official keyless GitHub Releases Atom feed fallback when anonymous REST quota is exhausted
                 _, atom_xml = http_get(f'https://github.com/{repo}/releases.atom', timeout=timeout)
                 releases = [
                     {
@@ -189,6 +357,185 @@ def fetch_single_source(entity_slug: str, source: dict, timeout: int = 15) -> di
                 'url': releases[0]['url'] if releases and releases[0]['url'] else f'https://github.com/{repo}/releases',
                 'observedAt': observed_at,
                 'structured': {'repo': repo, 'releases': releases},
+            }
+
+        if kind == 'github_repo_activity':
+            repo = source['repo']
+            limit = int(source.get('limit', 10))
+            gh_headers = _github_headers()
+            commits_url = source.get('commitsApiUrl') or f'https://api.github.com/repos/{repo}/commits?per_page={limit}'
+            issues_url = source.get('issuesApiUrl') or f'https://api.github.com/repos/{repo}/issues?state=all&sort=updated&per_page={min(limit * 2, 100)}'
+
+            _, commits_body = http_get(commits_url, extra_headers=gh_headers, timeout=timeout)
+            raw_commits = json.loads(commits_body)
+            commits = [
+                {
+                    'sha': str(c.get('sha', ''))[:12],
+                    'message': ((c.get('commit') or {}).get('message') or '').splitlines()[0].strip()[:200],
+                    'author': ((c.get('commit') or {}).get('author') or {}).get('name', ''),
+                    'date': ((c.get('commit') or {}).get('author') or {}).get('date', ''),
+                    'url': c.get('html_url', ''),
+                }
+                for c in raw_commits[:limit]
+                if isinstance(c, dict)
+            ]
+
+            _, issues_body = http_get(issues_url, extra_headers=gh_headers, timeout=timeout)
+            raw_issues = json.loads(issues_body)
+            issues: list[dict] = []
+            prs: list[dict] = []
+            for item in raw_issues:
+                if not isinstance(item, dict):
+                    continue
+                entry = {
+                    'number': int(item.get('number', 0)),
+                    'title': str(item.get('title', '')).strip()[:200],
+                    'state': str(item.get('state', '')).lower(),
+                    'author': ((item.get('user') or {}).get('login') or ''),
+                    'authorAssociation': str(item.get('author_association', 'NONE')),
+                    'comments': int(item.get('comments', 0) or 0),
+                    'updatedAt': str(item.get('updated_at', '')),
+                    'url': str(item.get('html_url', '')),
+                    'labels': sorted(
+                        str(lb.get('name', '')).strip()
+                        for lb in (item.get('labels') or [])
+                        if isinstance(lb, dict) and lb.get('name')
+                    ),
+                }
+                if 'pull_request' in item:
+                    if len(prs) < limit:
+                        prs.append(entry)
+                else:
+                    if len(issues) < limit:
+                        issues.append(entry)
+
+            return {
+                'entitySlug': entity_slug, 'sourceId': source_id, 'kind': kind, 'ok': True,
+                'url': f'https://github.com/{repo}', 'observedAt': observed_at,
+                'structured': {'repo': repo, 'commits': commits, 'issues': issues, 'prs': prs},
+            }
+
+        if kind == 'github_file':
+            repo = source['repo']
+            path = (source.get('path') or '').strip()
+            ref = (source.get('ref') or '').strip()
+            gh_headers = _github_headers()
+            if source.get('apiUrl'):
+                url = source['apiUrl']
+            else:
+                ep = (
+                    f'https://api.github.com/repos/{repo}/contents/{urllib.parse.quote(path, safe="/")}'
+                    if path else f'https://api.github.com/repos/{repo}/readme'
+                )
+                url = f'{ep}?ref={urllib.parse.quote(ref)}' if ref else ep
+            _, body = http_get(url, extra_headers=gh_headers, timeout=timeout)
+            data = json.loads(body)
+            if not isinstance(data, dict) or not data.get('sha'):
+                raise ValueError('Invalid GitHub file response: missing blob sha')
+            resolved_path = str(data.get('path') or path or 'README.md')
+            lines: list[str] = []
+            if data.get('encoding') == 'base64' and data.get('content'):
+                decoded = base64.b64decode(''.join(str(data['content']).split())).decode('utf-8', errors='replace')
+                lines = [ln.strip() for ln in decoded.splitlines() if ln.strip()][:200]
+            return {
+                'entitySlug': entity_slug, 'sourceId': source_id, 'kind': kind, 'ok': True,
+                'url': data.get('html_url') or f'https://github.com/{repo}/blob/{ref or "HEAD"}/{resolved_path}',
+                'observedAt': observed_at,
+                'structured': {
+                    'repo': repo,
+                    'path': resolved_path,
+                    'ref': ref or 'default',
+                    'blobSha': str(data['sha']),
+                    'size': int(data.get('size', 0) or 0),
+                    'lines': lines,
+                },
+            }
+
+        if kind == 'github_trending':
+            since = str(source.get('since', 'daily')).lower()
+            if since not in {'daily', 'weekly', 'monthly'}:
+                raise ValueError(f'Unsupported GitHub Trending since value: {since}')
+            language = (source.get('language') or '').strip()
+            spoken = (source.get('spokenLanguage') or '').strip()
+            if source.get('apiUrl'):
+                url = source['apiUrl']
+            else:
+                lang_seg = f'/{urllib.parse.quote(language)}' if language else ''
+                qs = {'since': since}
+                if spoken:
+                    qs['spoken_language_code'] = spoken
+                url = f'https://github.com/trending{lang_seg}?{urllib.parse.urlencode(qs)}'
+            _, html = http_get(url, timeout=timeout)
+            parser = _GitHubTrendingParser()
+            parser.feed(html)
+            if parser.expected_count == 0 or len(parser.entries) != parser.expected_count:
+                raise ValueError(
+                    f'Incomplete GitHub Trending parse: expected {parser.expected_count} rows, parsed {len(parser.entries)}'
+                )
+            return {
+                'entitySlug': entity_slug, 'sourceId': source_id, 'kind': kind, 'ok': True,
+                'url': url, 'observedAt': observed_at,
+                'structured': {
+                    'since': since,
+                    'language': language,
+                    'expectedCount': parser.expected_count,
+                    'parsedCount': len(parser.entries),
+                    'complete': True,
+                    'entries': parser.entries,
+                },
+            }
+
+        if kind == 'producthunt':
+            limit = int(source.get('limit', 10))
+            token = os.environ.get('PRODUCTHUNT_TOKEN', '').strip()
+            if token and (source.get('graphqlUrl') or not source.get('apiUrl')):
+                gql_url = source.get('graphqlUrl') or 'https://api.producthunt.com/v2/api/graphql'
+                _, body = http_post_json(
+                    gql_url,
+                    {'query': _PRODUCTHUNT_GRAPHQL_QUERY, 'variables': {'first': limit}},
+                    extra_headers={'Authorization': f'Bearer {token}'},
+                    timeout=timeout,
+                )
+                payload = json.loads(body)
+                if payload.get('errors'):
+                    raise ValueError(f'Product Hunt GraphQL error: {payload["errors"]}')
+                edges = (((payload.get('data') or {}).get('posts') or {}).get('edges') or [])
+                posts = []
+                for edge in edges[:limit]:
+                    node = (edge or {}).get('node') or {}
+                    posts.append({
+                        'id': str(node.get('id', '')),
+                        'name': str(node.get('name', '')).strip(),
+                        'tagline': str(node.get('tagline', '')).strip(),
+                        'url': str(node.get('url', '')).strip(),
+                        'votesCount': int(node.get('votesCount', 0) or 0),
+                        'commentsCount': int(node.get('commentsCount', 0) or 0),
+                        'reviewsCount': int(node.get('reviewsCount', 0) or 0),
+                        'reviewsRating': node.get('reviewsRating'),
+                        'createdAt': str(node.get('createdAt', '')),
+                    })
+                return {
+                    'entitySlug': entity_slug, 'sourceId': source_id, 'kind': kind, 'ok': True,
+                    'url': 'https://www.producthunt.com/', 'observedAt': observed_at,
+                    'structured': {'mode': 'graphql', 'posts': posts},
+                }
+
+            feed_url = source.get('apiUrl') or 'https://www.producthunt.com/feed'
+            _, xml_body = http_get(feed_url, timeout=timeout)
+            entries = parse_rss_or_atom(xml_body, limit=limit)
+            posts = [
+                {
+                    'name': e['title'],
+                    'tagline': e['summary'],
+                    'url': e['url'],
+                    'publishedAt': e['publishedAt'],
+                }
+                for e in entries
+            ]
+            return {
+                'entitySlug': entity_slug, 'sourceId': source_id, 'kind': kind, 'ok': True,
+                'url': feed_url, 'observedAt': observed_at,
+                'structured': {'mode': 'rss', 'posts': posts},
             }
 
         if kind == 'appstore_ios':
@@ -350,12 +697,19 @@ def fetch_single_source(entity_slug: str, source: dict, timeout: int = 15) -> di
         ET.ParseError,
         json.JSONDecodeError,
     ) as exc:
-        return {
+        error_kind, http_status = classify_error(exc)
+        err_rec = {
             'entitySlug': entity_slug, 'sourceId': source_id, 'kind': kind,
-            'ok': False, 'error': str(exc), 'observedAt': observed_at,
+            'ok': False, 'errorKind': error_kind, 'error': str(exc), 'observedAt': observed_at,
         }
+        if http_status is not None:
+            err_rec['httpStatus'] = http_status
+        return err_rec
 
-    return {'entitySlug': entity_slug, 'sourceId': source_id, 'kind': kind, 'ok': False, 'error': 'Unhandled kind', 'observedAt': observed_at}
+    return {
+        'entitySlug': entity_slug, 'sourceId': source_id, 'kind': kind,
+        'ok': False, 'errorKind': 'unknown', 'error': 'Unhandled kind', 'observedAt': observed_at,
+    }
 
 
 def fetch_watchlist(workspace: Path, *, entity_filter: str | None = None, timeout: int = 15) -> dict:

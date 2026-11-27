@@ -38,9 +38,20 @@ def utc_now() -> str:
 
 class _MockIntelHandler(BaseHTTPRequestHandler):
     routes: dict[str, tuple[int, str, str]] = {}
+    post_routes: dict[str, tuple[int, str, str]] = {}
 
     def do_GET(self):
         status, ctype, body = self.routes.get(self.path, (404, 'text/plain', 'not found'))
+        self.send_response(status)
+        self.send_header('Content-Type', ctype)
+        self.end_headers()
+        self.wfile.write(body.encode('utf-8'))
+
+    def do_POST(self):
+        length = int(self.headers.get('Content-Length', '0') or '0')
+        if length > 0:
+            self.rfile.read(length)
+        status, ctype, body = self.post_routes.get(self.path, (404, 'text/plain', 'not found'))
         self.send_response(status)
         self.send_header('Content-Type', ctype)
         self.end_headers()
@@ -515,6 +526,410 @@ class MarketIntelTest(unittest.TestCase):
         self.assertIn('strengths', bc_html)
         self.assertIn('gaps', bc_html)
         self.assertIn('evidenceUrls', bc_html)
+
+    def test_new_adapters_github_activity_file_trending_and_producthunt(self):
+        import base64
+        import os
+
+        readme_v1 = base64.b64encode(b'# Acme CLI\nFast local workflow engine.\n').decode('ascii')
+        readme_v2 = base64.b64encode(b'# Acme CLI\nFast local workflow engine.\nNow with team sync.\n').decode('ascii')
+
+        trending_v1 = (
+            '<html><body>'
+            '<article class="Box-row"><h2><a href="/acme/agent-kit">acme / agent-kit</a></h2>'
+            '<p class="col-9">Autonomous workflow runner</p>'
+            '<span itemprop="programmingLanguage">TypeScript</span>'
+            '<a href="/acme/agent-kit/stargazers">1,200</a>'
+            '<span class="d-inline-block float-sm-right">210 stars today</span></article>'
+            '<article class="Box-row"><h2><a href="/beta/local-ai">beta / local-ai</a></h2>'
+            '<p class="col-9">Offline model router</p>'
+            '<span itemprop="programmingLanguage">Rust</span>'
+            '<a href="/beta/local-ai/stargazers">850</a>'
+            '<span class="d-inline-block float-sm-right">140 stars today</span></article>'
+            '</body></html>'
+        )
+        trending_v2 = (
+            '<html><body>'
+            '<article class="Box-row"><h2><a href="/beta/local-ai">beta / local-ai</a></h2>'
+            '<p class="col-9">Offline model router</p>'
+            '<span itemprop="programmingLanguage">Rust</span>'
+            '<a href="/beta/local-ai/stargazers">990</a>'
+            '<span class="d-inline-block float-sm-right">180 stars today</span></article>'
+            '<article class="Box-row"><h2><a href="/gamma/mcp-hub">gamma / mcp-hub</a></h2>'
+            '<p class="col-9">MCP connector registry</p>'
+            '<span itemprop="programmingLanguage">Go</span>'
+            '<a href="/gamma/mcp-hub/stargazers">410</a>'
+            '<span class="d-inline-block float-sm-right">120 stars today</span></article>'
+            '</body></html>'
+        )
+        ph_rss = (
+            '<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom">'
+            '<entry><title>FlowDesk</title><link href="https://www.producthunt.com/posts/flowdesk"/>'
+            '<updated>2026-11-27T08:00:00Z</updated><summary>Run background workflows from chat</summary></entry>'
+            '</feed>'
+        )
+        ph_graphql = json.dumps({
+            'data': {
+                'posts': {
+                    'edges': [{
+                        'node': {
+                            'id': 'ph-101',
+                            'name': 'FlowDesk',
+                            'tagline': 'Run background workflows from chat',
+                            'url': 'https://www.producthunt.com/posts/flowdesk',
+                            'votesCount': 312,
+                            'commentsCount': 24,
+                            'reviewsCount': 5,
+                            'reviewsRating': 4.8,
+                            'createdAt': '2026-11-27T08:00:00Z',
+                        }
+                    }]
+                }
+            }
+        })
+
+        routes = {
+            '/gh/commits': (200, 'application/json', json.dumps([
+                {
+                    'sha': 'aaaa1111bbbb2222cccc3333dddd4444eeee5555',
+                    'html_url': 'https://github.com/acme/agent-kit/commit/aaaa1111',
+                    'commit': {
+                        'message': 'feat: add deterministic retry budget\n\ndetails',
+                        'author': {'name': 'Alice', 'date': '2026-11-27T07:00:00Z'},
+                    },
+                }
+            ])),
+            '/gh/issues': (200, 'application/json', json.dumps([
+                {
+                    'number': 42,
+                    'title': 'Linux daemon hangs after sleep',
+                    'state': 'open',
+                    'html_url': 'https://github.com/acme/agent-kit/issues/42',
+                    'user': {'login': 'ext-user'},
+                    'author_association': 'NONE',
+                    'comments': 3,
+                    'updated_at': '2026-11-27T08:00:00Z',
+                    'labels': [{'name': 'bug'}],
+                },
+                {
+                    'number': 43,
+                    'title': 'fix: retry backoff timer',
+                    'state': 'closed',
+                    'html_url': 'https://github.com/acme/agent-kit/pull/43',
+                    'user': {'login': 'maintainer-bob'},
+                    'author_association': 'MEMBER',
+                    'comments': 1,
+                    'updated_at': '2026-11-27T08:30:00Z',
+                    'labels': [],
+                    'pull_request': {'url': 'https://api.github.com/repos/acme/agent-kit/pulls/43'},
+                },
+            ])),
+            '/gh/readme': (200, 'application/json', json.dumps({
+                'path': 'README.md',
+                'sha': '1111111111111111111111111111111111111111',
+                'size': 42,
+                'encoding': 'base64',
+                'type': 'file',
+                'html_url': 'https://github.com/acme/agent-kit/blob/main/README.md',
+                'content': readme_v1,
+            })),
+            '/gh/trending': (200, 'text/html', trending_v1),
+            '/ph/feed': (200, 'application/atom+xml', ph_rss),
+        }
+        _MockIntelHandler.routes = routes
+        _MockIntelHandler.post_routes = {
+            '/ph/graphql': (200, 'application/json', ph_graphql),
+        }
+        srv = ThreadingHTTPServer(('127.0.0.1', 0), _MockIntelHandler)
+        port = srv.server_address[1]
+        t = threading.Thread(target=srv.serve_forever, daemon=True)
+        t.start()
+        self.addCleanup(srv.shutdown)
+        self.addCleanup(srv.server_close)
+        base = f'http://127.0.0.1:{port}'
+
+        watchlist = {
+            'schemaVersion': 'market-intel-watchlist/1',
+            'updatedAt': utc_now(),
+            'entities': [
+                {
+                    'slug': 'acme',
+                    'name': 'Acme Agent Kit',
+                    'category': 'direct-competitor',
+                    'sources': [
+                        {
+                            'id': 'repo_activity',
+                            'kind': 'github_repo_activity',
+                            'repo': 'acme/agent-kit',
+                            'commitsApiUrl': f'{base}/gh/commits',
+                            'issuesApiUrl': f'{base}/gh/issues',
+                        },
+                        {
+                            'id': 'readme',
+                            'kind': 'github_file',
+                            'repo': 'acme/agent-kit',
+                            'path': 'README.md',
+                            'apiUrl': f'{base}/gh/readme',
+                        },
+                    ],
+                },
+                {
+                    'slug': 'github-trending-daily',
+                    'name': 'GitHub Trending Daily',
+                    'category': 'sector-radar',
+                    'sources': [
+                        {'id': 'trending_daily', 'kind': 'github_trending', 'since': 'daily', 'apiUrl': f'{base}/gh/trending'},
+                    ],
+                },
+                {
+                    'slug': 'producthunt-daily',
+                    'name': 'Product Hunt Daily',
+                    'category': 'sector-radar',
+                    'sources': [
+                        {'id': 'ph_rss', 'kind': 'producthunt', 'apiUrl': f'{base}/ph/feed'},
+                    ],
+                },
+            ],
+        }
+        (self.ws / 'watchlist.json').write_text(json.dumps(watchlist), encoding='utf-8')
+
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop('PRODUCTHUNT_TOKEN', None)
+            cap1 = fetch_sources.fetch_watchlist(self.ws)
+
+        self.assertEqual(cap1['okCount'], 4)
+        self.assertEqual(cap1['failedCount'], 0)
+        by_src = {r['sourceId']: r for r in cap1['records']}
+
+        # Issues and PRs must be strictly separated, with external authorAssociation preserved
+        act = by_src['repo_activity']['structured']
+        self.assertEqual(len(act['commits']), 1)
+        self.assertEqual(len(act['issues']), 1)
+        self.assertEqual(len(act['prs']), 1)
+        self.assertEqual(act['issues'][0]['number'], 42)
+        self.assertEqual(act['issues'][0]['authorAssociation'], 'NONE')
+        self.assertEqual(act['prs'][0]['number'], 43)
+
+        # File blobSha and decoded lines captured
+        readme = by_src['readme']['structured']
+        self.assertEqual(readme['blobSha'], '1111111111111111111111111111111111111111')
+        self.assertIn('# Acme CLI', readme['lines'])
+
+        # Trending completeness and ordering
+        tr = by_src['trending_daily']['structured']
+        self.assertTrue(tr['complete'])
+        self.assertEqual(tr['expectedCount'], 2)
+        self.assertEqual([e['repo'] for e in tr['entries']], ['acme/agent-kit', 'beta/local-ai'])
+
+        # Product Hunt RSS fallback works without token
+        self.assertEqual(by_src['ph_rss']['structured']['mode'], 'rss')
+        self.assertEqual(by_src['ph_rss']['structured']['posts'][0]['name'], 'FlowDesk')
+
+        # Product Hunt GraphQL mode separates commentsCount (launch) from reviewsCount
+        with mock.patch.dict(os.environ, {'PRODUCTHUNT_TOKEN': 'test-token-placeholder'}):
+            ph_gql_rec = fetch_sources.fetch_single_source(
+                'producthunt-daily',
+                {'id': 'ph_gql', 'kind': 'producthunt', 'graphqlUrl': f'{base}/ph/graphql'},
+            )
+        self.assertTrue(ph_gql_rec['ok'])
+        self.assertEqual(ph_gql_rec['structured']['mode'], 'graphql')
+        self.assertEqual(ph_gql_rec['structured']['posts'][0]['commentsCount'], 24)
+        self.assertEqual(ph_gql_rec['structured']['posts'][0]['reviewsCount'], 5)
+
+        # Baseline diff
+        diff1 = snapshot_diff.diff_capture(self.ws, cap1)
+        self.assertEqual(diff1['outcome'], 'baseline_initialized')
+
+        # Update README + trending ranks + add new commit -> material_change with structured diffs
+        routes['/gh/readme'] = (200, 'application/json', json.dumps({
+            'path': 'README.md',
+            'sha': '2222222222222222222222222222222222222222',
+            'size': 64,
+            'encoding': 'base64',
+            'type': 'file',
+            'html_url': 'https://github.com/acme/agent-kit/blob/main/README.md',
+            'content': readme_v2,
+        }))
+        routes['/gh/trending'] = (200, 'text/html', trending_v2)
+        routes['/gh/commits'] = (200, 'application/json', json.dumps([
+            {
+                'sha': 'ffff9999eeee8888dddd7777cccc6666bbbb5555',
+                'html_url': 'https://github.com/acme/agent-kit/commit/ffff9999',
+                'commit': {
+                    'message': 'feat: ship team sync protocol',
+                    'author': {'name': 'Alice', 'date': '2026-11-28T00:00:00Z'},
+                },
+            },
+            {
+                'sha': 'aaaa1111bbbb2222cccc3333dddd4444eeee5555',
+                'html_url': 'https://github.com/acme/agent-kit/commit/aaaa1111',
+                'commit': {
+                    'message': 'feat: add deterministic retry budget\n\ndetails',
+                    'author': {'name': 'Alice', 'date': '2026-11-27T07:00:00Z'},
+                },
+            },
+        ]))
+        cap2 = fetch_sources.fetch_watchlist(self.ws)
+        diff2 = snapshot_diff.diff_capture(self.ws, cap2)
+        self.assertEqual(diff2['outcome'], 'material_change')
+        self.assertEqual(diff2['materialChangeCount'], 3)
+        by_change = {c['sourceId']: c for c in diff2['materialChanges']}
+        self.assertEqual(by_change['repo_activity']['changeKind'], 'content_changed')
+        self.assertEqual(len(by_change['repo_activity']['diff']['addedCommits']), 1)
+        self.assertEqual(by_change['readme']['diff']['currentSha'], '2222222222222222222222222222222222222222')
+        self.assertIn('Now with team sync.', by_change['readme']['diff']['addedLines'])
+        self.assertEqual(by_change['trending_daily']['diff']['entered'], ['gamma/mcp-hub'])
+        self.assertEqual(by_change['trending_daily']['diff']['dropped'], ['acme/agent-kit'])
+        self.assertEqual(by_change['trending_daily']['diff']['rankMoves'][0]['repo'], 'beta/local-ai')
+        self.assertEqual(by_change['trending_daily']['diff']['rankMoves'][0]['delta'], 1)
+
+        # Incomplete trending HTML MUST fail closed as parse_error instead of faking dropped repos
+        routes['/gh/trending'] = (200, 'text/html', '<html><body><article class="Box-row"><div>broken</div></article></body></html>')
+        cap_broken = fetch_sources.fetch_watchlist(self.ws, entity_filter='github-trending-daily')
+        self.assertEqual(cap_broken['failedCount'], 1)
+        self.assertEqual(cap_broken['records'][0]['errorKind'], 'parse_error')
+
+    def test_error_classification_and_semantic_change_kinds(self):
+        import urllib.error
+
+        # 1. Structured errorKind classification across all failure modes
+        cases = [
+            (urllib.error.HTTPError('https://x.test', 429, 'Too Many Requests', {}, None), 'rate_limited'),
+            (urllib.error.HTTPError('https://x.test', 401, 'Unauthorized', {}, None), 'auth_required'),
+            (urllib.error.HTTPError('https://x.test', 403, 'Forbidden', {}, None), 'access_denied'),
+            (urllib.error.HTTPError('https://x.test', 403, 'API rate limit exceeded', {}, None), 'rate_limited'),
+            (ValueError('Cloudflare captcha verification required'), 'challenge'),
+            (TimeoutError('timed out'), 'network_timeout'),
+            (json.JSONDecodeError('bad', 'x', 0), 'parse_error'),
+        ]
+        for exc, expected_kind in cases:
+            with mock.patch.object(fetch_sources, 'http_get', side_effect=exc):
+                rec = fetch_sources.fetch_single_source('acme', {'id': 's', 'kind': 'webpage', 'url': 'https://acme.example'})
+                self.assertFalse(rec['ok'])
+                self.assertEqual(rec['errorKind'], expected_kind, f'Expected {expected_kind} for {exc!r}, got {rec}')
+
+        # 2. Semantic changeKind in snapshot_diff:
+        #    engagement_only -> honest no_material_change (silent)
+        #    discussion_active -> tracked in discussionUpdates without faking a brand-new post
+        #    coverage_expanded -> tracked in coverageExpanded without faking today's material change
+        base_hits = [
+            {'title': 'Show HN: Acme 2.1', 'url': 'https://acme.example/v2', 'hnUrl': 'https://news.ycombinator.com/item?id=101', 'points': 100, 'comments': 20, 'createdAt': '2026-11-26T00:00:00Z'},
+            {'title': 'Acme vs Beta', 'url': 'https://acme.example/vs', 'hnUrl': 'https://news.ycombinator.com/item?id=100', 'points': 50, 'comments': 10, 'createdAt': '2026-11-25T00:00:00Z'},
+        ]
+        cap_base = {
+            'schemaVersion': 'market-intel-signal/1',
+            'generatedAt': utc_now(),
+            'records': [{
+                'entitySlug': 'acme', 'sourceId': 'hn', 'kind': 'hn_algolia', 'ok': True,
+                'url': 'https://hn.algolia.com/?q=acme', 'observedAt': utc_now(),
+                'structured': {'query': 'acme', 'hits': base_hits},
+            }],
+        }
+        d0 = snapshot_diff.diff_capture(self.ws, cap_base)
+        self.assertEqual(d0['outcome'], 'baseline_initialized')
+
+        # 2a. Points-only jitter -> engagement_only, outcome MUST remain no_material_change
+        cap_points = {
+            **cap_base,
+            'records': [{
+                **cap_base['records'][0],
+                'structured': {'query': 'acme', 'hits': [
+                    {**base_hits[0], 'points': 115},
+                    base_hits[1],
+                ]},
+            }],
+        }
+        d_points = snapshot_diff.diff_capture(self.ws, cap_points)
+        self.assertEqual(d_points['outcome'], 'no_material_change')
+        self.assertEqual(d_points['materialChangeCount'], 0)
+        self.assertEqual(d_points['engagementOnlyCount'], 1)
+
+        # 2b. Comments increased on existing thread -> discussion_active, not material_change new post
+        cap_comments = {
+            **cap_base,
+            'records': [{
+                **cap_base['records'][0],
+                'structured': {'query': 'acme', 'hits': [
+                    {**base_hits[0], 'points': 115, 'comments': 38},
+                    base_hits[1],
+                ]},
+            }],
+        }
+        d_comments = snapshot_diff.diff_capture(self.ws, cap_comments)
+        self.assertEqual(d_comments['outcome'], 'no_material_change')
+        self.assertEqual(d_comments['discussionUpdateCount'], 1)
+        self.assertEqual(d_comments['discussionUpdates'][0]['changeKind'], 'discussion_active')
+
+        # 2c. Wider limit reveals older trailing item while prefix is identical -> coverage_expanded
+        cap_wider = {
+            **cap_base,
+            'records': [{
+                **cap_base['records'][0],
+                'structured': {'query': 'acme', 'hits': [
+                    {**base_hits[0], 'points': 115, 'comments': 38},
+                    base_hits[1],
+                    {'title': 'Older Acme 1.0 post', 'url': 'https://acme.example/v1', 'hnUrl': 'https://news.ycombinator.com/item?id=90', 'points': 30, 'comments': 5, 'createdAt': '2026-10-01T00:00:00Z'},
+                ]},
+            }],
+        }
+        d_wider = snapshot_diff.diff_capture(self.ws, cap_wider)
+        self.assertEqual(d_wider['outcome'], 'no_material_change')
+        self.assertEqual(d_wider['materialChangeCount'], 0)
+        self.assertEqual(d_wider['coverageExpandedCount'], 1)
+        self.assertEqual(d_wider['coverageExpanded'][0]['changeKind'], 'coverage_expanded')
+
+    def test_sector_radar_discovery_category_computer_use_and_battlecard_filtering(self):
+        (self.ws / 'watchlist.json').write_text(
+            json.dumps({
+                'schemaVersion': 'market-intel-watchlist/1',
+                'updatedAt': utc_now(),
+                'entities': [
+                    {'slug': 'acme', 'name': 'Acme Corp', 'category': 'direct-competitor', 'sources': []},
+                    {'slug': 'github-trending-daily', 'name': 'GitHub Trending Daily', 'category': 'sector-radar', 'sources': []},
+                ],
+            }),
+            encoding='utf-8',
+        )
+        capture = {
+            'schemaVersion': 'market-intel-signal/1',
+            'generatedAt': utc_now(),
+            'records': [
+                {
+                    'entitySlug': 'github-trending-daily', 'sourceId': 'trending', 'kind': 'github_trending', 'ok': True,
+                    'url': 'https://github.com/trending?since=daily', 'observedAt': utc_now(),
+                    'structured': {
+                        'entries': [{'rank': 1, 'repo': 'gamma/mcp-hub', 'url': 'https://github.com/gamma/mcp-hub', 'description': 'MCP connector registry'}],
+                    },
+                },
+                {
+                    'entitySlug': 'github-trending-daily', 'sourceId': 'cu-medium', 'kind': 'computer_use', 'ok': True,
+                    'url': 'https://medium.com/@analyst/mcp-hub-review', 'observedAt': utc_now(),
+                    'structured': {'excerpt': 'gamma/mcp-hub crossed 400 stars in 24 hours with active external PRs.'},
+                },
+            ],
+        }
+        gate = evidence_gate.gate_candidates(self.ws, capture, [{
+            'entitySlug': 'github-trending-daily',
+            'severity': 'medium',
+            'category': 'discovery',
+            'confidence': 'triangulated',
+            'summary': 'New open-source project gamma/mcp-hub entered GitHub Trending #1 with corroborating analyst coverage.',
+            'evidenceUrls': ['https://github.com/gamma/mcp-hub', 'https://medium.com/@analyst/mcp-hub-review'],
+            'observedAt': utc_now(),
+            'quote': 'gamma/mcp-hub crossed 400 stars in 24 hours',
+        }], commit_events=True)
+        self.assertEqual(gate['acceptedCount'], 1)
+        self.assertEqual(gate['accepted'][0]['category'], 'discovery')
+        self.assertEqual(gate['accepted'][0]['sourceKinds'], ['computer_use', 'github_trending'])
+
+        # Radar board includes sector-radar entities & discovery events; battlecard board excludes sector-radar
+        radar_payload = build_boards.build_radar_payload(self.ws)
+        self.assertEqual(radar_payload['summary']['entityCount'], 2)
+        self.assertEqual(radar_payload['summary']['eventCount'], 1)
+
+        bc_payload = build_boards.build_battlecard_payload(self.ws)
+        self.assertEqual([c['slug'] for c in bc_payload['cards']], ['acme'])
+        self.assertEqual(bc_payload['summary']['entityCount'], 1)
 
 
 if __name__ == '__main__':

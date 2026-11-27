@@ -26,12 +26,12 @@ This directory layout works inside the human's existing research folder, a singl
     └── YYYY-MM-DD-brief.md       # Optional grounded periodic or ad-hoc briefs
 ```
 
-## 1. `watchlist.json` Contract & All 11 Keyless Adapter Keys
+## 1. `watchlist.json` Contract & All 15 Public Adapter Keys
 
 ```json
 {
   "schemaVersion": "market-intel-watchlist/1",
-  "updatedAt": "2026-11-25T00:00:00Z",
+  "updatedAt": "2026-11-28T00:00:00Z",
   "entities": [
     {
       "slug": "acme-cloud",
@@ -40,20 +40,36 @@ This directory layout works inside the human's existing research folder, a singl
       "sources": [
         { "id": "pricing", "kind": "webpage", "url": "https://example.com/pricing" },
         { "id": "releases", "kind": "github_releases", "repo": "owner/repo", "limit": 5 },
+        { "id": "activity", "kind": "github_repo_activity", "repo": "owner/repo", "limit": 10 },
+        { "id": "readme", "kind": "github_file", "repo": "owner/repo", "path": "README.md" },
         { "id": "jobs", "kind": "greenhouse_jobs", "boardToken": "acme" }
+      ]
+    },
+    {
+      "slug": "github-trending-daily",
+      "name": "GitHub Trending Daily",
+      "category": "sector-radar",
+      "sources": [
+        { "id": "trending", "kind": "github_trending", "since": "daily" }
       ]
     }
   ]
 }
 ```
 
+Use `"category": "sector-radar"` for broad discovery sources (such as GitHub Trending or Product Hunt daily feeds). `radar-board` displays all entities including `sector-radar`, while `battlecard-board` automatically excludes `sector-radar` entries to keep competitor battlecards focused.
+
 Every source object accepts an optional `"id"` (defaults to `kind`) and an optional `"apiUrl"` override for testing or custom mirrors where noted:
 
 | `kind` | Required Keys | Optional Keys | Notes |
 |---|---|---|---|
 | `webpage` | `url` | `id` | Fetches HTML and extracts normalized visible text lines (max 400 lines) |
-| `rss` | `url` | `id`, `limit` (default `10`) | Supports RSS 2.0 and Atom feeds (including Statuspage `/history.atom`) |
+| `rss` | `url` | `id`, `limit` (default `10`) | Supports RSS 2.0 and Atom feeds (including Medium `/feed/@author`, Statuspage `/history.atom`) |
 | `github_releases` | `repo` (`owner/repo`) | `id`, `limit` (default `5`), `apiUrl` | Uses `GITHUB_TOKEN` env var if set; falls back to public `.atom` on HTTP 403 |
+| `github_repo_activity` | `repo` (`owner/repo`) | `id`, `limit` (default `10`), `commitsApiUrl`, `issuesApiUrl` | Fetches default-branch commits plus strictly separated `issues` vs `prs` with `authorAssociation` |
+| `github_file` | `repo` (`owner/repo`) | `id`, `path` (defaults to `/readme`), `ref`, `apiUrl` | Tracks `blobSha` and decoded lines (up to 200) to isolate documentation/config edits from feature shipping |
+| `github_trending` | *(none)* | `id`, `since` (`daily`\|`weekly`\|`monthly`, default `daily`), `language`, `spokenLanguage`, `apiUrl` | Parses full ordered board with row-completeness check; fails closed as `parse_error` if partial |
+| `producthunt` | *(none)* | `id`, `limit` (default `10`), `apiUrl`, `graphqlUrl` | Uses official GraphQL when `PRODUCTHUNT_TOKEN` is set (separating `commentsCount` and `reviewsCount`), otherwise falls back to zero-key Atom feed |
 | `appstore_ios` | `appId` or `bundleId` | `id`, `country` (default `"us"`), `apiUrl` | Queries Apple iTunes Lookup API |
 | `npm` | `package` | `id`, `apiUrl` | Supports scoped packages (e.g., `@scope/pkg`) |
 | `pypi` | `package` | `id`, `apiUrl` | Queries PyPI JSON API |
@@ -63,9 +79,11 @@ Every source object accepts an optional `"id"` (defaults to `kind`) and an optio
 | `sec_edgar` | `cik` | `id`, `forms` (default `["10-K","10-Q","8-K","S-1"]`), `limit` (default `10`), `apiUrl` | Zero-pads CIK to 10 digits with SEC-compliant `User-Agent` |
 | `hn_algolia` | `query` | `id`, `limit` (default `10`), `apiUrl` | Queries Hacker News Algolia `search_by_date` stories |
 
-## 2. Capture Envelope (`captures/latest.json`, `market-intel-signal/1`)
+## 2. Capture Envelope (`captures/latest.json`, `market-intel-signal/1`) & Diff Classification
 
-Used by `fetch_sources.py`, `snapshot_diff.py`, and `evidence_gate.py`. Priority 1 Connectors and Priority 3 browser / `web_fetch` / `local_doc` observations append records in the same shape:
+Used by `fetch_sources.py`, `snapshot_diff.py`, and `evidence_gate.py`. Priority 1 Connectors (`connector:reddit`, `connector:x`, `connector:github`) and Priority 3 Computer Use / browser / `web_fetch` observations (`computer_use`, `browser`, `web_fetch`) append records in the same shape. Failed records (`ok: false`) include structured `errorKind` (`rate_limited`, `auth_required`, `access_denied`, `challenge`, `network_timeout`, `parse_error`, `unsupported_kind`, `unknown`) and optional `httpStatus`.
+
+`snapshot_diff.py` classifies changes into `materialChanges` (`changeKind: "content_changed"`), `discussionUpdates` (`changeKind: "discussion_active"`), `engagementOnly` (`changeKind: "engagement_only"`), and `coverageExpanded` (`changeKind: "coverage_expanded"`). Pure `engagement_only` and `coverage_expanded` updates keep `outcome: "no_material_change"`.
 
 ```json
 {
@@ -139,7 +157,7 @@ Append-only JSONL committed solely through `scripts/evidence_gate.py --commit-ev
 - `eventId`: deterministic 16-char sha256 fingerprint (idempotent deduplication key)
 - `entitySlug`: registered entity slug from `watchlist.json`
 - `severity`: `"high"` | `"medium"` | `"low"`
-- `category`: `"pricing"` | `"release"` | `"hiring"` | `"filing"` | `"outage"` | `"positioning"` | `"community"`
+- `category`: `"pricing"` | `"release"` | `"hiring"` | `"filing"` | `"outage"` | `"positioning"` | `"community"` | `"discovery"`
 - `confidence`: `"triangulated"` | `"single_source"` (computed by `evidence_gate.py`)
 - `sourceKinds`: sorted list of distinct verified source kinds backing this event
 - `summary`: concise factual change statement (>= 8 chars)
