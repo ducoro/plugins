@@ -1,6 +1,6 @@
 # Real Data Sources & Adapter Priority
 
-Never fabricate competitor metrics, pricing, releases, or filings from model memory. Collect live facts in strict priority order:
+Never fabricate competitor metrics, pricing, releases, or filings from model memory. Collect live facts in strict priority order and ground every tier into `evidence_gate.py`.
 
 ## Priority 1: Ducoro Core Connectors
 
@@ -14,7 +14,7 @@ Use mounted Connector tools (or `ducoro-cli mcp catalog call <slug> <tool> --arg
 
 ## Priority 2: Verified Keyless Public APIs (`scripts/fetch_sources.py`)
 
-Zero API keys required; all endpoints return official, publicly accessible data:
+Zero API keys required; all endpoints return official, publicly accessible data. Full `watchlist.json` source keys live in `references/workspace-schema.md`.
 
 | Source Type (`kind`) | Official Public Endpoint | What It Tracks (Invisible to Model Memory) |
 |---|---|---|
@@ -34,4 +34,18 @@ Zero API keys required; all endpoints return official, publicly accessible data:
 
 - Use built-in `web_search` / `web_fetch` for primary press releases or investor-relations pages.
 - For login-gated portals or JS-heavy pricing calculators, use the host browser and pause immediately for human login/CAPTCHA; never extract browser cookies or bypass anti-bot gates.
-- Human-supplied PDFs, earnings transcripts, or customer interview notes live under `entities/<slug>/local-docs/` and are cited by relative path plus page/line excerpt.
+- Human-supplied filings, earnings transcripts, decks, or customer interview notes live under `<data-dir>/entities/<slug>/local-docs/`.
+
+## Grounding Priority 1 & Priority 3 Findings Through `evidence_gate.py`
+
+All three source tiers flow through the exact same deterministic evidence gate so no tier bypasses verification:
+
+1. **Append Connector, Web Fetch, or Browser records into `market-intel-signal/1`**:
+   Write a capture shard (e.g., `<data-dir>/captures/external.json`) using `schemaVersion: "market-intel-signal/1"` with `ok: true`, the exact `entitySlug`, a descriptive `kind` (e.g., `"connector:github"`, `"connector:x"`, `"browser"`, `"web_fetch"`), the real `url`, ISO `observedAt`, and `structured` containing the verbatim observed excerpt (`lines` or `excerpt`). Merge it with keyless captures via:
+   ```sh
+   python3 scripts/fetch_sources.py <data-dir> \
+     --merge <data-dir>/captures/keyless.json <data-dir>/captures/external.json \
+     --out <data-dir>/captures/latest.json
+   ```
+2. **Cite human-supplied local documents via `localRef`**:
+   Store the source file inside `<data-dir>` (typically `entities/<slug>/local-docs/<filename>.txt` or `.md`) and set `"localRef": "entities/<slug>/local-docs/<filename>.txt"` on the candidate claim (with or without `evidenceUrls`). `scripts/evidence_gate.py` verifies that `localRef` stays inside `<data-dir>`, exists on disk, counts `local_doc` as a distinct `sourceKind` for triangulation, and checks that the normalized `quote` appears verbatim in the file or referenced capture record.

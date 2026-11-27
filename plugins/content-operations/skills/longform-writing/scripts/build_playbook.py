@@ -9,24 +9,6 @@ from pathlib import Path
 import re
 import sys
 
-TONE_PERSONA_MAP = (
-    (('casual', 'friend', 'chat', '轻松', '有趣', '朋友', '聊天'), 'midnight-friend'),
-    (('warm', 'story', 'essay', '温暖', '共鸣', '故事', '治愈'), 'warm-editor'),
-    (('sharp', 'commentary', 'opinion', '犀利', '锐评', '观点', '新闻'), 'sharp-journalist'),
-    (('data', 'finance', 'research', '严谨', '数据', '研究', '财经'), 'cold-analyst'),
-    (('humor', 'funny', 'satire', '幽默', '搞笑', '段子'), 'humor-storyteller'),
-    (('code', 'dev', 'tutorial', '技术', '代码', '教程', '开发'), 'tech-coder'),
-    (('industry', 'analysis', 'deep', '专业', '分析', '深度', '行业'), 'industry-observer'),
-)
-
-
-def infer_persona(tone: str) -> str:
-    lower = tone.lower()
-    for keywords, persona in TONE_PERSONA_MAP:
-        if any(k in lower for k in keywords):
-            return persona
-    return 'industry-observer'
-
 
 def load_corpus(corpus_dir: Path) -> list[dict]:
     if not corpus_dir.is_dir():
@@ -95,7 +77,7 @@ def init_style_profile(
     (style_dir / 'corpus').mkdir(parents=True, exist_ok=True)
     (style_dir / 'themes').mkdir(parents=True, exist_ok=True)
 
-    chosen_persona = persona.strip() or infer_persona(tone)
+    chosen_persona = persona.strip() or 'unspecified'
     profile = {
         'version': 1,
         'name': name.strip(),
@@ -124,7 +106,7 @@ def main(argv=None) -> int:
     p_init.add_argument('--industry', required=True, help='Primary vertical or domain.')
     p_init.add_argument('--topics', required=True, help='Comma-separated core topics.')
     p_init.add_argument('--tone', required=True, help='Desired editorial tone.')
-    p_init.add_argument('--persona', default='', help='Optional explicit persona override.')
+    p_init.add_argument('--persona', default='', help='Optional explicit writing persona label (defaults to "unspecified" when omitted).')
     p_init.add_argument('--theme', default='professional-clean', help='Default WeChat theme name.')
     p_init.add_argument('--audience', default='')
     p_init.add_argument('--author', default='')

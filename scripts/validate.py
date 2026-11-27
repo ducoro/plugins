@@ -157,11 +157,14 @@ def validate_no_cross_plugin_references(bundle: Path, plugin_name: str, all_plug
         r'(?<![a-z0-9-])(?:' + '|'.join(re.escape(other) for other in other_names) + r')(?![a-z0-9-])',
         re.I,
     )
-    for md_path in sorted(bundle.rglob('*.md')):
-        if not md_path.is_file():
+    for file_path in sorted(bundle.rglob('*')):
+        if not file_path.is_file() or file_path.name == 'LICENSE':
             continue
-        rel = md_path.relative_to(root).as_posix()
-        for lineno, line in enumerate(md_path.read_text(encoding='utf-8', errors='replace').splitlines(), start=1):
+        raw = file_path.read_bytes()
+        if b'\x00' in raw:
+            continue
+        rel = file_path.relative_to(root).as_posix()
+        for lineno, line in enumerate(raw.decode('utf-8', errors='replace').splitlines(), start=1):
             match = pattern.search(line)
             if match:
                 raise ValueError(

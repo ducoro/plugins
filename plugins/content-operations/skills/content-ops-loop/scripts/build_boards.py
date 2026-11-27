@@ -515,12 +515,12 @@ def main(argv=None) -> int:
     parser.add_argument('--board', choices=BOARD_NAMES, help='Update only one specific board.')
     parser.add_argument(
         '--board-dir',
-        help='Optional target directory for --board (e.g. a Space boards/<id>/ folder created via board new).',
+        help='Optional target directory for --board (e.g. a Space boards/<id>/ folder created via ducoro-cli board new).',
     )
     parser.add_argument(
         '--overwrite-templates',
         action='store_true',
-        help='Overwrite index.html, README.md, and runtime/board-sdk-bridge.js from plugin templates.',
+        help='Overwrite index.html, README.md, runtime/board-sdk-bridge.js, and runtime/board-ui.css from plugin templates.',
     )
     parser.add_argument(
         '--embed-inline',

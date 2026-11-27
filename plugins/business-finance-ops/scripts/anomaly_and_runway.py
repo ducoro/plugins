@@ -7,14 +7,49 @@ from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 import importlib.util
 import json
+import os
 from pathlib import Path
 from statistics import median
+import sys
+import tempfile
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 TWO_DP = Decimal('0.01')
 ONE_DP = Decimal('0.1')
+VALID_COST_CLASSES = frozenset({
+    'recurring_revenue',
+    'one_time_revenue',
+    'cogs',
+    'fixed_opex',
+    'variable_opex',
+})
 DEFAULT_COGS_CATS = {'cloud_infra', 'payment_fees', 'cogs', 'hosting', 'api_usage'}
 DEFAULT_VARIABLE_OPEX_CATS = {'marketing', 'ads', 'contractors', 'events', 'travel'}
+
+
+class LedgerCorruptionError(ValueError):
+    """Raised when ledger.jsonl contains a malformed or schema-invalid line."""
+
+    def __init__(self, path: Path, line: int, reason: str):
+        self.path = str(path)
+        self.line = line
+        self.reason = reason
+        super().__init__(f'{self.path}:{self.line}: corrupted ledger line ({reason})')
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(prefix=f'.{path.name}.', suffix='.tmp', dir=str(path.parent))
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as fh:
+            fh.write(text)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp_path, path)
+    except Exception:
+        tmp_path.unlink(missing_ok=True)
+        raise
 
 
 def _prev_month(ym: str) -> str:
@@ -22,11 +57,35 @@ def _prev_month(ym: str) -> str:
     return f'{year - 1}-12' if mon == 1 else f'{year:04d}-{mon - 1:02d}'
 
 
-def _classify_row(row: dict) -> str:
+def _load_cost_class_map(accounts: dict, category_rules: dict | None) -> dict[str, str]:
+    merged: dict[str, str] = {}
+    for source_name, doc in (('accounts.json', accounts), ('category-rules.json', category_rules or {})):
+        raw_map = doc.get('costClassMap')
+        if raw_map is None:
+            continue
+        if not isinstance(raw_map, dict):
+            raise ValueError(f'{source_name}: costClassMap must be a JSON object')
+        for raw_cat, raw_cls in raw_map.items():
+            cat = str(raw_cat).strip().lower()
+            cls = str(raw_cls).strip().lower()
+            if not cat:
+                continue
+            if cls not in VALID_COST_CLASSES:
+                raise ValueError(
+                    f'{source_name}: invalid costClass {raw_cls!r} for category {raw_cat!r}; '
+                    f'expected one of {sorted(VALID_COST_CLASSES)}'
+                )
+            merged[cat] = cls
+    return merged
+
+
+def _classify_row(row: dict, cost_class_map: dict[str, str] | None = None) -> str:
     explicit = str(row.get('costClass') or '').strip().lower()
-    if explicit in {'recurring_revenue', 'one_time_revenue', 'cogs', 'fixed_opex', 'variable_opex'}:
+    if explicit in VALID_COST_CLASSES:
         return explicit
     cat = str(row.get('category') or '').strip().lower()
+    if cost_class_map and cat in cost_class_map:
+        return cost_class_map[cat]
     if row.get('direction') == 'inflow':
         return 'one_time_revenue' if cat in {'one_time_revenue', 'grant', 'refund_received', 'consulting_one_time'} else 'recurring_revenue'
     if cat in DEFAULT_COGS_CATS:
@@ -56,21 +115,38 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
 
 
-def _load_ledger(workspace: Path) -> list[dict]:
-    p = workspace / 'ledger.jsonl'
+def _sort_key(row: dict) -> tuple[str, str]:
+    raw_ts = str(row.get('timestamp') or row.get('date') or '').strip()
+    if raw_ts:
+        try:
+            dt = datetime.fromisoformat(raw_ts.replace('Z', '+00:00'))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(timezone.utc).isoformat(), str(row.get('txHash', ''))
+        except ValueError:
+            pass
+    return raw_ts, str(row.get('txHash', ''))
+
+
+def _load_ledger(data_dir: Path) -> list[dict]:
+    p = data_dir / 'ledger.jsonl'
     if not p.is_file():
         return []
     rows = []
-    for ln in p.read_text(encoding='utf-8').splitlines():
-        ln = ln.strip()
+    for line_no, raw in enumerate(p.read_text(encoding='utf-8').splitlines(), start=1):
+        ln = raw.strip()
         if not ln:
             continue
         try:
             obj = json.loads(ln)
-            if isinstance(obj, dict) and obj.get('txHash'):
-                rows.append(obj)
-        except json.JSONDecodeError:
-            continue
+        except json.JSONDecodeError as exc:
+            raise LedgerCorruptionError(p, line_no, f'invalid JSON: {exc.msg}') from exc
+        if not isinstance(obj, dict):
+            raise LedgerCorruptionError(p, line_no, 'expected JSON object')
+        tx_hash = obj.get('txHash')
+        if not isinstance(tx_hash, str) or not tx_hash.strip():
+            raise LedgerCorruptionError(p, line_no, 'missing non-empty txHash')
+        rows.append(obj)
     return rows
 
 
@@ -81,10 +157,17 @@ def analyze_workspace(
     write_report: bool = True,
     scenario_extra_burn: str = '0',
 ) -> dict:
-    workspace = workspace.expanduser().resolve()
-    accounts = json.loads((workspace / 'accounts.json').read_text(encoding='utf-8'))
-    budgets_doc = json.loads((workspace / 'budgets.json').read_text(encoding='utf-8'))
-    fx_cache = json.loads((workspace / 'fx-cache.json').read_text(encoding='utf-8')) if (workspace / 'fx-cache.json').is_file() else {'snapshots': {}}
+    data_dir = workspace.expanduser().resolve()
+    accounts = json.loads((data_dir / 'accounts.json').read_text(encoding='utf-8'))
+    budgets_doc = json.loads((data_dir / 'budgets.json').read_text(encoding='utf-8'))
+    category_rules = (
+        json.loads((data_dir / 'category-rules.json').read_text(encoding='utf-8'))
+        if (data_dir / 'category-rules.json').is_file()
+        else {}
+    )
+    fx_cache = json.loads((data_dir / 'fx-cache.json').read_text(encoding='utf-8')) if (data_dir / 'fx-cache.json').is_file() else {'snapshots': {}}
+
+    cost_class_map = _load_cost_class_map(accounts, category_rules)
 
     base_ccy = str(accounts.get('baseCurrency', 'USD')).upper()
     thresholds = accounts.get('thresholds') or {}
@@ -96,15 +179,21 @@ def analyze_workspace(
     flux_min_pct = Decimal(str(thresholds.get('fluxMinPct', '15')))
     extra_burn_dec = Decimal(str(scenario_extra_burn or '0'))
 
-    all_rows = _load_ledger(workspace)
-    all_rows.sort(key=lambda r: (r.get('timestamp') or r.get('date') or '', r.get('txHash', '')))
+    all_rows = _load_ledger(data_dir)
+    all_rows.sort(key=_sort_key)
 
     # Convert every row to base currency using exact Decimal
     enriched: list[dict] = []
     for r in all_rows:
         orig_amt = Decimal(str(r['amount']))
         base_amt, rate_used = fx_rates.convert_to_base(orig_amt, r['currency'], base_ccy, fx_cache, tx_date=r.get('date'))
-        enriched.append({**r, 'costClass': _classify_row(r), 'baseAmount': str(base_amt), 'fxRateUsed': rate_used, '_baseDec': base_amt})
+        enriched.append({
+            **r,
+            'costClass': _classify_row(r, cost_class_map),
+            'baseAmount': str(base_amt),
+            'fxRateUsed': rate_used,
+            '_baseDec': base_amt,
+        })
 
     target_month = month or (enriched[-1]['date'][:7] if enriched else utc_now()[:7])
     prior_month = _prev_month(target_month)
@@ -166,6 +255,7 @@ def analyze_workspace(
     recurring_net_burn = (outflow_total - recurring_inflow).quantize(TWO_DP, rounding=ROUND_HALF_UP)
     downside_burn = (outflow_total - (recurring_inflow * Decimal('0.80'))).quantize(TWO_DP, rounding=ROUND_HALF_UP)
     runway_months = _runway_months(total_cash, monthly_net_burn)
+    recurring_runway_months = _runway_months(total_cash, recurring_net_burn)
 
     scenarios = {
         'base': {
@@ -174,7 +264,7 @@ def analyze_workspace(
         },
         'recurringOnly': {
             'monthlyNetBurn': str(recurring_net_burn if recurring_net_burn > 0 else Decimal('0.00')),
-            'runwayMonths': _runway_months(total_cash, recurring_net_burn),
+            'runwayMonths': recurring_runway_months,
         },
         'downsideRev20': {
             'monthlyNetBurn': str(downside_burn if downside_burn > 0 else Decimal('0.00')),
@@ -222,8 +312,12 @@ def analyze_workspace(
         key = (r.get('merchant', '').strip().lower(), r['amount'], r['currency'].upper())
         prev_list = seen_outflows.get(key, [])
         ts = datetime.fromisoformat(r['timestamp'].replace('Z', '+00:00'))
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
         for prev in prev_list:
             prev_ts = datetime.fromisoformat(prev['timestamp'].replace('Z', '+00:00'))
+            if prev_ts.tzinfo is None:
+                prev_ts = prev_ts.replace(tzinfo=timezone.utc)
             delta_h = Decimal(str(abs((ts - prev_ts).total_seconds()))) / Decimal('3600')
             if delta_h <= dup_window_h:
                 anomalies.append({
@@ -247,7 +341,7 @@ def analyze_workspace(
     by_merchant: dict[str, list[dict]] = {}
     for r in outflows:
         by_merchant.setdefault(r.get('merchant', '').strip().lower(), []).append(r)
-    for mkey, items in sorted(by_merchant.items()):
+    for _mkey, items in sorted(by_merchant.items()):
         if len(items) < 3:
             continue
         hist_vals = [x['_baseDec'] for x in items[:-1]]
@@ -307,8 +401,17 @@ def analyze_workspace(
             'status': status,
         })
 
-    # 4. Low cash runway warning
+    # 4. Low cash runway warning: evaluate BOTH base and recurringOnly so one-time windfalls cannot mask structural burn
+    triggered_scenarios: list[str] = []
+    scenario_details: list[str] = []
     if runway_months is not None and Decimal(runway_months) < min_runway_m:
+        triggered_scenarios.append('base')
+        scenario_details.append(f'base={runway_months} mo ({monthly_net_burn} {base_ccy}/mo)')
+    if recurring_runway_months is not None and Decimal(recurring_runway_months) < min_runway_m:
+        triggered_scenarios.append('recurringOnly')
+        scenario_details.append(f'recurringOnly={recurring_runway_months} mo ({recurring_net_burn} {base_ccy}/mo)')
+
+    if triggered_scenarios:
         anomalies.append({
             'alertId': f'runway-{target_month}',
             'type': 'low_runway',
@@ -316,15 +419,29 @@ def analyze_workspace(
             'merchant': 'Cash Runway',
             'amount': str(total_cash),
             'currency': base_ccy,
-            'summary': f'Projected cash runway is {runway_months} months (< {min_runway_m} months threshold) at {monthly_net_burn} {base_ccy}/mo net burn.',
+            'triggeredScenarios': triggered_scenarios,
+            'summary': (
+                f'Projected cash runway below {min_runway_m} months threshold in '
+                f'{", ".join(triggered_scenarios)}: {"; ".join(scenario_details)}.'
+            ),
             'evidence': [],
         })
+
+    effective_thresholds = {
+        'duplicateWindowHours': int(dup_window_h) if dup_window_h == dup_window_h.to_integral_value() else str(dup_window_h),
+        'vendorHikePct': str(hike_pct),
+        'budgetWarnPct': str(budget_warn_pct),
+        'minRunwayMonths': str(min_runway_m),
+        'fluxMinAbs': str(flux_min_abs),
+        'fluxMinPct': str(flux_min_pct),
+    }
 
     report = {
         'schemaVersion': 'business-finance-report/1',
         'generatedAt': utc_now(),
         'month': target_month,
         'baseCurrency': base_ccy,
+        'thresholds': effective_thresholds,
         'summary': {
             'inflowTotal': str(inflow_total.quantize(TWO_DP, rounding=ROUND_HALF_UP)),
             'recurringInflow': str(recurring_inflow.quantize(TWO_DP, rounding=ROUND_HALF_UP)),
@@ -340,6 +457,7 @@ def analyze_workspace(
             'monthlyNetBurn': str(monthly_net_burn if monthly_net_burn > 0 else Decimal('0.00')),
             'recurringNetBurn': str(recurring_net_burn if recurring_net_burn > 0 else Decimal('0.00')),
             'runwayMonths': runway_months,
+            'recurringRunwayMonths': recurring_runway_months,
             'transactionCount': len(month_rows),
             'anomalyCount': len(anomalies),
             'highAnomalyCount': sum(1 for a in anomalies if a['severity'] == 'high'),
@@ -356,22 +474,41 @@ def analyze_workspace(
     }
 
     if write_report:
-        (workspace / 'finance-report.json').write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+        _atomic_write_text(data_dir / 'finance-report.json', json.dumps(report, indent=2, ensure_ascii=False) + '\n')
     return report
+
+
+def _emit_error(code: str, message: str, *, file_path: str | None = None, line: int | None = None) -> int:
+    err: dict[str, object] = {'code': code, 'message': message}
+    if file_path is not None:
+        err['file'] = file_path
+    if line is not None:
+        err['line'] = line
+    print(json.dumps({'ok': False, 'error': err}, indent=2, ensure_ascii=False), file=sys.stderr)
+    return 1
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description='Run exact Decimal financial reconciliation, budgets, and anomaly detection.')
-    parser.add_argument('workspace')
+    parser.add_argument('data_dir', metavar='data-dir', help='Active finance data directory')
     parser.add_argument('--month', default=None, help='YYYY-MM target month (defaults to latest ledger month)')
     parser.add_argument('--scenario-extra-burn', default='0', help='Optional proposed extra monthly burn in base currency')
     parser.add_argument('--write-report', action='store_true')
     args = parser.parse_args()
-    print(json.dumps(
-        analyze_workspace(Path(args.workspace), month=args.month, write_report=args.write_report, scenario_extra_burn=args.scenario_extra_burn),
-        indent=2,
-        ensure_ascii=False,
-    ))
+
+    try:
+        report = analyze_workspace(
+            Path(args.data_dir),
+            month=args.month,
+            write_report=args.write_report,
+            scenario_extra_burn=args.scenario_extra_burn,
+        )
+    except LedgerCorruptionError as exc:
+        return _emit_error('CORRUPTED_LEDGER_LINE', str(exc), file_path=exc.path, line=exc.line)
+    except (ValueError, OSError, json.JSONDecodeError) as exc:
+        return _emit_error('ANALYSIS_ERROR', str(exc))
+
+    print(json.dumps(report, indent=2, ensure_ascii=False))
     return 0
 
 

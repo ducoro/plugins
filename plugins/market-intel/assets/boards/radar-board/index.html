@@ -44,7 +44,7 @@
       </article>
       <article class="ui-kpi" data-mark-item="kpi-high" data-mark-label="High severity changes">
         <span class="ui-kpi-label">High Severity</span>
-        <span id="kpi-high" class="ui-kpi-value" data-tone="warning">0</span>
+        <span id="kpi-high" class="ui-kpi-value">0</span>
       </article>
     </section>
 
@@ -61,6 +61,7 @@
               <th>Entity</th>
               <th>Category</th>
               <th>Severity</th>
+              <th>Confidence &amp; Sources</th>
               <th>Verified Change &amp; Quote</th>
               <th>Evidence</th>
               <th data-shot-hide>Action</th>
@@ -85,6 +86,28 @@
       return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
+    function safeHttpUrl(u) {
+      try {
+        const parsed = new URL(String(u));
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : '';
+      } catch {
+        return '';
+      }
+    }
+
+    function assertAllowedKeys(args, allowedKeys) {
+      if (args === null || args === undefined) return {};
+      if (typeof args !== 'object' || Array.isArray(args)) {
+        throw new Error('Command arguments must be an object');
+      }
+      const allowed = new Set(allowedKeys);
+      const unknown = Object.keys(args).filter((k) => !allowed.has(k));
+      if (unknown.length > 0) {
+        throw new Error(`Unknown argument(s): ${unknown.join(', ')}`);
+      }
+      return args;
+    }
+
     function render() {
       const d = state.data || { summary: {}, entities: [], events: [] };
       document.getElementById('kpi-entities').textContent = d.summary?.entityCount ?? 0;
@@ -94,7 +117,7 @@
       const high = d.summary?.highSeverityCount ?? 0;
       highEl.textContent = high;
       highEl.dataset.tone = high > 0 ? 'warning' : '';
-      document.getElementById('updated-at').textContent = d.generatedAt ? `Updated ${d.generatedAt}` : 'Empty workspace';
+      document.getElementById('updated-at').textContent = d.generatedAt ? `Updated ${d.generatedAt}` : 'Empty data directory';
 
       const prevEntity = state.entity;
       entitySel.innerHTML = '<option value="all">All entities</option>' +
@@ -108,13 +131,26 @@
       });
 
       if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="7"><div class="ui-empty-inline">No verified changes match the current filter.</div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8"><div class="ui-empty-inline">No verified changes match the current filter.</div></td></tr>';
         return;
       }
 
       tbody.innerHTML = filtered.map((ev) => {
         const badgeClass = ev.severity === 'high' ? 'ui-badge-destructive' : ev.severity === 'medium' ? 'ui-badge-warning' : 'ui-badge-secondary';
-        const urls = (ev.evidenceUrls || []).map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener">Source ${i + 1}</a>`).join(' · ');
+        const conf = ev.confidence || 'single_source';
+        const confClass = conf === 'triangulated' ? 'ui-badge-primary' : 'ui-badge-outline';
+        const kinds = Array.isArray(ev.sourceKinds) ? ev.sourceKinds : [];
+        const kindsHtml = kinds.length
+          ? `<div class="ui-meta-row" style="margin-top:4px">${kinds.map((k) => `<span class="ui-badge ui-badge-secondary">${esc(k)}</span>`).join('')}</div>`
+          : '';
+        const urlLinks = (ev.evidenceUrls || [])
+          .map((u) => safeHttpUrl(u))
+          .filter(Boolean)
+          .map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">Source ${i + 1}</a>`);
+        if (ev.localRef) {
+          urlLinks.push(`<span class="ui-mono">${esc(ev.localRef)}</span>`);
+        }
+        const evidenceHtml = urlLinks.length ? urlLinks.join(' · ') : '—';
         const focused = state.focused === ev.eventId ? ' focused' : '';
         return `<tr class="${focused}" data-card="event-${esc(ev.eventId)}" data-card-title="${esc(ev.entityName)}: ${esc(ev.summary)}" data-mark-item="event-${esc(ev.eventId)}" data-mark-label="${esc(ev.summary)}">
           <td class="ui-mono ui-num">${esc((ev.observedAt || '').slice(0, 10))}</td>
@@ -122,10 +158,14 @@
           <td><span class="ui-badge ui-badge-outline">${esc(ev.category)}</span></td>
           <td><span class="ui-badge ${badgeClass}">${esc(ev.severity)}</span></td>
           <td>
+            <span class="ui-badge ${confClass}">${esc(conf)}</span>
+            ${kindsHtml}
+          </td>
+          <td>
             <div class="ui-item-title">${esc(ev.summary)}</div>
             <div class="ui-muted">"${esc(ev.quote)}"</div>
           </td>
-          <td>${urls || '—'}</td>
+          <td>${evidenceHtml}</td>
           <td data-shot-hide><button class="ui-btn ui-btn-xs ui-btn-ghost" data-requires-sdk data-act="brief" data-id="${esc(ev.eventId)}">Discuss</button></td>
         </tr>`;
       }).join('');
@@ -145,41 +185,68 @@
       getView: () => ({ entity: state.entity, severity: state.severity }),
       commands: {
         filterEntity: {
-          describe: 'Filter radar events by entity slug or all',
-          params: { entity: 'string' },
-          run: ({ entity }) => {
-            if (typeof entity !== 'string' || !entity.trim()) throw new Error('entity is required');
-            state.entity = entity.trim();
+          describe: 'Filter radar events by entity slug or all.',
+          params: { entity: 'Entity slug present in data.json, or "all".' },
+          run: (rawArgs) => {
+            const { entity } = assertAllowedKeys(rawArgs, ['entity']);
+            if (typeof entity !== 'string' || !entity.trim()) {
+              throw new Error('entity must be a non-empty string');
+            }
+            const next = entity.trim();
+            const validSlugs = (state.data?.entities || []).map((e) => e.slug).filter(Boolean);
+            if (next !== 'all' && !validSlugs.includes(next)) {
+              throw new Error(`Unknown entity "${next}". Valid values: ${['all', ...validSlugs].join(', ')}`);
+            }
+            state.entity = next;
             render();
             return { entity: state.entity };
           },
         },
         filterSeverity: {
-          describe: 'Filter radar events by severity (all|high|medium|low)',
-          params: { severity: 'string' },
-          run: ({ severity }) => {
-            if (!['all', 'high', 'medium', 'low'].includes(severity)) throw new Error('Invalid severity');
-            state.severity = severity;
-            sevSel.value = severity;
+          describe: 'Filter radar events by severity (all|high|medium|low).',
+          params: { severity: 'One of: all, high, medium, low.' },
+          run: (rawArgs) => {
+            const { severity } = assertAllowedKeys(rawArgs, ['severity']);
+            if (typeof severity !== 'string' || !['all', 'high', 'medium', 'low'].includes(severity.trim())) {
+              throw new Error('Invalid severity. Expected one of: all, high, medium, low');
+            }
+            state.severity = severity.trim();
+            sevSel.value = state.severity;
             render();
-            return { severity };
+            return { severity: state.severity };
           },
         },
         focusEvent: {
-          describe: 'Highlight a verified change row by eventId',
-          params: { eventId: 'string' },
-          run: ({ eventId }) => {
-            if (typeof eventId !== 'string' || !eventId.trim()) throw new Error('eventId is required');
-            state.focused = eventId.trim();
+          describe: 'Highlight and scroll to a verified change row by eventId.',
+          params: { eventId: 'Event ID from the currently loaded radar events.' },
+          run: (rawArgs) => {
+            const { eventId } = assertAllowedKeys(rawArgs, ['eventId']);
+            if (typeof eventId !== 'string' || !eventId.trim()) {
+              throw new Error('eventId must be a non-empty string');
+            }
+            const target = eventId.trim();
+            const knownIds = (state.data?.events || []).map((ev) => ev.eventId).filter(Boolean);
+            if (!knownIds.includes(target)) {
+              throw new Error(`Unknown eventId "${target}". Available: ${knownIds.slice(0, 10).join(', ') || 'none'}`);
+            }
+            state.focused = target;
             render();
             document.querySelector(`[data-card="event-${CSS.escape(state.focused)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return { focused: state.focused };
           },
         },
         resetFilters: {
-          describe: 'Reset radar entity and severity filters',
+          describe: 'Reset radar entity, severity filters, and highlighted row.',
           params: {},
-          run: () => { state.entity = 'all'; state.severity = 'all'; state.focused = ''; sevSel.value = 'all'; render(); return { reset: true }; },
+          run: (rawArgs) => {
+            assertAllowedKeys(rawArgs, []);
+            state.entity = 'all';
+            state.severity = 'all';
+            state.focused = '';
+            sevSel.value = 'all';
+            render();
+            return { reset: true };
+          },
         },
       },
     });

@@ -232,11 +232,20 @@ class ContentOpsBudgetAndToolsTest(unittest.TestCase):
                 capture_output=True, text=True, check=True,
             )
 
-            # Initialize style profile with automatic tone -> persona mapping
-            init_res = subprocess.run(
+            # Initialize style profile without heuristic keyword guessing (unspecified when --persona omitted)
+            init_unspec = subprocess.run(
                 [sys.executable, str(MEDIA_SCRIPTS / 'build_playbook.py'), 'init-style',
                  '--workspace', str(ws), '--name', 'Signal Lab', '--industry', 'AI Engineering',
                  '--topics', 'Agents,Systems,Workflows', '--tone', '严谨数据研究风格', '--theme', 'impeccable'],
+                capture_output=True, text=True, check=True,
+            )
+            self.assertEqual(json.loads(init_unspec.stdout)['profile']['writingPersona'], 'unspecified')
+
+            # Explicit --persona is persisted verbatim
+            init_res = subprocess.run(
+                [sys.executable, str(MEDIA_SCRIPTS / 'build_playbook.py'), 'init-style',
+                 '--workspace', str(ws), '--name', 'Signal Lab', '--industry', 'AI Engineering',
+                 '--topics', 'Agents,Systems,Workflows', '--tone', '严谨数据研究风格', '--persona', 'cold-analyst', '--theme', 'impeccable'],
                 capture_output=True, text=True, check=True,
             )
             profile_out = json.loads(init_res.stdout)
@@ -260,20 +269,31 @@ class ContentOpsBudgetAndToolsTest(unittest.TestCase):
             self.assertEqual(an['stats']['totalArticles'], 3)
             self.assertEqual(an['batchCount'], 2)
 
-            # Write playbook & run diagnose ensuring secrets are never leaked
+            # diagnose.py must require explicit --workspace / --data-dir (no hardcoded default workspace)
+            diag_missing = subprocess.run(
+                [sys.executable, str(LOOP_SCRIPTS / 'diagnose.py'), '--json'],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertNotEqual(diag_missing.returncode, 0)
+
+            # Write playbook & run diagnose ensuring secrets are never leaked and facebook slug is canonical
             (ws / 'style' / 'style-playbook.md').write_text('# Style Playbook\n- Short sentences.\n', encoding='utf-8')
             env = dict(os.environ)
             fake_secret = 'SUPER_SECRET_NEVER_PRINT_9999'
             env['WECHAT_OFFICIAL_APP_ID'] = 'wx_fake_id'
             env['WECHAT_OFFICIAL_APP_SECRET'] = fake_secret
+            env['FACEBOOK_PAGE_ID'] = 'fb_page_123'
+            env['FACEBOOK_PAGE_ACCESS_TOKEN'] = 'fb_tok_fake'
             diag_res = subprocess.run(
-                [sys.executable, str(LOOP_SCRIPTS / 'diagnose.py'), '--workspace', str(ws), '--json'],
+                [sys.executable, str(LOOP_SCRIPTS / 'diagnose.py'), '--data-dir', str(ws), '--json'],
                 capture_output=True, text=True, env=env, check=True,
             )
             self.assertNotIn(fake_secret, diag_res.stdout)
             diag = json.loads(diag_res.stdout)
             self.assertTrue(diag['ok'])
             self.assertIn('wechat-official', diag['configuredApiPlatforms'])
+            self.assertIn('facebook', diag['configuredApiPlatforms'])
+            self.assertNotIn('facebook-pages', diag['configuredApiPlatforms'])
             self.assertGreaterEqual(diag['styleReadinessScore'], 7)
 
     def test_wechat_fetch_stats_appends_snapshots_and_feeds_aggregate_metrics_plus_gallery(self):

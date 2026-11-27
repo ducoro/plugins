@@ -12,7 +12,7 @@ X is a **real-time public town square and interest graph** where speed, sharp pe
 - **Primary levers**:
   - **Early conversation depth (first 30–60 min)**: Author back-and-forth replies carry heavy weight.
   - **Bookmarks & quote-posts**: Bookmarks signal silent utility; quote-posts bridge into adjacent audiences.
-  - **Native media & link trade-off**: Use native images, `1200×675` cards (`card_deck.py --preset x-card`), concise video, or threads. Root outbound links often reduce `For You` reach—place links in `options.firstReply` (validated by `check_media_specs.py`) or publish Premium long posts / X Articles.
+  - **Native media & link trade-off**: Use native images, `1200×675` cards (`../shortform-social/scripts/card_deck.py scaffold <dir> --preset x-card`), concise video, or threads. Root outbound links often reduce `For You` reach—place links in `options.firstReply` (validated by `check_media_specs.py`) or publish Premium long posts / X Articles.
 - **Profile funnel (`Post → Profile → Bio + Pinned Post → Follow`)**: Review `profileClickRate` alongside whether Bio and pinned post match current positioning.
 
 ## 2. Benchmark Radar & Outbound Engagement

@@ -10,11 +10,6 @@ from pathlib import Path
 import re
 import sys
 
-CATEGORIES = ['tech-opinion', 'story-emotional', 'list-practical', 'hot-take', 'general']
-STORY_MARKERS = ['那天', '那年', '记得', '后来', '当时', '第一次', '突然', '终于']
-TRANSITION_WORDS = ['但是', '不过', '然而', '话说回来', '换个角度', '反过来看', '但真正']
-DATA_PATTERNS = [re.compile(r'\d+(?:\.\d+)?%'), re.compile(r'20[12]\d\s*年'), re.compile(r'https?://\S+')]
-
 
 def strip_variant_header(text: str) -> str:
     m = re.match(r'^\s*```json\s*\n.*?\n```\s*\n?', text, re.S)
@@ -24,7 +19,7 @@ def strip_variant_header(text: str) -> str:
 def extract_exemplar(
     raw_text: str,
     source: str = '',
-    category: str = '',
+    genre: str = '',
     *,
     user_authored: bool = False,
     framework: str = '',
@@ -43,7 +38,7 @@ def extract_exemplar(
     sentences = [s.strip() for p in paras for s in re.split(r'[。！？!?\n]+', p) if len(s.strip()) >= 2]
     short_ratio = round(sum(1 for s in sentences if len(s) <= 15) / max(len(sentences), 1), 3)
 
-    # Opening hook & closing cadence (<= 240 chars each)
+    # Objective positional cadence samples (opening, midpoint, closing <= 260 chars each)
     opening_parts, total = [], 0
     for p in paras:
         if total + len(p) > 240 and opening_parts:
@@ -56,32 +51,11 @@ def extract_exemplar(
             break
         closing_parts.insert(0, p)
         total += len(p)
+    midpoint_sample = paras[len(paras) // 2][:240] if len(paras) >= 3 else ''
 
-    # Transition / pivot sample
-    best_pivot, best_hits = '', 0
-    for p in paras:
-        if len(p) < 20:
-            continue
-        hits = sum(p.count(w) for w in TRANSITION_WORDS)
-        if hits > best_hits:
-            best_hits = hits
-            best_pivot = p[:240]
-
-    # Auto category
-    if not category:
-        data_hits = sum(len(rx.findall(clean)) for rx in DATA_PATTERNS)
-        story_hits = sum(clean.count(w) for w in STORY_MARKERS)
-        list_hits = len(re.findall(r'^(?:[-*+]\s+|\d+\.\s+)', clean, re.M))
-        if list_hits >= 5 and len(h2s) >= 2:
-            category = 'list-practical'
-        elif data_hits >= 3:
-            category = 'tech-opinion'
-        elif story_hits >= 3:
-            category = 'story-emotional'
-        elif plain_chars <= 1400:
-            category = 'hot-take'
-        else:
-            category = 'general'
+    # Explicit genre only; never guess via hardcoded wordlists
+    chosen_genre = genre.strip() or 'unspecified'
+    chosen_framework = framework.strip() or 'unspecified'
 
     eid = hashlib.sha256(f'{title}|{source}|{plain_chars}'.encode('utf-8')).hexdigest()[:10]
     ownership = 'user' if user_authored else 'third_party'
@@ -90,8 +64,8 @@ def extract_exemplar(
         'id': eid,
         'title': title or '(untitled)',
         'source': source,
-        'category': category if category in CATEGORIES else 'general',
-        'framework': framework.strip() or category,
+        'genre': chosen_genre,
+        'framework': chosen_framework,
         'ownership': ownership,
         'authenticity': authenticity,
         'allowedUses': ['style', 'structure'],
@@ -106,7 +80,7 @@ def extract_exemplar(
         },
         'cadenceSamples': {
             'openingHook': '\n\n'.join(opening_parts)[:260],
-            'transitionPivot': best_pivot,
+            'midpointSample': midpoint_sample,
             'closingBeat': '\n\n'.join(closing_parts)[:260],
         },
         'usageBoundary': 'Allowed for style and structure calibration only; personalMaterialsReusable is always false (never copy personal experiences or claims even from user-authored old articles).',
@@ -125,17 +99,17 @@ def main(argv=None) -> int:
     sub = ap.add_subparsers(dest='cmd', required=True)
 
     p_add = sub.add_parser('add', help='Extract style fingerprint from one or more Markdown articles into <workspace>/style/exemplars.json.')
-    p_add.add_argument('workspace', help='Path to content-ops workspace.')
+    p_add.add_argument('workspace', help='Path to content-ops data directory.')
     p_add.add_argument('files', nargs='+', help='Markdown article file(s).')
     p_add.add_argument('--source', default='', help='Source label or publication name.')
-    p_add.add_argument('--category', default='', choices=['', *CATEGORIES])
+    p_add.add_argument('--genre', default='', help='Optional explicit genre label (defaults to "unspecified" when omitted).')
     p_add.add_argument('--framework', default='', help='Optional writing framework tag (opinion, pain-point, checklist, story, comparison, trend-brief, retro).')
     p_add.add_argument('--user-authored', action='store_true', help='Mark exemplar ownership=user (only when explicitly confirmed as authored/edited by the user).')
     p_add.add_argument('--json', action='store_true')
 
     p_ls = sub.add_parser('list', help='List saved exemplars in <workspace>/style/exemplars.json.')
     p_ls.add_argument('workspace')
-    p_ls.add_argument('--category', default='')
+    p_ls.add_argument('--genre', default='')
     p_ls.add_argument('--ownership', default='', choices=['', 'user', 'third_party'])
     p_ls.add_argument('--framework', default='')
     p_ls.add_argument('--limit', type=int, default=0, help='Optional max count (recommended <= 2 when injecting into prompts).')
@@ -157,7 +131,7 @@ def main(argv=None) -> int:
             ex = extract_exemplar(
                 fp.read_text(encoding='utf-8'),
                 source=args.source or fp.stem,
-                category=args.category,
+                genre=args.genre,
                 user_authored=args.user_authored,
                 framework=args.framework,
             )
@@ -172,11 +146,12 @@ def main(argv=None) -> int:
 
     rows = store.get('exemplars', [])
     for r in rows:
+        r.setdefault('genre', 'unspecified')
         r.setdefault('ownership', 'third_party')
         r.setdefault('allowedUses', ['style', 'structure'])
         r.setdefault('personalMaterialsReusable', False)
-    if args.category:
-        rows = [r for r in rows if r.get('category') == args.category]
+    if args.genre:
+        rows = [r for r in rows if str(r.get('genre', '')).lower() == args.genre.lower()]
     if args.ownership:
         rows = [r for r in rows if r.get('ownership') == args.ownership]
     if args.framework:
@@ -189,7 +164,7 @@ def main(argv=None) -> int:
         print(f'Exemplars ({len(rows)}):')
         for r in rows:
             fp = r['fingerprint']
-            print(f"  - [{r['category']}|{r['ownership']}] {r['id']} | {r['title']} ({fp['charCount']} chars, avg para {fp['avgParagraphChars']})")
+            print(f"  - [{r['genre']}|{r['ownership']}] {r['id']} | {r['title']} ({fp['charCount']} chars, avg para {fp['avgParagraphChars']})")
     return 0
 
 

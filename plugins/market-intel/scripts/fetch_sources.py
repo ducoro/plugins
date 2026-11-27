@@ -76,7 +76,7 @@ def http_get(url: str, *, sec: bool = False, extra_headers: dict[str, str] | Non
                 raw = resp.read(2_000_000)
                 charset = resp.headers.get_content_charset() or 'utf-8'
                 return resp.status, raw.decode(charset, errors='replace')
-        except (urllib.error.URLError, ssl.SSLError, TimeoutError) as exc:
+        except (urllib.error.URLError, ssl.SSLError, TimeoutError, OSError) as exc:
             last_exc = exc
             if isinstance(exc, urllib.error.HTTPError) and 400 <= exc.code < 500:
                 raise
@@ -339,7 +339,17 @@ def fetch_single_source(entity_slug: str, source: dict, timeout: int = 15) -> di
                 'url': f'https://hn.algolia.com/?q={urllib.parse.quote(query)}', 'observedAt': observed_at,
                 'structured': {'query': query, 'hits': hits},
             }
-    except (urllib.error.URLError, urllib.error.HTTPError, ValueError, KeyError, ET.ParseError, json.JSONDecodeError) as exc:
+    except (
+        urllib.error.URLError,
+        urllib.error.HTTPError,
+        TimeoutError,
+        ssl.SSLError,
+        OSError,
+        ValueError,
+        KeyError,
+        ET.ParseError,
+        json.JSONDecodeError,
+    ) as exc:
         return {
             'entitySlug': entity_slug, 'sourceId': source_id, 'kind': kind,
             'ok': False, 'error': str(exc), 'observedAt': observed_at,
@@ -363,7 +373,29 @@ def fetch_watchlist(workspace: Path, *, entity_filter: str | None = None, timeou
     return {
         'schemaVersion': 'market-intel-signal/1',
         'generatedAt': utc_now(),
-        'workspace': str(workspace),
+        'dataDir': str(workspace),
+        'totalSources': len(records),
+        'okCount': sum(1 for r in records if r.get('ok')),
+        'failedCount': sum(1 for r in records if not r.get('ok')),
+        'records': records,
+    }
+
+
+def merge_captures(workspace: Path, capture_paths: list[Path]) -> dict:
+    workspace = workspace.expanduser().resolve()
+    records: list[dict] = []
+    for raw_path in capture_paths:
+        path = Path(raw_path).expanduser().resolve()
+        doc = json.loads(path.read_text(encoding='utf-8'))
+        if doc.get('schemaVersion') != 'market-intel-signal/1':
+            raise ValueError(f'{path}: invalid schemaVersion; expected market-intel-signal/1')
+        for rec in doc.get('records', []):
+            if isinstance(rec, dict):
+                records.append(rec)
+    return {
+        'schemaVersion': 'market-intel-signal/1',
+        'generatedAt': utc_now(),
+        'dataDir': str(workspace),
         'totalSources': len(records),
         'okCount': sum(1 for r in records if r.get('ok')),
         'failedCount': sum(1 for r in records if not r.get('ok')),
@@ -373,13 +405,18 @@ def fetch_watchlist(workspace: Path, *, entity_filter: str | None = None, timeou
 
 def main() -> int:
     parser = argparse.ArgumentParser(description='Fetch live public data for market-intel watchlist.')
-    parser.add_argument('workspace', help='Path to market-intel workspace')
+    parser.add_argument('data_dir', metavar='<data-dir>', help='Path to market-intel <data-dir>')
     parser.add_argument('--entity', default=None, help='Optional single entity slug filter')
     parser.add_argument('--timeout', type=int, default=15, help='Per-request timeout in seconds')
+    parser.add_argument('--merge', nargs='+', default=None, help='Merge multiple per-entity/external capture JSON files into one envelope')
     parser.add_argument('--out', default=None, help='Optional output JSON path')
     args = parser.parse_args()
 
-    envelope = fetch_watchlist(Path(args.workspace), entity_filter=args.entity, timeout=args.timeout)
+    if args.merge:
+        envelope = merge_captures(Path(args.data_dir), [Path(p) for p in args.merge])
+    else:
+        envelope = fetch_watchlist(Path(args.data_dir), entity_filter=args.entity, timeout=args.timeout)
+
     text = json.dumps(envelope, indent=2, ensure_ascii=False) + '\n'
     if args.out:
         out_path = Path(args.out).expanduser().resolve()

@@ -201,11 +201,11 @@ Top-level wrapper: `{"version": 1, "items": [ ... ]}`.
 Each item: `outboundId`, `platform`, `accountId`, `watchId` (optional FK into `benchmark-accounts.json`), `targetHandle`, `targetPostId`, `targetUrl` (required `http(s)://`), `targetExcerpt`, `discoveredAt` (ISO-8601 UTC), `actionType` (`reply` | `quote` | `repost` | `like` | `bookmark`), `angle`, `draftText`, `requiresApproval` (bool), `status` (`discovered` | `drafted` | `approved` | `sent` | `skipped`), `executedActionId` (**required when `status == "sent"`**, linking to `engagement/action-log.jsonl`).
 
 ### `engagement/action-log.jsonl` (one JSON object per line)
-Required keys (append-only, used for idempotency and daily rate-limit caps):
+Required keys (append-only, written by `engagement_guard.py record-action`, used for idempotency and daily rate-limit caps):
 ```json
-{"actionId":"act-20260116-01","executedAt":"2026-01-16T04:15:00Z","platform":"x-twitter","accountId":"acct-x-main","targetId":"cmt-99","actionType":"reply","result":"ok","error":null}
+{"actionId":"act-20260116-01","executedAt":"2026-01-16T04:15:00Z","platform":"x-twitter","accountId":"acct-x-main","targetId":"cmt-99","actionType":"reply","result":"ok","summary":"Replied with release note link","error":null}
 ```
-Allowed `actionType`: `reply`, `like`, `unlike`, `repost`, `bookmark`, `quote`, `follow`, `delete_comment`, `hide_reply`. `executedAt` MUST be ISO-8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`).
+Allowed `actionType`: `reply`, `like`, `unlike`, `repost`, `bookmark`, `quote`, `follow`, `delete_comment`, `hide_reply`. Allowed `result`: `ok`, `error`, `skipped`. `executedAt` MUST be ISO-8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`). `summary` is a short human-readable note (may be empty `""`); `error` is a string when `result == "error"` or `null` otherwise.
 
 ### `analytics/snapshots.jsonl` (one JSON object per line)
 Required keys: `snapshotId`, `capturedAt`, `window` (`24h` | `72h` | `7d` | `30d` | `account`), `platform`, `accountId`, `workId`, `topicId`, `title`, `metrics` (`views`, `likes`, `comments`, `shares`, `saves`), `platformMetrics` (object of platform-native numeric metrics).

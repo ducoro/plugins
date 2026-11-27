@@ -192,7 +192,7 @@ def audit_deck(
     allow_placeholders: bool = False,
 ) -> Dict[str, Any]:
     """Run objective structural, asset, placeholder, and WCAG AA contrast checks without aesthetic lock-in."""
-    target = target.resolve()
+    target = target.expanduser().resolve()
     html_path = target / 'index.html' if target.is_dir() else target
     if not html_path.is_file():
         raise FileNotFoundError(f'Deck HTML not found: {html_path}')

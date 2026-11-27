@@ -15,7 +15,7 @@ YouTube is the world's largest **long-form video library, recommendation engine,
 ## 2. Formats & Content Spectrum
 - **Specs (`references/specs.json`)**: Title `<= 100` chars (front-load key idea in first ~60 chars for mobile); description `<= 5000` chars (supports `00:00` chapter timestamps); tags total `<= 500` chars; long-form `16:9` (`1920x1080` or 4K) up to 12h / 256GB; Shorts `9:16` (`1080x1920`, `<= 180s`); custom thumbnail `1280x720` (`<= 2MB` JPG/PNG).
 - **Style spectrum**: Video essays, tutorials & walkthroughs, vlogs & documentaries, podcasts & interviews, product reviews, educational explainers, entertainment/comedy, and vertical Shorts.
-- **Packaging**: Pair thumbnail and title as complementary halves (don't repeat the exact same words on both); build `1280x720` thumbnails via `../shortform-social/scripts/card_deck.py --preset video-thumb` or real stills; verify `-14 LUFS`, `bt709`, and SRT captions with `../video-production/scripts/video_ops.py`.
+- **Packaging**: Pair thumbnail and title as complementary halves (don't repeat the exact same words on both); build `1280x720` thumbnails via `../shortform-social/scripts/card_deck.py scaffold <dir> --preset video-thumb` or real stills; verify `-14 LUFS`, `bt709`, and SRT captions with `../video-production/scripts/video_ops.py`.
 
 ## 3. Delivery & Verification (`references/protocol.md`)
 - Follow the shared Studio / OpenAPI / Gate 2 workflow in `../content-ops-loop/references/channel-access-matrix.md` and `approval-gates.md`.

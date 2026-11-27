@@ -1,6 +1,6 @@
 # Board Data Schemas
 
-`scripts/build_boards.py` aggregates `content-ops/` files into `assets/data.json` for each of the 5 boards. By default, routine updates write **only `assets/data.json`** (preserving in-place `ducoro.board.revalidate` without full reload); pass `--embed-inline` when exporting a standalone offline HTML snapshot.
+`scripts/build_boards.py` aggregates canonical files from the active data directory (in either Single-Space or Multi-Space relay topologies) into `assets/data.json` for each of the 5 boards. By default, routine updates write **only `assets/data.json`** (preserving in-place `ducoro.board.revalidate` without full reload); pass `--embed-inline` when exporting a standalone offline HTML snapshot.
 
 ## Common Envelope
 

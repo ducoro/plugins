@@ -1,13 +1,25 @@
-// Shared progressive-enhancement bridge for content-operations interactive boards.
+// Shared progressive-enhancement bridge for customer-support-ops interactive boards.
 // Standalone first: works with zero host SDK injection, and activates window.ducoro
 // features (Composer draft staging, live cast, shared view storage, agent commands,
-// live file revalidation, and read-only preview / shot projection) when served in a Ducoro Space.
+// host display theme sync, live file revalidation, and read-only preview / shot projection)
+// when served in a Ducoro Space.
+
+export function parseBooleanParam(value, paramName = 'value') {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  throw new Error(`Invalid boolean for ${paramName}: expected "true" or "false"`);
+}
 
 export function createBoardBridge({
   boardId,
   defaultView = {},
   onData = () => {},
   onApplyView = () => {},
+  onDisplayChange = () => {},
   getView = () => ({}),
   commands = {},
 }) {
@@ -31,6 +43,19 @@ export function createBoardBridge({
     !isShot() &&
     !isProjection() &&
     !isNonEmbedded();
+
+  function applyDisplay(display) {
+    if (!display || typeof display !== 'object') return;
+    const root = document.documentElement;
+    if (display.colorScheme === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    } else if (display.colorScheme === 'light') {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    }
+    onDisplayChange(display);
+  }
 
   function setStatus(message, tone = 'info') {
     if (!statusEl) return;
@@ -156,6 +181,14 @@ export function createBoardBridge({
       }
     });
 
+    sdk.ui?.onDisplayChange?.((display) => {
+      applyDisplay(display);
+    });
+
+    if (sdk.ui?.display) {
+      applyDisplay(sdk.ui.display);
+    }
+
     sdk.space?.onCastChange?.(({ actors }) => {
       latestActors = Array.isArray(actors) ? actors : [];
     });
@@ -173,7 +206,13 @@ export function createBoardBridge({
           return { status: 'reload-required', reason: 'full_scope_change' };
         }
         const paths = (notice.changes || []).flatMap((c) => [c.path, c.from, c.to].filter(Boolean));
-        const runtimeTouched = paths.some((p) => p === 'index.html' || p.startsWith('runtime/'));
+        const runtimeTouched = paths.some(
+          (p) =>
+            p === 'index.html' ||
+            p === 'assets/board-sdk-bridge.js' ||
+            p === 'assets/board-ui.css' ||
+            p.startsWith('runtime/')
+        );
         if (notice.reason === 'files' && runtimeTouched) {
           return { status: 'reload-required', reason: 'runtime_changed' };
         }
@@ -206,7 +245,8 @@ export function createBoardBridge({
 
     if (!sdk) return;
     try {
-      await sdk.board.ready;
+      const ctx = await sdk.board.ready;
+      if (ctx?.display) applyDisplay(ctx.display);
       updateWriteControls();
       if (!isProjection() && sdk.board.canIUse?.('storage.get')) {
         const saved = await sdk.storage.get('view');

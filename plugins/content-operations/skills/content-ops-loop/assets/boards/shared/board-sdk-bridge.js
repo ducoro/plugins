@@ -143,8 +143,26 @@ export function createBoardBridge({
     }
   }
 
+  function applyDisplay(display) {
+    if (!display || typeof display !== 'object') return;
+    const root = document.documentElement;
+    if (display.theme === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    } else if (display.theme === 'light') {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    }
+    if (typeof display.locale === 'string' && display.locale.trim()) {
+      root.lang = display.locale.trim();
+    }
+  }
+
   function registerSdkLifecycle() {
     if (!sdk) return;
+
+    if (sdk.ui?.display) applyDisplay(sdk.ui.display);
+    sdk.ui?.onDisplayChange?.((display) => applyDisplay(display));
 
     sdk.ui?.onLinkChange?.(({ state }) => {
       linkState = state;

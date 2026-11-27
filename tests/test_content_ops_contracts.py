@@ -87,6 +87,13 @@ class ContentOpsContractsTest(unittest.TestCase):
         for token in ('--background:', '--foreground:', '--card:', '--primary:', '--secondary:', '--muted:', '--muted-foreground:', '--destructive:', '--border:', '--radius:', '--chart-1:', '.dark {'):
             self.assertIn(token, shared_css, f'shared/board-ui.css missing shadcn/ui token {token}')
 
+        shared_bridge = (SKILLS / 'content-ops-loop' / 'assets' / 'boards' / 'shared' / 'board-sdk-bridge.js').read_text(encoding='utf-8')
+        self.assertIn('onDisplayChange', shared_bridge)
+        for board_name in build_mod.BOARD_NAMES:
+            readme_txt = (SKILLS / 'content-ops-loop' / 'assets' / 'boards' / board_name / 'README.md').read_text(encoding='utf-8')
+            self.assertIn('ducoro-cli board command', readme_txt, f'{board_name}/README.md missing full ducoro-cli board command')
+            self.assertIn('runtime/board-ui.css', readme_txt, f'{board_name}/README.md missing runtime/board-ui.css')
+
     def test_media_production_card_deck_template_declares_export_frames(self):
         template = SKILLS / 'shortform-social' / 'assets' / 'card-deck-template' / 'index.html'
         self.assertTrue(template.is_file(), 'Missing card-deck-template/index.html')

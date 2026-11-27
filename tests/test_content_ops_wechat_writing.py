@@ -345,14 +345,14 @@ def hello():
             server.shutdown()
             server.server_close()
 
-    def test_writing_quality_score_similarity_and_learn_edits_flywheel(self):
+    def test_writing_quality_probe_similarity_and_learn_edits_flywheel(self):
         with tempfile.TemporaryDirectory() as tmp:
             tdir = Path(tmp)
-            cliche_doc = tdir / 'cliche.md'
-            cliche_doc.write_text(
-                '首先，值得注意的是，众所周知这件事非常重要。其次，不可否认，不是工具不够好，而是认知没到位。'
-                '再者，毋庸置疑，不是速度不够快，而是方向没选对。最后，总而言之，综上所述，不是团队不够努力，而是方法论至关重要。'
-                + '这是一个极其深刻地、显著地、全面地、有效地、真正地改变行业格局的话题。' * 12,
+            rep_doc = tdir / 'repeated.md'
+            rep_doc.write_text(
+                '# 物理探针样本\n\n'
+                '首先我们看数据。首先我们看结构。首先我们看结论。\n\n'
+                '测试重复片段测试重复片段测试重复片段测试重复片段。\n',
                 encoding='utf-8',
             )
             clean_doc = tdir / 'clean.md'
@@ -369,21 +369,25 @@ def hello():
                 encoding='utf-8',
             )
 
-            r_bad = subprocess.run(
-                [sys.executable, str(MEDIA_SCRIPTS / 'check_writing_quality.py'), 'score', str(cliche_doc), '--json'],
+            r_probe = subprocess.run(
+                [sys.executable, str(MEDIA_SCRIPTS / 'check_writing_quality.py'), 'probe', str(rep_doc), '--json'],
                 capture_output=True, text=True, check=True,
             )
-            bad_data = json.loads(r_bad.stdout)
-            self.assertLess(bad_data['score'], 70)
-            bad_rules = {f['rule'] for f in bad_data['findings']}
-            self.assertIn('cliche_density', bad_rules)
-            self.assertIn('contrast_template_overuse', bad_rules)
+            probe_data = json.loads(r_probe.stdout)
+            self.assertNotIn('score', probe_data)
+            self.assertNotIn('passRecommended', probe_data)
+            stats = probe_data['stats']
+            self.assertGreater(stats['charCount'], 0)
+            self.assertEqual(stats['paragraphCount'], 2)
+            self.assertEqual(stats['repeatedOpenerRuns'], 1)
+            self.assertTrue(any(item['ngram'] == '测试重复' for item in stats['repeatedNgrams']))
 
-            r_ok = subprocess.run(
-                [sys.executable, str(MEDIA_SCRIPTS / 'check_writing_quality.py'), 'score', str(clean_doc), '--json'],
-                capture_output=True, text=True, check=True,
+            # Subjective --min-score blocking flag must no longer exist
+            r_no_min = subprocess.run(
+                [sys.executable, str(MEDIA_SCRIPTS / 'check_writing_quality.py'), 'probe', str(clean_doc), '--min-score', '90'],
+                capture_output=True, text=True, check=False,
             )
-            self.assertGreaterEqual(json.loads(r_ok.stdout)['score'], 90)
+            self.assertNotEqual(r_no_min.returncode, 0)
 
             # Similarity gate blocks near-clone and passes native rewrite
             r_sim_fail = subprocess.run(
@@ -615,17 +619,24 @@ def hello():
             self.assertEqual(r_data['theme'], 'emerald-geek')
             self.assertIn('#047857', rendered_preview.read_text(encoding='utf-8'))
 
-            # 4. extract_exemplar records structural fingerprint into <workspace>/style/exemplars.json
+            # 4. extract_exemplar records structural fingerprint without heuristic genre guessing
             p_ex = subprocess.run(
                 [sys.executable, str(MEDIA_SCRIPTS / 'extract_exemplar.py'), 'add', str(ws), str(md_out), '--source', '极客运营笔记', '--json'],
                 capture_output=True, text=True, check=True,
             )
             ex_data = json.loads(p_ex.stdout)
             self.assertEqual(ex_data['addedCount'], 1)
+            self.assertEqual(ex_data['exemplars'][0]['genre'], 'unspecified')
             self.assertEqual(ex_data['exemplars'][0]['fingerprint']['h2Count'], 2)
 
+            p_ex_genre = subprocess.run(
+                [sys.executable, str(MEDIA_SCRIPTS / 'extract_exemplar.py'), 'add', str(ws), str(md_out), '--source', '极客运营笔记', '--genre', 'analysis', '--json'],
+                capture_output=True, text=True, check=True,
+            )
+            self.assertEqual(json.loads(p_ex_genre.stdout)['exemplars'][0]['genre'], 'analysis')
+
             p_ls = subprocess.run(
-                [sys.executable, str(MEDIA_SCRIPTS / 'extract_exemplar.py'), 'list', str(ws), '--json'],
+                [sys.executable, str(MEDIA_SCRIPTS / 'extract_exemplar.py'), 'list', str(ws), '--genre', 'analysis', '--json'],
                 capture_output=True, text=True, check=True,
             )
             self.assertEqual(json.loads(p_ls.stdout)['count'], 1)

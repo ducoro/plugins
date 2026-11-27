@@ -190,11 +190,17 @@ def diff_capture(workspace: Path, capture: dict, *, update_baselines: bool = Tru
                 encoding='utf-8',
             )
 
-    if update_baselines:
+    ok_count = len(baselines_created) + len(material_changes) + len(unchanged) + len(deduped)
+    failed_count = len(skipped_failed)
+    partial_failure = failed_count > 0 and ok_count > 0
+
+    if update_baselines and ok_count > 0:
         seen['updatedAt'] = utc_now()
         seen_path.write_text(json.dumps(seen, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
 
-    if material_changes:
+    if failed_count > 0 and ok_count == 0:
+        outcome = 'capture_failed'
+    elif material_changes:
         outcome = 'material_change'
     elif baselines_created:
         outcome = 'baseline_initialized'
@@ -205,11 +211,13 @@ def diff_capture(workspace: Path, capture: dict, *, update_baselines: bool = Tru
         'schemaVersion': 'market-intel-diff/1',
         'generatedAt': utc_now(),
         'outcome': outcome,
+        'okCount': ok_count,
+        'partialFailure': partial_failure,
         'materialChangeCount': len(material_changes),
         'baselineCreatedCount': len(baselines_created),
         'unchangedCount': len(unchanged),
         'dedupedCount': len(deduped),
-        'failedCount': len(skipped_failed),
+        'failedCount': failed_count,
         'materialChanges': material_changes,
         'baselinesCreated': baselines_created,
         'unchanged': unchanged,
@@ -220,14 +228,14 @@ def diff_capture(workspace: Path, capture: dict, *, update_baselines: bool = Tru
 
 def main() -> int:
     parser = argparse.ArgumentParser(description='Diff a market-intel capture against stored baselines.')
-    parser.add_argument('workspace', help='Path to market-intel workspace')
+    parser.add_argument('data_dir', metavar='<data-dir>', help='Path to market-intel <data-dir>')
     parser.add_argument('--capture', required=True, help='Path to capture JSON from fetch_sources.py')
     parser.add_argument('--no-update', action='store_true', help='Dry-run diff without updating baseline snapshots')
     parser.add_argument('--out', default=None, help='Optional output JSON path')
     args = parser.parse_args()
 
     capture = json.loads(Path(args.capture).expanduser().resolve().read_text(encoding='utf-8'))
-    result = diff_capture(Path(args.workspace), capture, update_baselines=not args.no_update)
+    result = diff_capture(Path(args.data_dir), capture, update_baselines=not args.no_update)
     text = json.dumps(result, indent=2, ensure_ascii=False) + '\n'
     if args.out:
         out_path = Path(args.out).expanduser().resolve()

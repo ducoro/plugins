@@ -22,7 +22,7 @@
           <option value="P3">P3 Low</option>
         </select>
         <label class="ui-check-pill"><input id="escalated-only" type="checkbox" /> Escalated only</label>
-        <button id="triage-btn" class="ui-btn ui-btn-primary" data-requires-sdk>Run Triage</button>
+        <button id="triage-btn" class="ui-btn ui-btn-primary" data-requires-sdk>Draft Triage Prompt</button>
       </div>
     </header>
 
@@ -73,7 +73,7 @@
 
   <script id="board-initial-data" type="application/json">{"generatedAt":"","summary":{"openCount":0,"escalationCount":0,"slaBreachCount":0,"pendingDraftCount":0,"spikeCount":0},"tickets":[]}</script>
   <script type="module">
-    import { createBoardBridge } from './assets/board-sdk-bridge.js';
+    import { createBoardBridge, parseBooleanParam } from './assets/board-sdk-bridge.js';
 
     const state = { data: null, priority: 'all', escalatedOnly: false, focused: '' };
     const priSel = document.getElementById('priority-filter');
@@ -109,7 +109,7 @@
 
       tbody.innerHTML = rows.map((t) => {
         const pClass = t.priority === 'P0' ? 'ui-badge-destructive' : t.priority === 'P1' ? 'ui-badge-warning' : 'ui-badge-secondary';
-        const flags = (t.escalationReasons || []).map((r) => `<span class="ui-badge ${r === 'sla_breached' || r === 'p0_outage' || r === 'security_privacy' ? 'ui-badge-destructive' : 'ui-badge-warning'}">${esc(r)}</span>`).join(' ');
+        const flags = (t.escalationReasons || []).map((r) => `<span class="ui-badge ${r === 'sla_breached' || r === 'p0_outage' || r === 'security_privacy' || r === 'legal_regulatory' ? 'ui-badge-destructive' : 'ui-badge-warning'}">${esc(r)}</span>`).join(' ');
         const titleHtml = t.url ? `<a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(t.subject)}</a>` : esc(t.subject);
         const focused = state.focused === t.ticketId ? ' focused' : '';
         return `<tr class="${focused}" data-card="ticket-${esc(t.ticketId)}" data-card-title="${esc(t.subject)}" data-mark-item="ticket-${esc(t.ticketId)}" data-mark-label="${esc(t.subject)}">
@@ -122,7 +122,7 @@
           <td><div class="ui-meta-row">${flags || '<span class="ui-muted">Routine</span>'}</div></td>
           <td class="is-num ${t.slaBreached ? 'ui-status-destructive' : ''}">${esc(t.ageHours)}</td>
           <td><span class="ui-status ui-status-neutral">${esc(t.draftStatus || t.status)}</span></td>
-          <td data-shot-hide><button class="ui-btn ui-btn-xs ui-btn-ghost" data-requires-sdk data-id="${esc(t.ticketId)}">Review</button></td>
+          <td data-shot-hide data-mark-ignore><button class="ui-btn ui-btn-xs ui-btn-ghost" data-requires-sdk data-mark-ignore data-id="${esc(t.ticketId)}">Draft Reply Prompt</button></td>
         </tr>`;
       }).join('');
       bridge.updateWriteControls();
@@ -143,25 +143,37 @@
       commands: {
         filterPriority: {
           describe: 'Filter tickets by priority (all|P0|P1|P2|P3)',
-          params: { priority: 'string' },
+          params: { priority: 'Priority bucket: all, P0, P1, P2, or P3.' },
           run: ({ priority }) => {
-            if (!['all', 'P0', 'P1', 'P2', 'P3'].includes(priority)) throw new Error('Invalid priority');
-            state.priority = priority; priSel.value = priority; render(); return { priority };
+            if (!['all', 'P0', 'P1', 'P2', 'P3'].includes(priority)) {
+              throw new Error('Invalid priority: expected all, P0, P1, P2, or P3');
+            }
+            state.priority = priority;
+            priSel.value = priority;
+            render();
+            return { priority };
           },
         },
         filterEscalated: {
           describe: 'Toggle escalated-only ticket filter',
-          params: { escalatedOnly: 'boolean' },
+          params: { escalatedOnly: 'Boolean string: "true" or "false".' },
           run: ({ escalatedOnly }) => {
-            state.escalatedOnly = Boolean(escalatedOnly); escChk.checked = state.escalatedOnly; render(); return { escalatedOnly: state.escalatedOnly };
+            const parsed = parseBooleanParam(escalatedOnly, 'escalatedOnly');
+            state.escalatedOnly = parsed;
+            escChk.checked = parsed;
+            render();
+            return { escalatedOnly: state.escalatedOnly };
           },
         },
         focusTicket: {
           describe: 'Highlight a ticket row by ticketId',
-          params: { ticketId: 'string' },
+          params: { ticketId: 'Exact ticketId from assets/data.json.' },
           run: ({ ticketId }) => {
-            if (typeof ticketId !== 'string' || !ticketId.trim()) throw new Error('ticketId required');
-            state.focused = ticketId.trim(); render();
+            if (typeof ticketId !== 'string' || !ticketId.trim()) {
+              throw new Error('ticketId is required');
+            }
+            state.focused = ticketId.trim();
+            render();
             document.querySelector(`[data-card="ticket-${CSS.escape(state.focused)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return { focused: state.focused };
           },
@@ -169,7 +181,15 @@
         resetFilters: {
           describe: 'Reset support queue filters',
           params: {},
-          run: () => { state.priority = 'all'; state.escalatedOnly = false; state.focused = ''; priSel.value = 'all'; escChk.checked = false; render(); return { reset: true }; },
+          run: () => {
+            state.priority = 'all';
+            state.escalatedOnly = false;
+            state.focused = '';
+            priSel.value = 'all';
+            escChk.checked = false;
+            render();
+            return { reset: true };
+          },
         },
       },
     });

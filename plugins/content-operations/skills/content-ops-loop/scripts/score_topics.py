@@ -364,7 +364,7 @@ def main(argv=None) -> int:
     parser.add_argument('--dry-run', action='store_true', help='Print scoring summary without writing topics.json.')
     args = parser.parse_args(argv)
 
-    ws = Path(args.workspace).resolve()
+    ws = Path(args.workspace).expanduser().resolve()
     import_res = None
     if args.import_gated:
         import_res = import_gated_topics(ws, Path(args.import_gated), write=not args.dry_run)

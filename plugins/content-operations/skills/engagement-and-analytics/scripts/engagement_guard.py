@@ -135,6 +135,7 @@ def record_action(
     action_type: str,
     result: str = 'ok',
     summary: str = '',
+    error: str | None = None,
     executed_at: str | None = None,
     action_id: str | None = None,
     bypass_checks: bool = False,
@@ -151,6 +152,7 @@ def record_action(
         if not bud['ok']:
             return {'ok': False, 'error': 'rate_limit_exceeded', 'budget': bud}
 
+    err_val = error.strip() if isinstance(error, str) and error.strip() else None
     entry = {
         'actionId': action_id or f'act-{uuid.uuid4().hex[:12]}',
         'executedAt': iso_utc(now),
@@ -160,6 +162,7 @@ def record_action(
         'actionType': action_type,
         'result': result,
         'summary': summary.strip(),
+        'error': err_val,
     }
     log_path = ws / 'engagement' / 'action-log.jsonl'
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -194,6 +197,7 @@ def main(argv=None) -> int:
     p_rec.add_argument('--action-type', required=True)
     p_rec.add_argument('--result', choices=['ok', 'error', 'skipped'], default='ok')
     p_rec.add_argument('--summary', default='')
+    p_rec.add_argument('--error', default='')
     p_rec.add_argument('--executed-at', default='')
     p_rec.add_argument('--action-id', default='')
 
@@ -213,6 +217,7 @@ def main(argv=None) -> int:
                 action_type=args.action_type,
                 result=args.result,
                 summary=args.summary,
+                error=args.error or None,
                 executed_at=args.executed_at or None,
                 action_id=args.action_id or None,
             )

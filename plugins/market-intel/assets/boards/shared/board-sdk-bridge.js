@@ -1,7 +1,7 @@
-// Shared progressive-enhancement bridge for content-operations interactive boards.
+// Shared progressive-enhancement bridge for market-intel interactive boards.
 // Standalone first: works with zero host SDK injection, and activates window.ducoro
 // features (Composer draft staging, live cast, shared view storage, agent commands,
-// live file revalidation, and read-only preview / shot projection) when served in a Ducoro Space.
+// live display sync, live file revalidation, and read-only preview / shot projection) when served in a Ducoro Space.
 
 export function createBoardBridge({
   boardId,
@@ -37,6 +37,21 @@ export function createBoardBridge({
     statusEl.textContent = message;
     statusEl.dataset.tone = tone;
     statusEl.hidden = !message;
+  }
+
+  function applyDisplay(display) {
+    if (!display || typeof display !== 'object') return;
+    const root = document.documentElement;
+    if (display.colorScheme === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    } else if (display.colorScheme === 'light') {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    }
+    if (typeof display.locale === 'string' && display.locale.trim()) {
+      root.lang = display.locale.trim();
+    }
   }
 
   function updateWriteControls() {
@@ -146,6 +161,13 @@ export function createBoardBridge({
   function registerSdkLifecycle() {
     if (!sdk) return;
 
+    if (sdk.ui?.display) {
+      applyDisplay(sdk.ui.display);
+    }
+    sdk.ui?.onDisplayChange?.((display) => {
+      applyDisplay(display);
+    });
+
     sdk.ui?.onLinkChange?.(({ state }) => {
       linkState = state;
       updateWriteControls();
@@ -173,7 +195,13 @@ export function createBoardBridge({
           return { status: 'reload-required', reason: 'full_scope_change' };
         }
         const paths = (notice.changes || []).flatMap((c) => [c.path, c.from, c.to].filter(Boolean));
-        const runtimeTouched = paths.some((p) => p === 'index.html' || p.startsWith('runtime/'));
+        const runtimeTouched = paths.some(
+          (p) =>
+            p === 'index.html' ||
+            p === 'assets/board-sdk-bridge.js' ||
+            p === 'assets/board-ui.css' ||
+            p.startsWith('runtime/')
+        );
         if (notice.reason === 'files' && runtimeTouched) {
           return { status: 'reload-required', reason: 'runtime_changed' };
         }
@@ -206,7 +234,10 @@ export function createBoardBridge({
 
     if (!sdk) return;
     try {
-      await sdk.board.ready;
+      const ctx = await sdk.board.ready;
+      if (ctx?.display) {
+        applyDisplay(ctx.display);
+      }
       updateWriteControls();
       if (!isProjection() && sdk.board.canIUse?.('storage.get')) {
         const saved = await sdk.storage.get('view');

@@ -49,6 +49,28 @@
       return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
+    function safeHttpUrl(u) {
+      try {
+        const parsed = new URL(String(u));
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : '';
+      } catch {
+        return '';
+      }
+    }
+
+    function assertAllowedKeys(args, allowedKeys) {
+      if (args === null || args === undefined) return {};
+      if (typeof args !== 'object' || Array.isArray(args)) {
+        throw new Error('Command arguments must be an object');
+      }
+      const allowed = new Set(allowedKeys);
+      const unknown = Object.keys(args).filter((k) => !allowed.has(k));
+      if (unknown.length > 0) {
+        throw new Error(`Unknown argument(s): ${unknown.join(', ')}`);
+      }
+      return args;
+    }
+
     function render() {
       const d = state.data || { summary: {}, cards: [] };
       document.getElementById('kpi-tracked').textContent = d.summary?.entityCount ?? 0;
@@ -67,8 +89,15 @@
       grid.innerHTML = list.map((c) => {
         const focused = state.focused === c.slug ? ' focused' : '';
         const threatClass = c.threatLevel === 'high' ? 'ui-badge-destructive' : c.threatLevel === 'medium' ? 'ui-badge-warning' : 'ui-badge-secondary';
+        const strengths = (c.strengths || []).map((s) => `<li>${esc(s)}</li>`).join('');
+        const gaps = (c.gaps || []).map((s) => `<li>${esc(s)}</li>`).join('');
         const landmines = (c.landmines || []).map((s) => `<li>${esc(s)}</li>`).join('');
-        const objections = (c.objectionHandlers || []).map((o) => `<li><strong>${esc(o.objection)}</strong> → ${esc(o.response)}</li>`).join('');
+        const objections = (c.objectionHandlers || []).map((o) => `<li><strong>${esc(o.objection)}</strong> -> ${esc(o.response)}</li>`).join('');
+        const evidenceLinks = (c.evidenceUrls || [])
+          .map((u) => safeHttpUrl(u))
+          .filter(Boolean)
+          .map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">Source ${i + 1}</a>`)
+          .join(' · ');
         return `<article class="ui-card${focused}" data-card="entity-${esc(c.slug)}" data-card-title="${esc(c.name)}" data-mark-item="entity-${esc(c.slug)}" data-mark-label="${esc(c.name)}">
           <div class="ui-col-head">
             <span>${esc(c.name)}</span>
@@ -86,8 +115,11 @@
           ${c.whenWeWin ? `<p class="ui-muted"><strong>When we win:</strong> ${esc(c.whenWeWin)}</p>` : ''}
           ${c.whenWeLose ? `<p class="ui-muted"><strong>When we lose:</strong> ${esc(c.whenWeLose)}</p>` : ''}
           <div class="ui-quote">${esc(c.latestEvent)}</div>
+          ${strengths ? `<div class="ui-muted" style="margin-top:8px"><strong>Competitor Strengths</strong><ul style="margin:4px 0 0;padding-left:18px">${strengths}</ul></div>` : ''}
+          ${gaps ? `<div class="ui-muted" style="margin-top:8px"><strong>Known Gaps</strong><ul style="margin:4px 0 0;padding-left:18px">${gaps}</ul></div>` : ''}
           ${landmines ? `<div class="ui-muted" style="margin-top:8px"><strong>Discovery Landmines</strong><ul style="margin:4px 0 0;padding-left:18px">${landmines}</ul></div>` : ''}
           ${objections ? `<div class="ui-muted" style="margin-top:8px"><strong>Objection Handlers</strong><ul style="margin:4px 0 0;padding-left:18px">${objections}</ul></div>` : ''}
+          ${evidenceLinks ? `<p class="ui-muted" style="margin-top:8px"><strong>Evidence:</strong> ${evidenceLinks}</p>` : ''}
           <div class="ui-actions" data-shot-hide>
             <button class="ui-btn ui-btn-xs ui-btn-ghost" data-requires-sdk data-slug="${esc(c.slug)}">Update Card</button>
           </div>
@@ -104,25 +136,52 @@
       getView: () => ({ category: state.category }),
       commands: {
         filterCategory: {
-          describe: 'Filter battlecards by entity category',
-          params: { category: 'string' },
-          run: ({ category }) => { if (typeof category !== 'string') throw new Error('category required'); state.category = category; render(); return { category }; },
+          describe: 'Filter battlecards by entity category or all.',
+          params: { category: 'Category present in loaded cards, or "all".' },
+          run: (rawArgs) => {
+            const { category } = assertAllowedKeys(rawArgs, ['category']);
+            if (typeof category !== 'string' || !category.trim()) {
+              throw new Error('category must be a non-empty string');
+            }
+            const next = category.trim();
+            const validCats = [...new Set((state.data?.cards || []).map((c) => c.category).filter(Boolean))];
+            if (next !== 'all' && !validCats.includes(next)) {
+              throw new Error(`Unknown category "${next}". Valid values: ${['all', ...validCats].join(', ')}`);
+            }
+            state.category = next;
+            render();
+            return { category: state.category };
+          },
         },
         focusEntity: {
-          describe: 'Highlight a battlecard by entity slug',
-          params: { slug: 'string' },
-          run: ({ slug }) => {
-            if (typeof slug !== 'string' || !slug.trim()) throw new Error('slug required');
-            state.focused = slug.trim();
+          describe: 'Highlight and scroll to a battlecard by entity slug.',
+          params: { slug: 'Entity slug from the currently loaded battlecards.' },
+          run: (rawArgs) => {
+            const { slug } = assertAllowedKeys(rawArgs, ['slug']);
+            if (typeof slug !== 'string' || !slug.trim()) {
+              throw new Error('slug must be a non-empty string');
+            }
+            const target = slug.trim();
+            const validSlugs = (state.data?.cards || []).map((c) => c.slug).filter(Boolean);
+            if (!validSlugs.includes(target)) {
+              throw new Error(`Unknown entity slug "${target}". Valid slugs: ${validSlugs.join(', ') || 'none'}`);
+            }
+            state.focused = target;
             render();
             document.querySelector(`[data-card="entity-${CSS.escape(state.focused)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return { focused: state.focused };
           },
         },
         resetFilters: {
-          describe: 'Reset category filter and focus',
+          describe: 'Reset category filter and focused entity.',
           params: {},
-          run: () => { state.category = 'all'; state.focused = ''; render(); return { reset: true }; },
+          run: (rawArgs) => {
+            assertAllowedKeys(rawArgs, []);
+            state.category = 'all';
+            state.focused = '';
+            render();
+            return { reset: true };
+          },
         },
       },
     });

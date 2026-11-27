@@ -227,10 +227,10 @@
     .detail-box p, .detail-box ul { margin: 0; font-size: 14px; }
     .detail-box ul { padding-left: 18px; }
 
-    /* Dual track */
+    /* Three-tier channels / two-col topology */
     .two-col {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 16px;
     }
     .card {
@@ -463,10 +463,10 @@
         loopSub: 'Every draft, schedule, publish link, and metric stays in your local content-ops/ folder. Two human checkpoints ensure nothing goes public without your say-so. Click any step to see what gets created.',
         steps: [
           {
-            num: '01', title: 'Collect Ideas', gate: '',
-            what: 'Gather product updates, trending discussions, seasonal hooks, and real reader questions into one inbox so you never stare at a blank page.',
-            files: ['content-ops/brand-profile.md', 'content-ops/inbox/*.md'],
-            scripts: ['init_workspace.py --timezone <tz>'],
+            num: '01', title: 'Locate Folder & Collect Ideas', gate: '',
+            what: 'Discover the human\'s existing folder or current Space files/ first, then gather product updates, trending discussions, seasonal hooks, and reader questions into inbox/.',
+            files: ['<data-dir>/brand-profile.md', '<data-dir>/inbox/*.md'],
+            scripts: ['ducoro-cli space info / space resources get', 'init_workspace.py <data-dir> (first-time scaffold only)'],
           },
           {
             num: '02', title: 'Score & Pick Topics', gate: 'Your Approval #1',
@@ -506,14 +506,25 @@
           },
         ],
         detailHeaders: ['What This Step Does', 'Files Saved Locally', 'Built-in Helpers'],
-        channelsHeading: 'Two Official Ways to Publish — Zero Account Risk',
-        channelsSub: 'Start immediately with zero developer setup, or plug in your own official API keys whenever you want faster automation.',
+        channelsHeading: 'Three Official Tiers to Publish — Zero Account Risk',
+        channelsSub: 'Reuse connected Ducoro Core Connectors first, default to each platform\'s official browser Creator Studio with zero setup, or plug in your own official API keys for deep automation.',
         dualTracks: [
           {
-            badge: 'Default · Zero Setup · All 14 Platforms',
+            badge: 'Priority 1 · Connected Hosting · Zero Friction',
             badgeCls: 'badge-ok',
+            title: 'Ducoro Core Connectors',
+            desc: 'When running inside Ducoro, check active account-level Connectors first (`ducoro-cli mcp catalog list|status|tools|call`) for publishing, comment triage, and analytics while still enforcing Gate 2 and rate limits.',
+            bullets: [
+              'Checked first whenever an active platform Connector exposes the required tool',
+              'Zero manual browser clicks or custom token refresh scripts required',
+              'Enforces Gate 2 human confirmation and engagement_guard.py caps identically',
+            ],
+          },
+          {
+            badge: 'Priority 2 · Default Zero-Config · All 14 Platforms',
+            badgeCls: 'badge-accent',
             title: 'Official Browser Creator Studio',
-            desc: 'Your assistant opens each platform\'s official web studio right in your browser—uploads local images or videos, fills copy and covers, saves drafts, and pauses before clicking Publish.',
+            desc: 'Default path when no Connector covers the platform or feature: open each platform\'s official web studio in your browser, upload local assets, stage drafts, and pause before clicking Publish.',
             bullets: [
               'Works on day one across all 14 CN and Global platforms',
               'No developer app applications, no OAuth setup, no external image host required',
@@ -521,10 +532,10 @@
             ],
           },
           {
-            badge: 'Optional · For Power Users · 12 Platforms',
-            badgeCls: 'badge-accent',
-            title: 'Official Platform OpenAPIs',
-            desc: 'Already have developer credentials? Run the built-in Python scripts using keys stored only on your own machine—no background daemon and no third-party account hosting.',
+            badge: 'Priority 3 · Advanced Optional · 12 Platforms',
+            badgeCls: 'badge-warn',
+            title: 'Official Platform OpenAPIs (client.py)',
+            desc: 'When you explicitly configure official developer credentials in local env vars (or need deep endpoints like YouTube Analytics v2), call the bundled zero-dependency Python clients.',
             bullets: [
               'Direct local uploads built in for WeChat Official, X, YouTube, TikTok, and LinkedIn',
               'On-demand token refresh commands for short-lived tokens (X, WeChat, YouTube, TikTok)',
@@ -545,16 +556,16 @@
         boardsHeading: '5 Live Dashboards Included Out of the Box',
         boardsSub: 'Open any dashboard directly in a browser as a clean local page—or view it inside Ducoro to click any card and send approval, reply, or follow-up instructions straight into chat.',
         boardMetaLabels: ['What You Can Ask Your Assistant to Show', 'One-Click Chat Collaboration'],
-        topoHeading: 'Start Solo, or Split Across Dedicated Workspaces',
-        topoSub: 'Install this single plugin once—whether you run everything in one place or divide monitoring, writing, and publishing across separate workspaces.',
+        topoHeading: 'Start in One Space, or Relay Across Dedicated Spaces',
+        topoSub: 'Install this single plugin once—run everything inside the human\'s existing folder or current Space files/, or divide monitoring, writing, and publishing across separate Spaces.',
         topos: [
           {
             badge: 'Solo Creator / Fast Start',
             badgeCls: 'badge-ok',
-            title: 'Everything in One Workspace',
-            desc: 'One workspace handles the full journey from ideas to retrospectives inside a single content-ops/ folder.',
+            title: 'Single-Space End-to-End',
+            desc: 'One Space handles the full journey from ideas to retrospectives inside the human\'s existing folder or this Space\'s own files/ directory.',
             bullets: [
-              'Fastest setup: one command creates the workspace and all 5 live dashboards',
+              'Zero forced workspace setup: start directly in your existing folder or Space files/',
               'Every draft, schedule, publish record, and metric stays together',
               'Best for solo founders and lean teams with one primary assistant',
             ],
@@ -562,11 +573,11 @@
           {
             badge: 'Multi-Account / Higher Volume',
             badgeCls: 'badge-accent',
-            title: 'Split by Role Across Workspaces',
-            desc: 'Point dedicated spaces (e.g., Trend & Comment Watch, Writing, Publishing) to the same shared folder—each space owns its own files so nothing overwrites anything else.',
+            title: 'Multi-Space Relay',
+            desc: 'Point dedicated Spaces (Monitoring, Writing, Publishing) to the same shared folder—each Space owns its own mutable files and hands off via ducoro-cli space mail send.',
             bullets: [
-              'Watch & Analytics Space handles incoming trends, comment inbox, and metric snapshots',
-              'Writing Space handles topic selection, master drafts, and platform variants',
+              'Monitoring & Analytics Space handles incoming trends, comment inbox, and metric snapshots',
+              'Drafting Space handles topic selection, master drafts, and platform variants',
               'Publishing Space handles the calendar, live links, and pre-publish tamper checks',
             ],
           },
@@ -603,10 +614,10 @@
         loopSub: '每份草稿、排期、线上链接和数据都落在本地 content-ops/ 文件夹里，随时可查可审计。系统在「定选题」和「发出去」两处等你点头，其余环节自动衔接。点击任意一步查看详情。',
         steps: [
           {
-            num: '01', title: '日常收料', gate: '',
-            what: '把产品新功能、行业热点、营销节点和评论区里的真实提问统一收进收件箱，每天都有料可写。',
-            files: ['content-ops/brand-profile.md', 'content-ops/inbox/*.md'],
-            scripts: ['init_workspace.py --timezone Asia/Shanghai'],
+            num: '01', title: '定位目录与日常收料', gate: '',
+            what: '先复用你已有的内容目录或当前 Space 自带的 files/，再把产品更新、行业热点、营销节点和评论区真实提问统一收进收件箱。',
+            files: ['<data-dir>/brand-profile.md', '<data-dir>/inbox/*.md'],
+            scripts: ['ducoro-cli space info / space resources get', 'init_workspace.py <data-dir>（仅首次建结构时按需运行）'],
           },
           {
             num: '02', title: '挑选题防撞车', gate: '你拍板 #1',
@@ -646,14 +657,25 @@
           },
         ],
         detailHeaders: ['这一步帮你做什么', '本地留存文件', '内置配套工具'],
-        channelsHeading: '两种正规发布方式，守住账号安全',
-        channelsSub: '不需要先折腾开发者账号就能上手；如果你本来就有官方 API 凭证，也可以直接切到高速接口模式。',
+        channelsHeading: '三轨正规发布路径，守住账号安全',
+        channelsSub: '优先复用已连通的 Ducoro Core Connectors；默认零配置走官方浏览器后台；若已配置官方 API 环境变量，也可按需切到内置 OpenAPI 客户端。',
         dualTracks: [
           {
-            badge: '默认推荐 · 零配置 · 14 平台全支持',
+            badge: '优先级 1 · 已连通连接器 · 最省心',
             badgeCls: 'badge-ok',
-            title: '直接操作官方浏览器后台',
-            desc: '助手在你的浏览器里打开各平台官方创作者后台，像真人一样传本地图片视频、填标题封面、存成草稿，并在点“发布”前停下来等你确认。',
+            title: 'Ducoro Core Connectors',
+            desc: '在 Ducoro 内运行时先检查账号已连通的平台连接器（`ducoro-cli mcp catalog list|status|tools|call`），有对应发稿、评论或数据工具时优先直接调用，同样严守 Gate 2 与频控护栏。',
+            bullets: [
+              '优先检查目标平台是否已有可用 Connector 工具，避免重复折腾配置',
+              '无需手工切浏览器点按钮，也无需另配独立刷新脚本',
+              '与浏览器/API 共享同一套 Gate 2 拍板与 engagement_guard.py 频控上限',
+            ],
+          },
+          {
+            badge: '优先级 2 · 默认零配置 · 14 平台全支持',
+            badgeCls: 'badge-accent',
+            title: '官方浏览器创作者后台',
+            desc: '未连通 Connector 时的默认路径：在你的浏览器里打开各平台官方创作者后台，直传本地图片视频、填标题封面、存成草稿，并在点“发布”前停下来等你确认。',
             bullets: [
               '覆盖全部 14 个国内外平台，装上当天就能开跑',
               '不用申请开发者权限、不用配 OAuth、不用额外准备图床',
@@ -661,10 +683,10 @@
             ],
           },
           {
-            badge: '进阶可选 · 12 平台支持官方 API',
-            badgeCls: 'badge-accent',
-            title: '对接各平台官方开放接口',
-            desc: '如果你已经持有官方开发者凭证，可直接调用内置 Python 脚本发帖、传素材、回读数据。凭证只留在你本机，没有后台常驻进程，也不由任何第三方托管。',
+            badge: '优先级 3 · 进阶可选 · 12 平台官方 API',
+            badgeCls: 'badge-warn',
+            title: '官方平台 OpenAPI（client.py）',
+            desc: '当你已在本地环境变量中配置官方开发者凭证（或需要 YouTube Analytics v2 等深度接口）时，按需调用内置零依赖 Python 客户端，凭证只留在你本机。',
             bullets: [
               '公众号、X、YouTube、TikTok、LinkedIn 均已内置本地传图/传视频命令',
               '短期凭证支持发前按需现刷（X / 公众号 / YouTube / TikTok）',
@@ -672,7 +694,7 @@
             ],
           },
         ],
-        legitGuardrail: '账号安全底线：绝不偷取浏览器 Cookie 冒充请求、绝不调用非官方逆向接口、绝不托管你的账号密码、绝不绕过验证码——只走官方网页后台或官方开放接口。',
+        legitGuardrail: '账号安全底线：绝不偷取浏览器 Cookie 冒充请求、绝不调用非官方逆向接口、绝不托管你的账号密码、绝不绕过验证码——只走已连通 Connector、官方网页后台或官方开放接口。',
         platformsHeading: '14 个平台，各有各的原生打法',
         platformsSub: '小红书的 3:4 封面、抖音的前 3 秒钩子、X 的字数与串文、公众号的长文排版，各平台规矩完全不同。我们把 14 个平台分开维护，发哪个才调哪个的打法和规格检查。',
         filters: [
@@ -851,41 +873,54 @@
     ];
 
     const QUICK_SNIPPET = {
-      en: `# 1. Create your local content-ops/ folder and all 5 live dashboards
-python3 skills/content-ops-loop/scripts/init_workspace.py . --timezone Asia/Shanghai
+      en: `# 1. Locate the human's existing folder or this Space's files/ first (no forced workspace)
+ducoro-cli space info <space-id> --json
+ducoro-cli space resources get <space-id> --json
+ducoro-cli local-folder list --json
 
-# 2. Score new topic ideas and flag anything repeated within 14 days
-python3 skills/content-ops-loop/scripts/score_topics.py ./content-ops
+# 2. Check active Ducoro Core Connectors first (Priority 1)
+ducoro-cli mcp catalog list --json
 
-# 3. Check every platform variant's text, images, ratios, and required fields
-python3 skills/content-ops-loop/scripts/check_media_specs.py ./content-ops/drafts/<draft-id> --update-meta
+# 3. Optional first-time scaffold inside your chosen <data-dir> (existing folder or Space files/)
+python3 skills/content-ops-loop/scripts/init_workspace.py <data-dir> --timezone Asia/Shanghai
 
-# 4. Publish via Official Browser Studio (default, zero setup)
-#    Or if using Instagram/Facebook/Threads/Pinterest official APIs,
-#    stage a 5-hour public URL right before publishing:
-ducoro-cli media upload ./content-ops/drafts/<draft-id>/assets/cover.jpg --json
+# 4. Score topic candidates and validate every platform variant before Gate 2
+python3 skills/content-ops-loop/scripts/score_topics.py <data-dir>
+python3 skills/content-ops-loop/scripts/check_media_specs.py <data-dir>/drafts/<draft-id> --update-meta
+python3 skills/content-ops-loop/scripts/validate_workspace.py <data-dir> --verify-slot <slot-id>
 
-# 5. Roll up analytics, verify workspace files, and refresh all 5 dashboards
-python3 skills/engagement-and-analytics/scripts/aggregate_metrics.py ./content-ops --days 14
-python3 skills/content-ops-loop/scripts/validate_workspace.py ./content-ops
-python3 skills/content-ops-loop/scripts/build_boards.py ./content-ops`,
-      zh: `# 1. 一键建好本地 content-ops/ 工作区和全部 5 张实时展板
-python3 skills/content-ops-loop/scripts/init_workspace.py . --timezone Asia/Shanghai
+# 5. Publish via Connector (Priority 1) -> Official Browser Studio (Priority 2, default)
+#    -> Optional OpenAPI client.py (Priority 3; stage 5h media URLs for Meta/Pinterest):
+ducoro-cli media upload <data-dir>/drafts/<draft-id>/assets/cover.jpg --json
 
-# 2. 给候选选题自动打分，并排查近 14 天内是否撞题
-python3 skills/content-ops-loop/scripts/score_topics.py ./content-ops
+# 6. Roll up analytics, diagnose readiness, and project data into Space Boards
+python3 skills/engagement-and-analytics/scripts/aggregate_metrics.py <data-dir> --days 14
+python3 skills/content-ops-loop/scripts/diagnose.py --workspace <data-dir> --json
+python3 skills/content-ops-loop/scripts/build_boards.py <data-dir>`,
+      zh: `# 1. 先定位已有内容目录或当前 Space 自带的 files/（不强制另建工作区）
+ducoro-cli space info <space-id> --json
+ducoro-cli space resources get <space-id> --json
+ducoro-cli local-folder list --json
 
-# 3. 发布前自动核对各平台字数、图片格式、画面比例与必填项
-python3 skills/content-ops-loop/scripts/check_media_specs.py ./content-ops/drafts/<draft-id> --update-meta
+# 2. 优先检查已连通的 Ducoro Core Connectors（优先级 1）
+ducoro-cli mcp catalog list --json
 
-# 4. 默认直接通过浏览器进官方创作者后台发稿（零配置）；
-#    若使用 IG / FB / Threads / Pinterest 官方 API，临发前先换 5 小时临时链接：
-ducoro-cli media upload ./content-ops/drafts/<draft-id>/assets/cover.jpg --json
+# 3. 仅首次在选定数据目录 <data-dir> 建标准子目录时按需运行脚手架
+python3 skills/content-ops-loop/scripts/init_workspace.py <data-dir> --timezone Asia/Shanghai
 
-# 5. 汇总数据复盘、校验工作区完整性并刷新 5 张展板
-python3 skills/engagement-and-analytics/scripts/aggregate_metrics.py ./content-ops --days 14
-python3 skills/content-ops-loop/scripts/validate_workspace.py ./content-ops
-python3 skills/content-ops-loop/scripts/build_boards.py ./content-ops`,
+# 4. 选题打分防撞车，并在 Gate 2 发布前核验各平台规格与防篡改哈希
+python3 skills/content-ops-loop/scripts/score_topics.py <data-dir>
+python3 skills/content-ops-loop/scripts/check_media_specs.py <data-dir>/drafts/<draft-id> --update-meta
+python3 skills/content-ops-loop/scripts/validate_workspace.py <data-dir> --verify-slot <slot-id>
+
+# 5. 按三轨发布：优先级 1 Connector -> 优先级 2 官方浏览器后台（默认零配置）
+#    -> 优先级 3 可选官方 OpenAPI client.py（IG/FB/Threads/Pinterest 临发换 5h 链接）：
+ducoro-cli media upload <data-dir>/drafts/<draft-id>/assets/cover.jpg --json
+
+# 6. 汇总数据复盘、健康诊断并刷新展板投影
+python3 skills/engagement-and-analytics/scripts/aggregate_metrics.py <data-dir> --days 14
+python3 skills/content-ops-loop/scripts/diagnose.py --workspace <data-dir> --json
+python3 skills/content-ops-loop/scripts/build_boards.py <data-dir>`,
     };
 
     let lang = (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';

@@ -1,6 +1,6 @@
 # Content Operations
 
-> **Visual Interactive Overview**: Open [docs/index.html](docs/index.html) in any browser for an interactive bilingual (EN / 中文) overview of the loop, dual-track execution model, 14-platform capability matrix, and 5 Ducoro Board SDK dashboards.
+> **Visual Interactive Overview**: Open [docs/index.html](docs/index.html) in any browser for an interactive bilingual (EN / 中文) overview of the loop, three-tier legitimate execution model, 14-platform capability matrix, and 5 Ducoro Board SDK dashboards.
 
 A self-contained, zero-backend plugin for running a continuous, multi-platform content operations loop across 14 social platforms using **three legitimate, platform-official execution tiers**:
 - **Connected Ducoro Core Connectors (checked first when available)**: check `ducoro-cli mcp catalog list` / `status <slug>` / `tools <slug>` and reuse active hosted Connectors for intake, publishing, engagement, or analytics whenever the required tool is available (still enforcing Gate 2 approval and rate-limit guards).
@@ -12,8 +12,8 @@ A self-contained, zero-backend plugin for running a continuous, multi-platform c
 ## Architecture
 
 One cohesive Domain Role plugin (`PLUGIN.md` as level-1 entry + progressive level-2/level-3 on-demand playbooks and resources) covers the entire content operations domain so a single Bot mounts it once and can run either:
-- **Single-workspace end-to-end mode** (one Bot runs the whole loop in one Space), or
-- **Split-workspace relay mode** (multiple specialized Spaces—e.g. monitoring, drafting, publishing, analytics—each reading only the relevant level-2/level-3 playbooks while sharing the same file-backed workspace contract).
+- **Single-Space end-to-end mode** (one Bot runs the whole loop inside the human's existing folder or the Space's own `files/`), or
+- **Multi-Space relay mode** (multiple specialized Spaces—e.g. monitoring, drafting, publishing, analytics—each reading only the relevant level-2/level-3 playbooks while relaying over a shared folder and `ducoro-cli space mail send`).
 
 ### Level-1 Entry & Core Stage Playbooks
 

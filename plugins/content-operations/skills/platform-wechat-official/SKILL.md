@@ -15,7 +15,7 @@ WeChat Official Accounts serve **high-trust private subscribers**, **WeChat Reco
 ## 2. Formats, Specs & Deterministic HTML Toolchain
 - **Format A — Long-form Article (`image_text`, `references/specs.json`)**:
   - **Title**: `<= 64` chars (16–28 CN chars avoids truncation in chat share cards). **Digest**: `<= 120` UTF-8 bytes (~40 CN chars). **Body**: `<= 20000` chars.
-  - **Cover pair**: `2.35:1` (`900x383` headline) + `1:1` (`1080x1080` chat/secondary share) via `../shortform-social/scripts/card_deck.py --preset wechat-cover-pair`.
+  - **Cover pair**: `2.35:1` (`900x383` headline) + `1:1` (`1080x1080` chat/secondary share) via `../shortform-social/scripts/card_deck.py scaffold <dir> --preset wechat-cover-pair`.
   - **Deterministic inline HTML (`scripts/render_wechat_html.py`)**: WeChat strips `<style>`, `<script>`, `<link>`, `@media`, `var(--*)`, and external fonts, and rewrites links for unverified accounts. Always render through `scripts/render_wechat_html.py` (18 standalone themes in `assets/themes/*.json` + `--gallery <out.html>` + `--workspace <ws>` for learned themes; supports 9 `:::container` blocks with custom/locale titles, `--no-cjk-spacing`, `--section-numbering`, and optional `--aigc-footer` off by default). Validator (`validate_wechat_html`) parses real HTML tags/styles cleanly—never false-flags CSS keywords inside prose or `<code>`.
   - **Theme learning & import**: `scripts/learn_theme.py <url|--file saved.html> --name <slug> --workspace <ws>` extracts inline palette/layout; `scripts/fetch_wechat_article.py <url|--file saved.html> -o <out.md>` converts articles to Markdown.
 - **Format B — Image Carousel (`newspic` / 小绿书)**:

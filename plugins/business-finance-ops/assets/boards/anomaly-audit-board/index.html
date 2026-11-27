@@ -114,7 +114,7 @@
           <td><strong>${esc(a.merchant)}</strong></td>
           <td class="is-num ui-mono">${esc(a.amount)} ${esc(a.currency)}</td>
           <td><div class="ui-item-title">${esc(a.summary)}</div>${trace ? `<div class="ui-mono ui-muted">${esc(trace)}</div>` : ''}</td>
-          <td data-shot-hide><button class="ui-btn ui-btn-xs ui-btn-ghost" data-requires-sdk data-id="${esc(a.alertId)}">Investigate</button></td>
+          <td data-shot-hide><button class="ui-btn ui-btn-xs ui-btn-ghost" data-requires-sdk data-mark-ignore data-id="${esc(a.alertId)}">Investigate</button></td>
         </tr>`;
       }).join('');
       bridge.updateWriteControls();

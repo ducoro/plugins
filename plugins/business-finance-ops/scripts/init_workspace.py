@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
-"""Initialize a shared business-finance-ops workspace and seed board data."""
+"""Initialize a business-finance-ops data directory schema (no Board side effects)."""
 from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
 import json
 from pathlib import Path
-import subprocess
-import sys
-
-SCRIPT_DIR = Path(__file__).resolve().parent
 
 
 def utc_now() -> str:
@@ -27,7 +23,7 @@ def write_json_if_missing(path: Path, payload: object) -> bool:
 def init_workspace(root: Path, *, base_currency: str = 'USD') -> dict:
     root = root.expanduser().resolve()
     base_ccy = base_currency.strip().upper()
-    for rel in ('raw-statements', 'invoices', 'reports', 'boards'):
+    for rel in ('raw-statements', 'invoices', 'reports'):
         (root / rel).mkdir(parents=True, exist_ok=True)
 
     now = utc_now()
@@ -44,7 +40,10 @@ def init_workspace(root: Path, *, base_currency: str = 'USD') -> dict:
                 'vendorHikePct': '20',
                 'budgetWarnPct': '80',
                 'minRunwayMonths': '6',
+                'fluxMinAbs': '100',
+                'fluxMinPct': '15',
             },
+            'costClassMap': {},
         },
     ):
         created.append('accounts.json')
@@ -63,11 +62,34 @@ def init_workspace(root: Path, *, base_currency: str = 'USD') -> dict:
         {
             'schemaVersion': 'business-finance-category-rules/1',
             'rules': [
-                {'pattern': r'aws|amazon web services|cloudflare|vercel|google cloud|aliyun|tencent cloud', 'category': 'cloud_infra'},
-                {'pattern': r'openai|anthropic|github|linear|figma|notion|slack|zoom', 'category': 'software_saas'},
-                {'pattern': r'stripe fee|processing fee|bank fee|wire fee', 'category': 'payment_fees'},
-                {'pattern': r'google ads|meta ads|x ads|linkedin ads', 'category': 'marketing'},
+                {
+                    'pattern': r'aws|amazon web services|cloudflare|vercel|google cloud|aliyun|tencent cloud',
+                    'category': 'cloud_infra',
+                    'direction': 'outflow',
+                },
+                {
+                    'pattern': r'openai|anthropic|github|linear|figma|notion|slack|zoom',
+                    'category': 'software_saas',
+                    'direction': 'outflow',
+                },
+                {
+                    'pattern': r'stripe fee|processing fee|bank fee|wire fee',
+                    'category': 'payment_fees',
+                    'direction': 'outflow',
+                },
+                {
+                    'pattern': r'google ads|meta ads|x ads|linkedin ads',
+                    'category': 'marketing',
+                    'direction': 'outflow',
+                },
+                {
+                    'pattern': r'\b(?:grant|setup fee|one-time|asset sale)\b',
+                    'category': 'one_time_revenue',
+                    'direction': 'inflow',
+                    'costClass': 'one_time_revenue',
+                },
             ],
+            'costClassMap': {},
         },
     ):
         created.append('category-rules.json')
@@ -81,22 +103,17 @@ def init_workspace(root: Path, *, base_currency: str = 'USD') -> dict:
         ledger_path.write_text('', encoding='utf-8')
         created.append('ledger.jsonl')
 
-    build_script = SCRIPT_DIR / 'build_boards.py'
-    if build_script.is_file():
-        subprocess.run(
-            [sys.executable, str(build_script), str(root), '--all', '--overwrite-templates'],
-            check=True,
-            stdout=subprocess.DEVNULL,
-        )
-    return {'workspace': str(root), 'baseCurrency': base_ccy, 'created': created, 'initializedAt': now}
+    return {'dataDir': str(root), 'baseCurrency': base_ccy, 'created': created, 'initializedAt': now}
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description='Initialize business-finance-ops workspace.')
-    parser.add_argument('workspace')
+    parser = argparse.ArgumentParser(
+        description='Initialize business-finance-ops ledger and config files inside <data-dir>.'
+    )
+    parser.add_argument('data_dir', metavar='data-dir', help='Target data directory (existing finance folder, Space files/, or shared directory)')
     parser.add_argument('--base-currency', default='USD')
     args = parser.parse_args()
-    print(json.dumps(init_workspace(Path(args.workspace), base_currency=args.base_currency), indent=2, ensure_ascii=False))
+    print(json.dumps(init_workspace(Path(args.data_dir), base_currency=args.base_currency), indent=2, ensure_ascii=False))
     return 0
 
 

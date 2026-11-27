@@ -22,6 +22,11 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc).replace(microsecond=0)
 
 
+def parse_ts(raw: str) -> datetime:
+    dt = datetime.fromisoformat(str(raw).replace('Z', '+00:00'))
+    return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
 def body_hash(text: str) -> str:
     return hashlib.sha256(text.strip().encode('utf-8')).hexdigest()[:16]
 
@@ -39,20 +44,31 @@ def scan_reply_body(body: str, *, allow_commitments: bool = False) -> list[str]:
     return errors
 
 
-def _load_queue(workspace: Path) -> tuple[Path, dict]:
-    p = workspace / 'outbound-queue.json'
+def _load_queue(data_dir: Path) -> tuple[Path, dict]:
+    p = data_dir / 'outbound-queue.json'
     data = json.loads(p.read_text(encoding='utf-8')) if p.is_file() else {'schemaVersion': 'customer-support-outbound/1', 'drafts': {}}
     data.setdefault('drafts', {})
     return p, data
 
 
-def _load_tickets(workspace: Path) -> dict:
-    p = workspace / 'tickets/tickets.json'
+def _load_tickets(data_dir: Path) -> dict:
+    p = data_dir / 'tickets/tickets.json'
     return json.loads(p.read_text(encoding='utf-8')).get('tickets', {}) if p.is_file() else {}
 
 
-def _load_reply_log(workspace: Path) -> list[dict]:
-    p = workspace / 'reply-log.jsonl'
+def _load_policy(data_dir: Path) -> dict:
+    p = data_dir / 'sla-policy.json'
+    if not p.is_file():
+        return {}
+    try:
+        data = json.loads(p.read_text(encoding='utf-8'))
+        return data if isinstance(data, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _load_reply_log(data_dir: Path) -> list[dict]:
+    p = data_dir / 'reply-log.jsonl'
     if not p.is_file():
         return []
     rows = []
@@ -67,25 +83,38 @@ def _load_reply_log(workspace: Path) -> list[dict]:
     return rows
 
 
-def stage_draft(workspace: Path, ticket_id: str, body: str, *, draft_id: str | None = None) -> dict:
-    workspace = workspace.expanduser().resolve()
-    tickets = _load_tickets(workspace)
+def stage_draft(data_dir: Path, ticket_id: str, body: str, *, draft_id: str | None = None) -> dict:
+    data_dir = data_dir.expanduser().resolve()
+    tickets = _load_tickets(data_dir)
     if ticket_id not in tickets:
         raise ValueError(f'Unknown ticketId: {ticket_id}')
     ticket = tickets[ticket_id]
+    policy = _load_policy(data_dir)
     issues = scan_reply_body(body, allow_commitments=False)
+    hard_blocks = [i for i in issues if i != 'unauthorized_commitment']
     h = body_hash(body)
     did = draft_id or f'draft-{hashlib.sha256(f"{ticket_id}:{h}".encode("utf-8")).hexdigest()[:10]}'
-    requires_approval = bool(ticket.get('requiresHumanApproval', True)) or ('unauthorized_commitment' in issues)
+    requires_approval = (
+        bool(ticket.get('requiresHumanApproval', True))
+        or ('unauthorized_commitment' in issues)
+        or bool(policy.get('requireApprovalForRoutine', False))
+    )
 
-    q_path, queue = _load_queue(workspace)
+    if hard_blocks:
+        status = 'blocked'
+    elif requires_approval:
+        status = 'awaiting_approval'
+    else:
+        status = 'ready_to_send'
+
+    q_path, queue = _load_queue(data_dir)
     draft = {
         'draftId': did,
         'ticketId': ticket_id,
         'body': body,
         'draftHash': h,
         'requiresHumanApproval': requires_approval,
-        'status': 'blocked' if [i for i in issues if i != 'unauthorized_commitment'] else 'awaiting_approval',
+        'status': status,
         'scanViolations': issues,
         'approvedBy': None,
         'approvedAt': None,
@@ -100,18 +129,18 @@ def stage_draft(workspace: Path, ticket_id: str, body: str, *, draft_id: str | N
     return draft
 
 
-def approve_draft(workspace: Path, draft_id: str, approved_by: str) -> dict:
-    workspace = workspace.expanduser().resolve()
+def approve_draft(data_dir: Path, draft_id: str, approved_by: str, *, now: datetime | None = None) -> dict:
+    data_dir = data_dir.expanduser().resolve()
     if not approved_by.strip():
         raise ValueError('approved_by must be a non-empty human identifier')
-    q_path, queue = _load_queue(workspace)
+    q_path, queue = _load_queue(data_dir)
     if draft_id not in queue['drafts']:
         raise ValueError(f'Unknown draftId: {draft_id}')
     draft = queue['drafts'][draft_id]
-    hard_blocks = [v for v in scan_reply_body(draft['body'], allow_commitments=True)]
+    hard_blocks = scan_reply_body(draft['body'], allow_commitments=True)
     if hard_blocks:
         raise ValueError(f'Cannot approve draft with hard safety violations: {hard_blocks}')
-    now_iso = utc_now().isoformat().replace('+00:00', 'Z')
+    now_iso = (now or utc_now()).isoformat().replace('+00:00', 'Z')
     draft['draftHash'] = body_hash(draft['body'])
     draft['approvedBy'] = approved_by.strip()
     draft['approvedAt'] = now_iso
@@ -122,10 +151,16 @@ def approve_draft(workspace: Path, draft_id: str, approved_by: str) -> dict:
     return draft
 
 
-def check_send(workspace: Path, draft_id: str, *, now: datetime | None = None) -> dict:
-    workspace = workspace.expanduser().resolve()
+def check_send(
+    data_dir: Path,
+    draft_id: str,
+    *,
+    now: datetime | None = None,
+    force_followup: bool = False,
+) -> dict:
+    data_dir = data_dir.expanduser().resolve()
     now_dt = now or utc_now()
-    q_path, queue = _load_queue(workspace)
+    q_path, queue = _load_queue(data_dir)
     if draft_id not in queue['drafts']:
         return {'allowed': False, 'reasons': ['unknown_draft_id']}
 
@@ -137,7 +172,12 @@ def check_send(workspace: Path, draft_id: str, *, now: datetime | None = None) -
 
     # Re-scan body at send time (even after approval, leaks/placeholders are never allowed)
     live_hash = body_hash(draft.get('body', ''))
-    hard_blocks = scan_reply_body(draft.get('body', ''), allow_commitments=bool(draft.get('approvedBy')))
+    has_valid_approval = (
+        bool(draft.get('approvedBy'))
+        and bool(draft.get('approvedBodyHash'))
+        and live_hash == draft.get('approvedBodyHash')
+    )
+    hard_blocks = scan_reply_body(draft.get('body', ''), allow_commitments=has_valid_approval)
     reasons.extend(hard_blocks)
 
     if draft.get('requiresHumanApproval', True):
@@ -147,45 +187,94 @@ def check_send(workspace: Path, draft_id: str, *, now: datetime | None = None) -
             reasons.append('tampered_after_approval')
             draft['status'] = 'awaiting_approval'
             draft['approvedBy'] = None
+            draft['approvedAt'] = None
             draft['approvedBodyHash'] = None
             q_path.write_text(json.dumps(queue, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+    elif draft.get('approvedBodyHash') and live_hash != draft.get('approvedBodyHash'):
+        # Even for routine drafts, if a human explicitly approved it and it was later modified, fail closed.
+        reasons.append('tampered_after_approval')
+        draft['status'] = 'awaiting_approval'
+        draft['approvedBy'] = None
+        draft['approvedAt'] = None
+        draft['approvedBodyHash'] = None
+        q_path.write_text(json.dumps(queue, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
 
-    # Idempotency & cooldown check against reply-log.jsonl
-    policy_path = workspace / 'sla-policy.json'
-    cooldown_h = float(json.loads(policy_path.read_text(encoding='utf-8')).get('replyCooldownHours', 24)) if policy_path.is_file() else 24.0
+    # Idempotency & cooldown check against append-only reply-log.jsonl
+    policy = _load_policy(data_dir)
+    cooldown_h = float(policy.get('replyCooldownHours', 24))
     cutoff = now_dt - timedelta(hours=cooldown_h)
-    for rec in _load_reply_log(workspace):
-        if rec.get('ticketId') == draft.get('ticketId'):
-            if rec.get('bodyHash') == live_hash:
-                reasons.append('duplicate_reply_hash')
-                break
-            try:
-                sent_dt = datetime.fromisoformat(str(rec.get('sentAt', '')).replace('Z', '+00:00'))
-                if sent_dt >= cutoff:
-                    reasons.append('ticket_in_reply_cooldown')
-                    break
-            except ValueError:
-                continue
+    ticket_id = draft.get('ticketId')
+    tickets = _load_tickets(data_dir)
+    ticket = tickets.get(ticket_id) or {}
+
+    last_inbound_dt: datetime | None = None
+    if ticket.get('lastInboundAt'):
+        try:
+            last_inbound_dt = parse_ts(str(ticket['lastInboundAt']))
+        except ValueError:
+            last_inbound_dt = None
+
+    approved_dt: datetime | None = None
+    if has_valid_approval and draft.get('approvedAt'):
+        try:
+            approved_dt = parse_ts(str(draft['approvedAt']))
+        except ValueError:
+            approved_dt = None
+
+    latest_sent_in_cooldown: datetime | None = None
+    for rec in _load_reply_log(data_dir):
+        if rec.get('ticketId') != ticket_id:
+            continue
+        # Strict duplicate hash guard: identical body to the same ticket is NEVER allowed to resend.
+        if rec.get('bodyHash') == live_hash:
+            reasons.append('duplicate_reply_hash')
+            break
+        try:
+            sent_dt = parse_ts(str(rec.get('sentAt', '')))
+        except ValueError:
+            continue
+        if sent_dt >= cutoff and (latest_sent_in_cooldown is None or sent_dt > latest_sent_in_cooldown):
+            latest_sent_in_cooldown = sent_dt
+
+    if latest_sent_in_cooldown is not None and 'duplicate_reply_hash' not in reasons:
+        # Legitimate follow-ups unlock cooldown when:
+        # 1) the customer sent a newer inbound message after our last reply, OR
+        # 2) a human explicitly approved this new draft after our last reply, OR
+        # 3) --force-followup is passed AND the draft has explicit human approval (never unapproved spam).
+        has_new_inbound = last_inbound_dt is not None and last_inbound_dt > latest_sent_in_cooldown
+        has_post_send_approval = has_valid_approval and (
+            (approved_dt is not None and approved_dt > latest_sent_in_cooldown) or force_followup
+        )
+        if not (has_new_inbound or has_post_send_approval):
+            reasons.append('ticket_in_reply_cooldown')
 
     return {
         'allowed': len(reasons) == 0,
         'draftId': draft_id,
-        'ticketId': draft.get('ticketId'),
+        'ticketId': ticket_id,
         'liveHash': live_hash,
         'reasons': sorted(set(reasons)),
     }
 
 
-def record_sent(workspace: Path, draft_id: str, external_reply_id: str, *, now: datetime | None = None) -> dict:
-    workspace = workspace.expanduser().resolve()
-    gate = check_send(workspace, draft_id, now=now)
+def record_sent(
+    data_dir: Path,
+    draft_id: str,
+    external_reply_id: str,
+    *,
+    now: datetime | None = None,
+    force_followup: bool = False,
+) -> dict:
+    """Commit outbound delivery to outbound-queue.json and append-only reply-log.jsonl only (single-writer)."""
+    data_dir = data_dir.expanduser().resolve()
+    gate = check_send(data_dir, draft_id, now=now, force_followup=force_followup)
     if not gate['allowed']:
         raise ValueError(f'Send blocked by reply_guard: {gate["reasons"]}')
     if not external_reply_id.strip():
         raise ValueError('external_reply_id is required to prove delivery')
 
     now_iso = (now or utc_now()).isoformat().replace('+00:00', 'Z')
-    q_path, queue = _load_queue(workspace)
+    q_path, queue = _load_queue(data_dir)
     draft = queue['drafts'][draft_id]
     draft['status'] = 'sent'
     draft['sentAt'] = now_iso
@@ -201,24 +290,17 @@ def record_sent(workspace: Path, draft_id: str, external_reply_id: str, *, now: 
         'externalReplyId': external_reply_id.strip(),
         'sentAt': now_iso,
     }
-    with (workspace / 'reply-log.jsonl').open('a', encoding='utf-8') as fh:
+    with (data_dir / 'reply-log.jsonl').open('a', encoding='utf-8') as fh:
         fh.write(json.dumps(log_entry, ensure_ascii=False) + '\n')
 
-    # Update ticket status to replied
-    t_path = workspace / 'tickets/tickets.json'
-    if t_path.is_file():
-        store = json.loads(t_path.read_text(encoding='utf-8'))
-        if draft['ticketId'] in store.get('tickets', {}):
-            store['tickets'][draft['ticketId']]['status'] = 'replied'
-            store['updatedAt'] = now_iso
-            t_path.write_text(json.dumps(store, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
-
+    # Single-writer invariant: reply_guard never writes tickets/tickets.json.
+    # Triage and boards derive replied status directly from reply-log.jsonl.
     return log_entry
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description='Tamper-proof outbound reply guard for customer-support-ops.')
-    parser.add_argument('workspace')
+    parser.add_argument('data_dir', help='Path to customer-support-ops data directory')
     sub = parser.add_subparsers(dest='cmd', required=True)
 
     p_stage = sub.add_parser('stage')
@@ -232,28 +314,35 @@ def main() -> int:
 
     p_chk = sub.add_parser('check-send')
     p_chk.add_argument('--draft-id', required=True)
+    p_chk.add_argument('--force-followup', action='store_true', help='Unlock cooldown for an explicitly human-approved follow-up draft')
 
     p_rec = sub.add_parser('record-sent')
     p_rec.add_argument('--draft-id', required=True)
     p_rec.add_argument('--external-reply-id', required=True)
+    p_rec.add_argument('--force-followup', action='store_true', help='Unlock cooldown for an explicitly human-approved follow-up draft')
 
     args = parser.parse_args()
-    ws = Path(args.workspace)
-    if args.cmd == 'stage':
-        body = Path(args.body_file).expanduser().resolve().read_text(encoding='utf-8')
-        print(json.dumps(stage_draft(ws, args.ticket, body, draft_id=args.draft_id), indent=2, ensure_ascii=False))
-        return 0
-    if args.cmd == 'approve':
-        print(json.dumps(approve_draft(ws, args.draft_id, args.approved_by), indent=2, ensure_ascii=False))
-        return 0
-    if args.cmd == 'check-send':
-        res = check_send(ws, args.draft_id)
-        print(json.dumps(res, indent=2, ensure_ascii=False))
-        return 0 if res['allowed'] else 2
-    if args.cmd == 'record-sent':
-        print(json.dumps(record_sent(ws, args.draft_id, args.external_reply_id), indent=2, ensure_ascii=False))
-        return 0
-    return 1
+    data_dir = Path(args.data_dir)
+    try:
+        if args.cmd == 'stage':
+            body = Path(args.body_file).expanduser().resolve().read_text(encoding='utf-8')
+            print(json.dumps(stage_draft(data_dir, args.ticket, body, draft_id=args.draft_id), indent=2, ensure_ascii=False))
+            return 0
+        if args.cmd == 'approve':
+            print(json.dumps(approve_draft(data_dir, args.draft_id, args.approved_by), indent=2, ensure_ascii=False))
+            return 0
+        if args.cmd == 'check-send':
+            res = check_send(data_dir, args.draft_id, force_followup=args.force_followup)
+            print(json.dumps(res, indent=2, ensure_ascii=False))
+            return 0 if res['allowed'] else 2
+        if args.cmd == 'record-sent':
+            print(json.dumps(record_sent(data_dir, args.draft_id, args.external_reply_id, force_followup=args.force_followup), indent=2, ensure_ascii=False))
+            return 0
+        print(json.dumps({'error': f'Unknown command: {args.cmd}', 'code': 'unknown_command'}), file=sys.stderr)
+        return 1
+    except (ValueError, FileNotFoundError, OSError, json.JSONDecodeError) as exc:
+        print(json.dumps({'error': str(exc), 'code': type(exc).__name__}, ensure_ascii=False), file=sys.stderr)
+        return 1
 
 
 if __name__ == '__main__':

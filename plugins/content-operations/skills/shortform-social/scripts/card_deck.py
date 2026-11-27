@@ -128,7 +128,7 @@ def scaffold_deck(
     _, after = rest.split(end_marker, 1)
     html_out = f'{before}{start_marker}\n\n' + '\n\n'.join(frames_blocks) + f'\n\n    {end_marker}{after}'
 
-    target_dir = target_dir.resolve()
+    target_dir = target_dir.expanduser().resolve()
     index_path = target_dir / 'index.html'
     readme_path = target_dir / 'README.md'
     if index_path.exists() and not overwrite:

@@ -1,37 +1,13 @@
 #!/usr/bin/env python3
-"""Zero-dependency writing quality risk checker (mechanical AI-isms + cross-platform similarity gate)."""
+"""Zero-dependency physical text telemetry probe and cross-platform n-gram similarity checker."""
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import json
 from pathlib import Path
 import re
 import sys
-
-CLICHE_PHRASES_ZH = [
-    '综上所述', '总而言之', '值得注意的是', '需要指出的是', '不可否认',
-    '毋庸置疑', '众所周知', '显而易见', '从某种意义上说', '至关重要',
-    '不言而喻', '具有重要意义', '发挥着重要作用', '意义深远', '影响深远',
-    '引发了广泛关注', '引起了热烈讨论', '由此可见', '不难发现',
-    '通过以上分析', '正如我们所看到的',
-]
-
-CLICHE_PHRASES_EN = [
-    'in today\'s fast-paced world', 'in conclusion', 'it is worth noting',
-    'needless to say', 'delve into', 'game-changer', 'revolutionize',
-    'unlock the full potential', 'tapestry of', 'at the end of the day',
-    'navigating the landscape', 'ever-evolving landscape', 'it goes without saying',
-]
-
-HEDGE_ADVERBS = ['极其', '极大地', '深刻地', '显著地', '全面地', '有效地', '真正地', 'literally', 'fundamentally', 'seamlessly']
-
-EVIDENCE_PATTERNS = [
-    re.compile(r'https?://\S+'),
-    re.compile(r'20[12]\d\s*年|\b20[12]\d(?:-\d{2})?\b'),
-    re.compile(r'\d+(?:\.\d+)?%'),
-    re.compile(r'(?:亿|万)\s*(?:美元|元|人民币|用户|次)|\$\d[\d,.]*[KMBkmb]?'),
-    re.compile(r'(?:据|根据|来自)\s*[\u4e00-\u9fffA-Za-z0-9]{2,12}(?:报告|数据|研究|财报|公告|文档)'),
-]
 
 NORM_RE = re.compile(r'[^\w\u4e00-\u9fff]+')
 
@@ -45,34 +21,45 @@ def strip_code_blocks(text: str) -> str:
     return re.sub(r'```.*?```', '', text, flags=re.S)
 
 
-def score_text(raw_text: str) -> dict:
-    """Run mechanical style-risk checks (never claims to prove human vs AI authorship or verify facts)."""
-    body = strip_code_blocks(strip_variant_header(raw_text))
-    lines = body.splitlines()
-    plain_chars = len(re.sub(r'\s+', '', body))
+def char_ngrams(text: str, n: int = 3) -> set[str]:
+    norm = NORM_RE.sub('', strip_code_blocks(strip_variant_header(text))).lower()
+    if len(norm) < n:
+        return {norm} if norm else set()
+    return {norm[i:i + n] for i in range(len(norm) - n + 1)}
 
-    # 1. Cliche / filler phrases
-    cliche_hits = []
-    for phrase in CLICHE_PHRASES_ZH:
-        count = body.count(phrase)
-        if count:
-            cliche_hits.append({'phrase': phrase, 'count': count})
-    lower_body = body.lower()
-    for phrase in CLICHE_PHRASES_EN:
-        count = lower_body.count(phrase)
-        if count:
-            cliche_hits.append({'phrase': phrase, 'count': count})
-    total_cliches = sum(h['count'] for h in cliche_hits)
 
-    # 2. Excessive filler adverbs
-    adverb_count = sum(lower_body.count(w.lower()) for w in HEDGE_ADVERBS)
+def top_repeated_ngrams(text: str, n: int = 4, min_count: int = 3, limit: int = 10) -> list[dict]:
+    """Return objective high-frequency character n-grams inside prose (no wordlists or style scoring)."""
+    norm = NORM_RE.sub('', text).lower()
+    if len(norm) < n:
+        return []
+    counts = Counter(norm[i:i + n] for i in range(len(norm) - n + 1))
+    repeated = [(gram, cnt) for gram, cnt in counts.items() if cnt >= min_count]
+    repeated.sort(key=lambda item: (-item[1], item[0]))
+    return [{'ngram': gram, 'count': cnt} for gram, cnt in repeated[:limit]]
 
-    # 3. Split sentences & measure fragment ratio + repeated openers
+
+def probe_text(raw_text: str, ngram_len: int = 4) -> dict:
+    """Measure purely objective physical text telemetry (length, paragraph/sentence distribution, n-gram repetition)."""
+    body = strip_code_blocks(strip_variant_header(raw_text)).replace('\r\n', '\n')
     prose = re.sub(r'^#{1,6}\s+.*$', '', body, flags=re.M)
     prose = re.sub(r'^:::\w*.*$', '', prose, flags=re.M)
+
+    paragraphs = [
+        p.strip()
+        for p in re.split(r'\n\s*\n+', prose)
+        if p.strip()
+    ]
+    para_lengths = [len(re.sub(r'\s+', '', p)) for p in paragraphs]
+    plain_chars = sum(para_lengths) if para_lengths else len(re.sub(r'\s+', '', prose))
+    avg_para_chars = round(sum(para_lengths) / max(len(para_lengths), 1), 1) if para_lengths else 0.0
+    max_para_chars = max(para_lengths) if para_lengths else 0
+
     sentences = [s.strip() for s in re.split(r'[。！？!?\n]+', prose) if len(s.strip()) >= 2]
-    short_fragments = [s for s in sentences if len(s) <= 8]
-    fragment_ratio = round(len(short_fragments) / max(len(sentences), 1), 3)
+    sent_lengths = [len(re.sub(r'\s+', '', s)) for s in sentences]
+    avg_sent_chars = round(sum(sent_lengths) / max(len(sent_lengths), 1), 1) if sent_lengths else 0.0
+    short_sentences = [s for s in sentences if len(s) <= 8]
+    short_ratio = round(len(short_sentences) / max(len(sentences), 1), 3) if sentences else 0.0
 
     repeated_openers = 0
     for idx in range(2, len(sentences)):
@@ -80,86 +67,21 @@ def score_text(raw_text: str) -> dict:
         if a and a == b == c:
             repeated_openers += 1
 
-    # 4. Concrete evidence / source anchor signals
-    evidence_hits = sum(len(rx.findall(body)) for rx in EVIDENCE_PATTERNS)
-
-    # 5. Parallel "不是X，而是Y" overuse
-    not_but_count = len(re.findall(r'不是[^，。！？\n]{1,18}，而是', body))
-
-    # 6. Compute risk flags & 0-100 readability/hygiene index (100 = cleanest mechanical style)
-    findings = []
-    penalty = 0
-    if total_cliches >= 3:
-        penalty += min(35, total_cliches * 5)
-        findings.append({
-            'rule': 'cliche_density',
-            'level': 'WARN' if total_cliches < 6 else 'HIGH',
-            'count': total_cliches,
-            'message': f'Found {total_cliches} formulaic transition/filler phrases; tighten openings and transitions',
-            'topMatches': sorted(cliche_hits, key=lambda x: -x['count'])[:8],
-        })
-    if not_but_count >= 3:
-        penalty += min(15, not_but_count * 4)
-        findings.append({
-            'rule': 'contrast_template_overuse',
-            'level': 'WARN',
-            'count': not_but_count,
-            'message': f'Repeated "不是…而是…" antithesis pattern {not_but_count} times; vary sentence structure',
-        })
-    if repeated_openers >= 1:
-        penalty += min(15, repeated_openers * 6)
-        findings.append({
-            'rule': 'repetitive_openers',
-            'level': 'WARN',
-            'count': repeated_openers,
-            'message': f'Detected {repeated_openers} run(s) of 3+ consecutive sentences with identical openings',
-        })
-    if len(sentences) >= 8 and fragment_ratio > 0.35:
-        findings.append({
-            'rule': 'choppy_fragments',
-            'level': 'INFO',
-            'count': len(short_fragments),
-            'message': f'Short fragment ratio is {fragment_ratio:.0%} ({len(short_fragments)}/{len(sentences)}); normal for punchy/narrative style, inspect if unintentional',
-        })
-    if adverb_count >= 5:
-        penalty += min(12, adverb_count * 2)
-        findings.append({
-            'rule': 'filler_adverbs',
-            'level': 'WARN',
-            'count': adverb_count,
-            'message': f'Found {adverb_count} abstract intensifier adverbs; consider concrete observations where appropriate',
-        })
-    if plain_chars >= 400 and evidence_hits == 0:
-        findings.append({
-            'rule': 'weak_evidence_anchors',
-            'level': 'INFO',
-            'count': 0,
-            'message': 'No dates, numbers, percentages, or URLs detected (fine for essays/stories; add anchors if reporting facts)',
-        })
-
-    score = max(0, 100 - penalty)
     return {
-        'score': score,
-        'passRecommended': score >= 75,
         'stats': {
             'charCount': plain_chars,
+            'paragraphCount': len(paragraphs),
+            'avgParagraphChars': avg_para_chars,
+            'maxParagraphChars': max_para_chars,
             'sentenceCount': len(sentences),
-            'clicheCount': total_cliches,
-            'contrastPatternCount': not_but_count,
-            'adverbCount': adverb_count,
-            'fragmentRatio': fragment_ratio,
-            'evidenceAnchors': evidence_hits,
+            'avgSentenceChars': avg_sent_chars,
+            'shortSentenceCount': len(short_sentences),
+            'shortSentenceRatio': short_ratio,
+            'repeatedOpenerRuns': repeated_openers,
+            'repeatedNgrams': top_repeated_ngrams(prose, n=ngram_len),
         },
-        'findings': findings,
-        'disclaimer': 'Advisory descriptive diagnostics only; does not judge genre fit, verify facts, or prove authorship.',
+        'note': 'Objective physical text telemetry only; editorial judgment, fact verification, and style fit belong to the model and independent reviewers.',
     }
-
-
-def char_ngrams(text: str, n: int = 3) -> set[str]:
-    norm = NORM_RE.sub('', strip_code_blocks(strip_variant_header(text))).lower()
-    if len(norm) < n:
-        return {norm} if norm else set()
-    return {norm[i:i + n] for i in range(len(norm) - n + 1)}
 
 
 def jaccard_similarity(a: str, b: str, n: int = 3) -> float:
@@ -172,15 +94,15 @@ def jaccard_similarity(a: str, b: str, n: int = 3) -> float:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description='Mechanical writing quality & cross-platform rewrite similarity checker.')
+    ap = argparse.ArgumentParser(description='Objective physical text telemetry probe & cross-platform n-gram similarity checker.')
     sub = ap.add_subparsers(dest='cmd', required=True)
 
-    p_score = sub.add_parser('score', help='Check one draft for mechanical style risks (cliches, rhythm, evidence density).')
-    p_score.add_argument('file', help='Path to Markdown or text draft.')
-    p_score.add_argument('--min-score', type=int, default=0, help='Optional exit non-zero threshold (default 0 = advisory).')
-    p_score.add_argument('--json', action='store_true')
+    p_probe = sub.add_parser('probe', help='Measure objective length, paragraph/sentence distribution, and n-gram repetition.')
+    p_probe.add_argument('file', help='Path to Markdown or text draft.')
+    p_probe.add_argument('-n', '--ngram', type=int, default=4, help='Character n-gram length for repetition telemetry (default 4).')
+    p_probe.add_argument('--json', action='store_true')
 
-    p_sim = sub.add_parser('similarity', help='Check pairwise 3-gram Jaccard similarity across multi-platform variants.')
+    p_sim = sub.add_parser('similarity', help='Check pairwise character n-gram Jaccard similarity across multi-platform variants.')
     p_sim.add_argument('files', nargs='+', help='Two or more draft/variant files to compare.')
     p_sim.add_argument('-n', type=int, default=3, help='Character n-gram length (default 3).')
     p_sim.add_argument('--threshold', type=float, default=0.45, help='Max recommended similarity for cross-platform rewrites.')
@@ -189,20 +111,24 @@ def main(argv=None) -> int:
 
     args = ap.parse_args(argv)
 
-    if args.cmd == 'score':
+    if args.cmd == 'probe':
         path = Path(args.file).expanduser().resolve()
         if not path.is_file():
             print(f'Error: file not found: {path}', file=sys.stderr)
             return 1
-        report = score_text(path.read_text(encoding='utf-8'))
+        report = probe_text(path.read_text(encoding='utf-8'), ngram_len=max(2, args.ngram))
         report['file'] = str(path)
         if args.json:
             print(json.dumps(report, indent=2, ensure_ascii=False))
         else:
-            print(f"Writing quality hygiene score: {report['score']}/100 ({path.name})")
-            for f in report['findings']:
-                print(f"  [{f['level']}] {f['rule']}: {f['message']}")
-        return 1 if args.min_score and report['score'] < args.min_score else 0
+            st = report['stats']
+            print(
+                f"{path.name}: {st['charCount']} chars, {st['paragraphCount']} paras "
+                f"(avg {st['avgParagraphChars']}), {st['sentenceCount']} sentences "
+                f"(avg {st['avgSentenceChars']}, short ratio {st['shortSentenceRatio']:.1%}), "
+                f"repeated opener runs={st['repeatedOpenerRuns']}"
+            )
+        return 0
 
     if len(args.files) < 2:
         print('Error: similarity requires at least 2 files', file=sys.stderr)

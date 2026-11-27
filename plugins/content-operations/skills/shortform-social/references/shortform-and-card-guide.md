@@ -37,7 +37,7 @@ Use the bundled Visual Card Studio (3 visual languages, 11 WCAG-verified palette
 
 1. Scaffold a local card deck folder with the chosen preset, style, and palette:
    `python3 scripts/card_deck.py scaffold <workspace>/drafts/<draft-id>/deck --preset xhs-carousel --style paper-studio --theme warm-linen --pages 5 --title "<Title>" --brand "@Handle" --overwrite --json`
-   (Presets: `xhs-carousel` `3:4`, `ig-carousel` `4:5`, `linkedin-pdf` `4:5`, `wechat-cover-pair`, `video-thumb`, `full-showcase`. For custom brand color, pass `--brand-hex "#RRGGBB"`.)
+   (Presets: `xhs-carousel` `3:4`, `ig-carousel` `4:5`, `linkedin-pdf` `4:5`, `x-card` `16:9`, `wechat-cover-pair`, `video-thumb`, `full-showcase`. For custom brand color, pass `--brand-hex "#RRGGBB"`.)
 2. Edit `index.html` with real copy and verified local visuals under `deck/assets/` (or write freeform custom HTML with `[data-export-frame="<id>"]` sized in explicit CSS pixels).
 3. Run offline structural & contrast audit:
    `python3 scripts/card_deck.py audit <workspace>/drafts/<draft-id>/deck --json`

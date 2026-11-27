@@ -167,11 +167,17 @@ class CatalogValidationTest(unittest.TestCase):
             validator.validate(self.root)
         plugin_md.write_text(original, encoding='utf-8')
 
-        # Cross-plugin sibling reference fails
+        # Cross-plugin sibling reference fails (both in .md and in non-markdown assets)
         plugin_md.write_text(original + '\nHand off code tasks to `software-stewardship`.\n', encoding='utf-8')
         with self.assertRaises(ValueError):
             validator.validate(self.root)
         plugin_md.write_text(original, encoding='utf-8')
+        css_asset = self.root / 'plugins/market-intel/assets/boards/shared/board-ui.css'
+        css_original = css_asset.read_text(encoding='utf-8')
+        css_asset.write_text('/* stolen from software-stewardship */\n' + css_original, encoding='utf-8')
+        with self.assertRaises(ValueError):
+            validator.validate(self.root)
+        css_asset.write_text(css_original, encoding='utf-8')
 
         # Hardcoded plugin version in feedback tag fails (must use @<version> from plugin.json)
         plugin_md.write_text(original + '\nRun `ducoro-cli feedback send "[plugin:market-intel@1.0.0] bug"`.\n', encoding='utf-8')

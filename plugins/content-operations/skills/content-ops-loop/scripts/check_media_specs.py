@@ -392,7 +392,7 @@ def main(argv=None) -> int:
     parser.add_argument('--update-meta', action='store_true', help='Write validation results and variantHash back to meta.json.')
     args = parser.parse_args(argv)
 
-    draft_dir = Path(args.draft_dir).resolve()
+    draft_dir = Path(args.draft_dir).expanduser().resolve()
     variants_dir = draft_dir / 'variants'
     if not variants_dir.is_dir():
         print(f'Missing variants directory: {variants_dir}', file=sys.stderr)

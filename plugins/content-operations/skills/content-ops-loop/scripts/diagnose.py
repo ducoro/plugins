@@ -26,7 +26,7 @@ PLATFORM_CREDENTIAL_GROUPS = {
     'threads': ('THREADS_ACCESS_TOKEN', 'THREADS_USER_ID'),
     'x-twitter': ('X_ACCESS_TOKEN',),
     'linkedin': ('LINKEDIN_ACCESS_TOKEN', 'LINKEDIN_AUTHOR_URN'),
-    'facebook-pages': ('FACEBOOK_PAGE_ID', 'FACEBOOK_PAGE_ACCESS_TOKEN'),
+    'facebook': ('FACEBOOK_PAGE_ID', 'FACEBOOK_PAGE_ACCESS_TOKEN'),
     'pinterest': ('PINTEREST_ACCESS_TOKEN',),
     'bilibili': ('BILIBILI_ACCESS_TOKEN',),
     'douyin': ('DOUYIN_ACCESS_TOKEN', 'DOUYIN_OPEN_ID'),
@@ -148,8 +148,8 @@ def run_diagnose(workspace: Path) -> dict:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description='Diagnose content-operations workspace, style readiness, and platform credential availability.')
-    ap.add_argument('--workspace', default='~/.ducoro/workspaces/content-ops', help='Path to content-ops workspace.')
+    ap = argparse.ArgumentParser(description='Diagnose content-operations data directory, style readiness, and platform credential availability.')
+    ap.add_argument('--workspace', '--data-dir', dest='workspace', required=True, help='Path to content-ops data directory.')
     ap.add_argument('--json', action='store_true', help='Print structured JSON report.')
     args = ap.parse_args(argv)
 

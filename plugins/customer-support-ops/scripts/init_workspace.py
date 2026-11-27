@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
-"""Initialize a shared customer-support-ops workspace and seed board data."""
+"""Initialize a customer-support-ops data directory (without creating boards inside it)."""
 from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
 import json
 from pathlib import Path
-import subprocess
-import sys
-
-SCRIPT_DIR = Path(__file__).resolve().parent
 
 DEFAULT_SLA_POLICY = {
     'schemaVersion': 'customer-support-sla/1',
     'firstResponseHours': {'P0': 1, 'P1': 4, 'P2': 24, 'P3': 72},
     'replyCooldownHours': 24,
     'spikeMinRecentCount': 3,
+    'spikeMinUniqueCustomers': 2,
     'spikeRatioThreshold': 2.0,
+    'requireApprovalForRoutine': False,
 }
 
 
@@ -34,7 +32,7 @@ def write_json_if_missing(path: Path, payload: object) -> bool:
 
 def init_workspace(root: Path) -> dict:
     root = root.expanduser().resolve()
-    for rel in ('tickets', 'issues', 'kb', 'boards'):
+    for rel in ('tickets', 'issues', 'kb'):
         (root / rel).mkdir(parents=True, exist_ok=True)
 
     now = utc_now()
@@ -61,22 +59,14 @@ def init_workspace(root: Path) -> dict:
         log_path.write_text('', encoding='utf-8')
         created.append('reply-log.jsonl')
 
-    build_script = SCRIPT_DIR / 'build_boards.py'
-    if build_script.is_file():
-        subprocess.run(
-            [sys.executable, str(build_script), str(root), '--all', '--overwrite-templates'],
-            check=True,
-            stdout=subprocess.DEVNULL,
-        )
-
-    return {'workspace': str(root), 'created': created, 'initializedAt': now}
+    return {'dataDir': str(root), 'created': created, 'initializedAt': now}
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description='Initialize customer-support-ops workspace.')
-    parser.add_argument('workspace', help='Target workspace path')
+    parser = argparse.ArgumentParser(description='Initialize a customer-support-ops data directory.')
+    parser.add_argument('data_dir', help='Target data directory path (existing folder, Space files/, or shared folder)')
     args = parser.parse_args()
-    print(json.dumps(init_workspace(Path(args.workspace)), indent=2, ensure_ascii=False))
+    print(json.dumps(init_workspace(Path(args.data_dir)), indent=2, ensure_ascii=False))
     return 0
 
 

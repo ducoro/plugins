@@ -7,12 +7,15 @@ import importlib.util
 import itertools
 import json
 from pathlib import Path
+import ssl
 import tempfile
 import threading
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS = ROOT / 'plugins/market-intel/scripts'
+PLUGIN_ROOT = ROOT / 'plugins/market-intel'
+SCRIPTS = PLUGIN_ROOT / 'scripts'
 
 
 def load_mod(name: str):
@@ -53,6 +56,14 @@ class MarketIntelTest(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.ws = Path(self.tmp.name) / 'market-intel'
         init_workspace.init_workspace(self.ws)
+
+    def test_init_workspace_does_not_create_boards_dir(self):
+        self.assertFalse((self.ws / 'boards').exists())
+        for expected in ('captures', 'snapshots', 'entities', 'battlecards', 'briefs'):
+            self.assertTrue((self.ws / expected).is_dir())
+        self.assertTrue((self.ws / 'watchlist.json').is_file())
+        self.assertTrue((self.ws / 'seen-events.json').is_file())
+        self.assertTrue((self.ws / 'events.jsonl').is_file())
 
     def test_http_roundtrip_all_keyless_adapters_and_board_projection(self):
         routes = {
@@ -109,6 +120,7 @@ class MarketIntelTest(unittest.TestCase):
         diff1 = snapshot_diff.diff_capture(self.ws, capture)
         self.assertEqual(diff1['outcome'], 'baseline_initialized')
         self.assertEqual(diff1['baselineCreatedCount'], 11)
+        self.assertFalse(diff1['partialFailure'])
 
         # Step 2: timestamp/nonce churn only -> MUST be honest no_material_change
         routes['/pricing'] = (200, 'text/html', '<html><head><title>Acme Pricing</title><script>var nonce=xyz999;</script></head><body><h1>Pro Plan</h1><p>$29/mo</p><p>Updated 2026-11-25T15:59:59Z</p></body></html>')
@@ -142,11 +154,87 @@ class MarketIntelTest(unittest.TestCase):
         gate2 = evidence_gate.gate_candidates(self.ws, cap3, candidates, commit_events=True)
         self.assertEqual(gate2['committedCount'], 0)
 
-        # Board projection writes real data
-        radar_data = build_boards.project_board(self.ws, 'radar-board', self.ws / 'boards/radar-board')
+        # Board projection writes real data into an external Space board dir
+        board_dir = Path(self.tmp.name) / 'space-boards/radar-board'
+        radar_data = build_boards.project_board(self.ws, 'radar-board', board_dir)
         payload = json.loads(radar_data.read_text(encoding='utf-8'))
         self.assertEqual(payload['summary']['eventCount'], 1)
         self.assertEqual(payload['summary']['highSeverityCount'], 1)
+
+    def test_fetch_sources_catches_timeout_and_ssl_errors_without_crashing_batch(self):
+        watchlist = {
+            'schemaVersion': 'market-intel-watchlist/1',
+            'updatedAt': utc_now(),
+            'entities': [{
+                'slug': 'acme',
+                'name': 'Acme Corp',
+                'sources': [
+                    {'id': 'timeout-src', 'kind': 'webpage', 'url': 'https://timeout.example/pricing'},
+                    {'id': 'ssl-src', 'kind': 'webpage', 'url': 'https://badssl.example/pricing'},
+                    {'id': 'ok-src', 'kind': 'webpage', 'url': 'https://ok.example/pricing'},
+                ],
+            }],
+        }
+        (self.ws / 'watchlist.json').write_text(json.dumps(watchlist), encoding='utf-8')
+
+        def fake_http_get(url: str, **kwargs):
+            if 'timeout.example' in url:
+                raise TimeoutError('timed out waiting for origin')
+            if 'badssl.example' in url:
+                raise ssl.SSLError('TLS handshake failed')
+            return 200, '<html><body><h1>Pro Plan</h1><p>$49/mo</p></body></html>'
+
+        with mock.patch.object(fetch_sources, 'http_get', side_effect=fake_http_get):
+            cap = fetch_sources.fetch_watchlist(self.ws)
+
+        self.assertEqual(cap['totalSources'], 3)
+        self.assertEqual(cap['okCount'], 1)
+        self.assertEqual(cap['failedCount'], 2)
+        by_id = {r['sourceId']: r for r in cap['records']}
+        self.assertFalse(by_id['timeout-src']['ok'])
+        self.assertIn('timed out', by_id['timeout-src']['error'])
+        self.assertFalse(by_id['ssl-src']['ok'])
+        self.assertIn('TLS', by_id['ssl-src']['error'])
+        self.assertTrue(by_id['ok-src']['ok'])
+
+        # Merge captures helper combines per-entity shards cleanly
+        shard_a = self.ws / 'captures/a.json'
+        shard_b = self.ws / 'captures/b.json'
+        shard_a.write_text(json.dumps({**cap, 'records': cap['records'][:1]}), encoding='utf-8')
+        shard_b.write_text(json.dumps({**cap, 'records': cap['records'][1:]}), encoding='utf-8')
+        merged = fetch_sources.merge_captures(self.ws, [shard_a, shard_b])
+        self.assertEqual(merged['totalSources'], 3)
+        self.assertEqual(merged['okCount'], 1)
+        self.assertEqual(merged['failedCount'], 2)
+
+    def test_snapshot_diff_capture_failed_and_partial_failure_never_silently_swallow_errors(self):
+        all_failed_capture = {
+            'schemaVersion': 'market-intel-signal/1',
+            'generatedAt': utc_now(),
+            'records': [
+                {'entitySlug': 'acme', 'sourceId': 'pricing', 'kind': 'webpage', 'ok': False, 'error': 'TimeoutError'},
+                {'entitySlug': 'acme', 'sourceId': 'releases', 'kind': 'github_releases', 'ok': False, 'error': 'SSLError'},
+            ],
+        }
+        diff_fail = snapshot_diff.diff_capture(self.ws, all_failed_capture)
+        self.assertEqual(diff_fail['outcome'], 'capture_failed')
+        self.assertEqual(diff_fail['okCount'], 0)
+        self.assertEqual(diff_fail['failedCount'], 2)
+        self.assertFalse(diff_fail['partialFailure'])
+
+        partial_capture = {
+            'schemaVersion': 'market-intel-signal/1',
+            'generatedAt': utc_now(),
+            'records': [
+                {'entitySlug': 'acme', 'sourceId': 'pricing', 'kind': 'webpage', 'ok': True, 'url': 'https://acme.example/pricing', 'observedAt': utc_now(), 'structured': {'title': 'Pricing', 'lines': ['Pro Plan', '$49/mo']}},
+                {'entitySlug': 'acme', 'sourceId': 'releases', 'kind': 'github_releases', 'ok': False, 'error': 'HTTP 503'},
+            ],
+        }
+        diff_partial = snapshot_diff.diff_capture(self.ws, partial_capture)
+        self.assertEqual(diff_partial['outcome'], 'baseline_initialized')
+        self.assertEqual(diff_partial['okCount'], 1)
+        self.assertEqual(diff_partial['failedCount'], 1)
+        self.assertTrue(diff_partial['partialFailure'])
 
     def test_class_a_exhaustive_evidence_gate_invariants_and_fault_injection(self):
         """Class A exhaustive proof: all 2^6 combinations of grounding dimensions obey strict fail-closed rejection."""
@@ -157,7 +245,15 @@ class MarketIntelTest(unittest.TestCase):
         capture = {
             'schemaVersion': 'market-intel-signal/1',
             'generatedAt': utc_now(),
-            'records': [{'entitySlug': 'acme', 'sourceId': 'p', 'kind': 'webpage', 'ok': True, 'url': 'https://acme.example/pricing', 'observedAt': utc_now(), 'structured': {}}],
+            'records': [{
+                'entitySlug': 'acme',
+                'sourceId': 'p',
+                'kind': 'webpage',
+                'ok': True,
+                'url': 'https://acme.example/pricing',
+                'observedAt': utc_now(),
+                'structured': {'title': 'Acme Pricing', 'lines': ['Pro Plan is now $49/mo']},
+            }],
         }
 
         checked = 0
@@ -195,8 +291,16 @@ class MarketIntelTest(unittest.TestCase):
             'schemaVersion': 'market-intel-signal/1',
             'generatedAt': utc_now(),
             'records': [
-                {'entitySlug': 'acme', 'sourceId': 'p', 'kind': 'webpage', 'ok': True, 'url': 'https://acme.example/pricing', 'observedAt': utc_now(), 'structured': {}},
-                {'entitySlug': 'acme', 'sourceId': 'j', 'kind': 'greenhouse_jobs', 'ok': True, 'url': 'https://boards.greenhouse.io/acme', 'observedAt': utc_now(), 'structured': {}},
+                {
+                    'entitySlug': 'acme', 'sourceId': 'p', 'kind': 'webpage', 'ok': True,
+                    'url': 'https://acme.example/pricing', 'observedAt': utc_now(),
+                    'structured': {'title': 'Pricing', 'lines': ['Pro Plan $49/mo']},
+                },
+                {
+                    'entitySlug': 'acme', 'sourceId': 'j', 'kind': 'greenhouse_jobs', 'ok': True,
+                    'url': 'https://boards.greenhouse.io/acme', 'observedAt': utc_now(),
+                    'structured': {'openCount': 4, 'sampleTitles': ['Enterprise AE', 'Solutions Architect']},
+                },
             ],
         }
         overclaimed = [{
@@ -212,13 +316,205 @@ class MarketIntelTest(unittest.TestCase):
             'entitySlug': 'acme', 'severity': 'high', 'category': 'positioning',
             'confidence': 'triangulated',
             'summary': 'Acme is moving upmarket (pricing jump + Enterprise AE hiring).',
-            'quote': 'Pro Plan $49/mo + 4 Enterprise AE roles', 'observedAt': utc_now(),
+            'quote': 'Pro Plan $49/mo', 'observedAt': utc_now(),
             'evidenceUrls': ['https://acme.example/pricing', 'https://boards.greenhouse.io/acme'],
         }]
         ok_tri = evidence_gate.gate_candidates(self.ws, multi_cap, corroborated)
         self.assertEqual(ok_tri['acceptedCount'], 1)
         self.assertEqual(ok_tri['accepted'][0]['confidence'], 'triangulated')
         self.assertEqual(ok_tri['accepted'][0]['sourceKinds'], ['greenhouse_jobs', 'webpage'])
+
+    def test_evidence_gate_entity_isolation_empty_watchlist_quote_and_local_ref(self):
+        # 1. Fail-closed when watchlist has zero entities
+        empty_cap = {
+            'schemaVersion': 'market-intel-signal/1',
+            'generatedAt': utc_now(),
+            'records': [{
+                'entitySlug': 'acme', 'sourceId': 'p', 'kind': 'webpage', 'ok': True,
+                'url': 'https://acme.example/pricing', 'observedAt': utc_now(),
+                'structured': {'lines': ['Pro Plan $49/mo']},
+            }],
+        }
+        empty_res = evidence_gate.gate_candidates(self.ws, empty_cap, [{
+            'entitySlug': 'acme', 'severity': 'high', 'category': 'pricing',
+            'summary': 'Acme pricing change without registered watchlist.',
+            'evidenceUrls': ['https://acme.example/pricing'],
+            'observedAt': utc_now(), 'quote': 'Pro Plan $49/mo',
+        }])
+        self.assertEqual(empty_res['rejectedCount'], 1)
+        self.assertIn('no registered entities', empty_res['rejected'][0]['errors'][0].lower())
+
+        # Register two distinct entities: acme and rival
+        (self.ws / 'watchlist.json').write_text(
+            json.dumps({
+                'schemaVersion': 'market-intel-watchlist/1',
+                'updatedAt': utc_now(),
+                'entities': [
+                    {'slug': 'acme', 'name': 'Acme Corp', 'sources': []},
+                    {'slug': 'rival', 'name': 'Rival Inc', 'sources': []},
+                ],
+            }),
+            encoding='utf-8',
+        )
+        two_entity_cap = {
+            'schemaVersion': 'market-intel-signal/1',
+            'generatedAt': utc_now(),
+            'records': [
+                {
+                    'entitySlug': 'acme', 'sourceId': 'p', 'kind': 'webpage', 'ok': True,
+                    'url': 'https://acme.example/pricing', 'observedAt': utc_now(),
+                    'structured': {'lines': ['Pro Plan $49/mo']},
+                },
+                {
+                    'entitySlug': 'rival', 'sourceId': 'j', 'kind': 'greenhouse_jobs', 'ok': True,
+                    'url': 'https://boards.greenhouse.io/rival', 'observedAt': utc_now(),
+                    'structured': {'openCount': 6, 'sampleTitles': ['Enterprise AE']},
+                },
+                {
+                    'entitySlug': 'acme', 'sourceId': 'x', 'kind': 'connector:x', 'ok': True,
+                    'url': 'https://x.com/acme/status/12345', 'observedAt': utc_now(),
+                    'structured': {'excerpt': 'SSO now included on Pro tier.'},
+                },
+            ],
+        }
+
+        # 2. Cross-entity URL borrowing MUST be rejected (cannot borrow rival's URL to pass or triangulate)
+        cross_entity = evidence_gate.gate_candidates(self.ws, two_entity_cap, [{
+            'entitySlug': 'acme', 'severity': 'high', 'category': 'positioning',
+            'confidence': 'triangulated',
+            'summary': 'Acme allegedly hiring Enterprise AE using Rival URL.',
+            'evidenceUrls': ['https://acme.example/pricing', 'https://boards.greenhouse.io/rival'],
+            'observedAt': utc_now(), 'quote': 'Pro Plan $49/mo',
+        }])
+        self.assertEqual(cross_entity['rejectedCount'], 1)
+        self.assertTrue(any('another entity' in e.lower() for e in cross_entity['rejected'][0]['errors']))
+
+        # 3. Fabricated quote not present in captured text MUST be rejected
+        bad_quote = evidence_gate.gate_candidates(self.ws, two_entity_cap, [{
+            'entitySlug': 'acme', 'severity': 'high', 'category': 'pricing',
+            'summary': 'Acme pricing change with hallucinated quote.',
+            'evidenceUrls': ['https://acme.example/pricing'],
+            'observedAt': utc_now(), 'quote': 'Enterprise Plan cut to $19/mo',
+        }])
+        self.assertEqual(bad_quote['rejectedCount'], 1)
+        self.assertTrue(any('quote excerpt not found' in e.lower() for e in bad_quote['rejected'][0]['errors']))
+
+        # 4. Connector record + webpage for same entity earns triangulated
+        connector_tri = evidence_gate.gate_candidates(self.ws, two_entity_cap, [{
+            'entitySlug': 'acme', 'severity': 'high', 'category': 'pricing',
+            'confidence': 'triangulated',
+            'summary': 'Acme updated Pro pricing and announced SSO via X connector.',
+            'evidenceUrls': ['https://acme.example/pricing', 'https://x.com/acme/status/12345'],
+            'observedAt': utc_now(), 'quote': 'SSO now included on Pro tier.',
+        }])
+        self.assertEqual(connector_tri['acceptedCount'], 1)
+        self.assertEqual(connector_tri['accepted'][0]['confidence'], 'triangulated')
+        self.assertEqual(connector_tri['accepted'][0]['sourceKinds'], ['connector:x', 'webpage'])
+
+        # 5. LocalRef support: exists inside <data-dir>, quote verified, blocks path traversal
+        doc_path = self.ws / 'entities/acme/local-docs/q3-call.txt'
+        doc_path.parent.mkdir(parents=True, exist_ok=True)
+        doc_path.write_text('Customer reported Acme renewal jumped 35% year over year.\n', encoding='utf-8')
+
+        local_only = evidence_gate.gate_candidates(self.ws, two_entity_cap, [{
+            'entitySlug': 'acme', 'severity': 'medium', 'category': 'pricing',
+            'summary': 'Customer call notes report 35% Acme renewal increase.',
+            'evidenceUrls': [],
+            'localRef': 'entities/acme/local-docs/q3-call.txt',
+            'observedAt': utc_now(), 'quote': 'Acme renewal jumped 35%',
+        }])
+        self.assertEqual(local_only['acceptedCount'], 1)
+        self.assertEqual(local_only['accepted'][0]['localRef'], 'entities/acme/local-docs/q3-call.txt')
+        self.assertEqual(local_only['accepted'][0]['sourceKinds'], ['local_doc'])
+
+        # Webpage + localRef => triangulated
+        local_plus_web = evidence_gate.gate_candidates(self.ws, two_entity_cap, [{
+            'entitySlug': 'acme', 'severity': 'high', 'category': 'pricing',
+            'confidence': 'triangulated',
+            'summary': 'Public Pro price rise corroborated by renewal call transcript.',
+            'evidenceUrls': ['https://acme.example/pricing'],
+            'localRef': 'entities/acme/local-docs/q3-call.txt',
+            'observedAt': utc_now(), 'quote': 'Acme renewal jumped 35%',
+        }])
+        self.assertEqual(local_plus_web['acceptedCount'], 1)
+        self.assertEqual(local_plus_web['accepted'][0]['confidence'], 'triangulated')
+        self.assertEqual(local_plus_web['accepted'][0]['sourceKinds'], ['local_doc', 'webpage'])
+
+        # Traversal or missing localRef MUST fail closed
+        traversal = evidence_gate.gate_candidates(self.ws, two_entity_cap, [{
+            'entitySlug': 'acme', 'severity': 'low', 'category': 'filing',
+            'summary': 'Attempted path traversal outside data dir.',
+            'evidenceUrls': [],
+            'localRef': '../outside.txt',
+            'observedAt': utc_now(), 'quote': 'outside quote',
+        }])
+        self.assertEqual(traversal['rejectedCount'], 1)
+
+    def test_build_boards_latest_event_sorting_and_battlecard_count_consistency(self):
+        (self.ws / 'watchlist.json').write_text(
+            json.dumps({
+                'schemaVersion': 'market-intel-watchlist/1',
+                'updatedAt': utc_now(),
+                'entities': [
+                    {'slug': 'acme', 'name': 'Acme Corp', 'category': 'direct-competitor', 'sources': []},
+                    {'slug': 'beta', 'name': 'Beta Labs', 'category': 'adjacent', 'sources': []},
+                ],
+            }),
+            encoding='utf-8',
+        )
+        # Write events out of chronological order (newer first, older second)
+        events = [
+            {
+                'eventId': '2222222222222222', 'entitySlug': 'acme', 'severity': 'high', 'category': 'pricing',
+                'confidence': 'triangulated', 'sourceKinds': ['greenhouse_jobs', 'webpage'],
+                'summary': 'Newer 2026-11-26 pricing change', 'evidenceUrls': ['https://acme.example/pricing'],
+                'observedAt': '2026-11-26T12:00:00Z', 'quote': 'Pro Plan $49/mo',
+            },
+            {
+                'eventId': '1111111111111111', 'entitySlug': 'acme', 'severity': 'low', 'category': 'release',
+                'confidence': 'single_source', 'sourceKinds': ['github_releases'],
+                'summary': 'Older 2026-11-20 minor patch', 'evidenceUrls': ['https://github.com/acme/cli/releases'],
+                'observedAt': '2026-11-20T08:00:00Z', 'quote': 'v2.0.1 patch',
+            },
+        ]
+        (self.ws / 'events.jsonl').write_text('\n'.join(json.dumps(e) for e in events) + '\n', encoding='utf-8')
+        # Battlecard populated via oneLiner + gaps + evidenceUrls (without pricingSummary/strengths)
+        (self.ws / 'battlecards/acme.json').write_text(
+            json.dumps({
+                'slug': 'acme',
+                'threatLevel': 'high',
+                'oneLiner': 'Developer workflow suite moving upmarket.',
+                'gaps': ['No offline mode'],
+                'evidenceUrls': ['https://acme.example/pricing'],
+            }),
+            encoding='utf-8',
+        )
+
+        bc_payload = build_boards.build_battlecard_payload(self.ws)
+        self.assertEqual(bc_payload['summary']['entityCount'], 2)
+        self.assertEqual(bc_payload['summary']['battlecardCount'], 1)
+        acme_card = next(c for c in bc_payload['cards'] if c['slug'] == 'acme')
+        self.assertEqual(acme_card['latestEvent'], 'Newer 2026-11-26 pricing change')
+        self.assertEqual(acme_card['gaps'], ['No offline mode'])
+        self.assertEqual(acme_card['evidenceUrls'], ['https://acme.example/pricing'])
+
+    def test_board_assets_and_bridge_contracts(self):
+        css = (PLUGIN_ROOT / 'assets/boards/shared/board-ui.css').read_text(encoding='utf-8')
+        js = (PLUGIN_ROOT / 'assets/boards/shared/board-sdk-bridge.js').read_text(encoding='utf-8')
+        radar_html = (PLUGIN_ROOT / 'assets/boards/radar-board/index.html').read_text(encoding='utf-8')
+        bc_html = (PLUGIN_ROOT / 'assets/boards/battlecard-board/index.html').read_text(encoding='utf-8')
+
+        self.assertIn('market-intel', css.splitlines()[0])
+        self.assertIn('market-intel', js.splitlines()[0])
+        self.assertIn('onDisplayChange', js)
+        self.assertIn('assets/board-sdk-bridge.js', js)
+        self.assertIn('assets/board-ui.css', js)
+        self.assertNotIn('id="kpi-high" class="ui-kpi-value" data-tone="warning"', radar_html)
+        self.assertIn('sourceKinds', radar_html)
+        self.assertIn('confidence', radar_html)
+        self.assertIn('strengths', bc_html)
+        self.assertIn('gaps', bc_html)
+        self.assertIn('evidenceUrls', bc_html)
 
 
 if __name__ == '__main__':

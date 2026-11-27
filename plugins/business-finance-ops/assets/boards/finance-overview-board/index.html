@@ -85,7 +85,7 @@
     </section>
   </main>
 
-  <script id="board-initial-data" type="application/json">{"generatedAt":"","month":"","baseCurrency":"USD","summary":{"inflowTotal":"0.00","outflowTotal":"0.00","netCashFlow":"0.00","totalCashBalance":"0.00","monthlyNetBurn":"0.00","runwayMonths":null,"transactionCount":0,"anomalyCount":0,"highAnomalyCount":0},"budgets":[],"transactions":[]}</script>
+  <script id="board-initial-data" type="application/json">{"generatedAt":"","month":"","baseCurrency":"USD","thresholds":{"minRunwayMonths":"6"},"summary":{"inflowTotal":"0.00","outflowTotal":"0.00","netCashFlow":"0.00","totalCashBalance":"0.00","monthlyNetBurn":"0.00","runwayMonths":null,"transactionCount":0,"anomalyCount":0,"highAnomalyCount":0},"scenarios":{},"fluxAnalysis":[],"budgets":[],"transactions":[]}</script>
   <script type="module">
     import { createBoardBridge } from './assets/board-sdk-bridge.js';
 
@@ -101,6 +101,8 @@
     function render() {
       const d = state.data || { summary: {}, budgets: [], transactions: [] };
       const ccy = d.baseCurrency || 'USD';
+      const rawMinRunway = Number(d.thresholds?.minRunwayMonths);
+      const minRunway = Number.isFinite(rawMinRunway) ? rawMinRunway : 6;
       for (const el of document.querySelectorAll('[data-ccy]')) el.textContent = ccy;
       document.getElementById('kpi-inflow').textContent = d.summary?.inflowTotal ?? '0.00';
       document.getElementById('kpi-outflow').textContent = d.summary?.outflowTotal ?? '0.00';
@@ -111,22 +113,22 @@
       const rwVal = d.scenarios?.recurringOnly?.runwayMonths ?? d.summary?.runwayMonths;
       const rwEl = document.getElementById('kpi-runway');
       rwEl.textContent = rwVal ? `${rwVal} mo` : 'CF+';
-      rwEl.dataset.tone = rwVal && Number(rwVal) < 6 ? 'destructive' : '';
+      rwEl.dataset.tone = rwVal && Number(rwVal) < minRunway ? 'destructive' : '';
       document.getElementById('month-label').textContent = d.month ? `Period ${d.month} · Cash ${d.summary?.totalCashBalance ?? '0.00'} ${ccy}` : '';
       document.getElementById('updated-at').textContent = d.generatedAt ? `Computed ${d.generatedAt}` : '';
 
       const scGrid = document.getElementById('scenarios-grid');
       const sc = d.scenarios || {};
       const scCards = [
-        ['Base (All Inflow)', sc.base],
-        ['Recurring-Only (No Windfalls)', sc.recurringOnly],
-        ['Downside (-20% Rev)', sc.downsideRev20],
-        ...(sc.proposedExpansion ? [['Proposed Expansion', sc.proposedExpansion]] : []),
-      ].filter(([, v]) => v);
+        ['base', 'Base (All Inflow)', sc.base],
+        ['recurringOnly', 'Recurring-Only (No Windfalls)', sc.recurringOnly],
+        ['downsideRev20', 'Downside (-20% Rev)', sc.downsideRev20],
+        ...(sc.proposedExpansion ? [['proposedExpansion', 'Proposed Expansion', sc.proposedExpansion]] : []),
+      ].filter(([, , v]) => v);
       scGrid.innerHTML = scCards.length
-        ? scCards.map(([label, v]) => {
-            const tone = v.runwayMonths && Number(v.runwayMonths) < 6 ? 'destructive' : '';
-            return `<article class="ui-kpi"><span class="ui-kpi-label">${esc(label)}</span><span class="ui-kpi-value" data-tone="${tone}">${v.runwayMonths ? esc(v.runwayMonths) + ' mo' : 'CF+'}</span><span class="ui-muted ui-num">Burn ${esc(v.monthlyNetBurn)} ${esc(ccy)}/mo</span></article>`;
+        ? scCards.map(([key, label, v]) => {
+            const tone = v.runwayMonths && Number(v.runwayMonths) < minRunway ? 'destructive' : '';
+            return `<article class="ui-kpi" data-card="scenario-${esc(key)}" data-card-title="${esc(label)}" data-mark-item="scenario-${esc(key)}" data-mark-label="${esc(label)}"><span class="ui-kpi-label">${esc(label)}</span><span class="ui-kpi-value" data-tone="${tone}">${v.runwayMonths ? esc(v.runwayMonths) + ' mo' : 'CF+'}</span><span class="ui-muted ui-num">Burn ${esc(v.monthlyNetBurn)} ${esc(ccy)}/mo</span></article>`;
           }).join('')
         : '<div class="ui-empty">Run anomaly_and_runway.py to compute scenarios.</div>';
 

@@ -7,7 +7,8 @@ Run this checklist before moving any draft from `in_review` to `ready` or schedu
 - **Zero fabricated experiences**: no invented first-person anecdotes unless supplied by the operator.
 - Links resolve cleanly (or are converted to numbered footnotes for WeChat Official Account HTML).
 - Illustrative mockups or sample numbers are labeled clearly as examples.
-- Optional diagnostics: `scripts/check_writing_quality.py score` flags formulaic clichés (advisory only—never distort voice to chase a number); `similarity` checks whether multi-platform adaptations were natively rewritten instead of copy-pasted.
+- Optional physical telemetry: `scripts/check_writing_quality.py probe` reports objective length/paragraph/sentence/repeated-ngram stats (no subjective score); `similarity` checks whether multi-platform adaptations were natively rewritten instead of copy-pasted.
+- For high-risk external releases or final long-form sign-off, complete isolated fresh read-only review via `ducoro-cli job dispatch` across orthogonal lenses (fact/provenance tracing, platform red lines/compliance, reader subtraction) before finalizing `assessment.json`.
 
 ## 2. Spec & Media Integrity
 - `python3 ../content-ops-loop/scripts/check_media_specs.py <draft-dir>` exits `0` with zero blocking issues (includes unfinished placeholder detection).

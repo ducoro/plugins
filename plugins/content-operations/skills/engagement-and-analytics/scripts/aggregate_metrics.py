@@ -580,7 +580,7 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
 
     result = aggregate(
-        Path(args.workspace).resolve(),
+        Path(args.workspace).expanduser().resolve(),
         days=args.days,
         platform_filter=args.platform,
         top_hooks_limit=args.top_hooks_limit,

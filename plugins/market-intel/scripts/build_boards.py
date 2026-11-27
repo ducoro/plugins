@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Project market-intel workspace truth one-way into isolated Board assets/data.json."""
+"""Project market-intel data truth one-way into isolated Board assets/data.json."""
 from __future__ import annotations
 
 import argparse
@@ -46,7 +46,7 @@ def read_jsonl(path: Path) -> list[dict]:
 def build_radar_payload(workspace: Path) -> dict:
     watchlist = read_json(workspace / 'watchlist.json', {'entities': []})
     events = read_jsonl(workspace / 'events.jsonl')
-    events.sort(key=lambda e: e.get('observedAt', ''), reverse=True)
+    events.sort(key=lambda e: str(e.get('observedAt', '')), reverse=True)
     entities = watchlist.get('entities', [])
     name_map = {e['slug']: e.get('name', e['slug']) for e in entities if isinstance(e, dict) and e.get('slug')}
     high_count = sum(1 for e in events if e.get('severity') == 'high')
@@ -69,10 +69,31 @@ def build_radar_payload(workspace: Path) -> dict:
     }
 
 
+def _has_populated_battlecard(card: dict, bc: dict) -> bool:
+    if isinstance(bc, dict) and any(
+        bc.get(k)
+        for k in (
+            'oneLiner', 'pricingSummary', 'latestVersion', 'hiringSignal',
+            'whenWeWin', 'whenWeLose', 'landmines', 'objectionHandlers',
+            'strengths', 'gaps', 'evidenceUrls',
+        )
+    ):
+        return True
+    return any([
+        card.get('pricingSummary') not in ('', '—'),
+        card.get('latestVersion') not in ('', '—'),
+        card.get('hiringSignal') not in ('', '—'),
+        bool(card.get('strengths')),
+        bool(card.get('gaps')),
+        bool(card.get('evidenceUrls')),
+    ])
+
+
 def build_battlecard_payload(workspace: Path) -> dict:
     watchlist = read_json(workspace / 'watchlist.json', {'entities': []})
     events = read_jsonl(workspace / 'events.jsonl')
     cards = []
+    populated_count = 0
     for e in watchlist.get('entities', []):
         if not isinstance(e, dict) or not e.get('slug'):
             continue
@@ -80,7 +101,8 @@ def build_battlecard_payload(workspace: Path) -> dict:
         profile = read_json(workspace / 'entities' / slug / 'profile.json', {})
         bc = read_json(workspace / 'battlecards' / f'{slug}.json', {})
         entity_events = [ev for ev in events if ev.get('entitySlug') == slug]
-        cards.append({
+        entity_events.sort(key=lambda ev: str(ev.get('observedAt', '')), reverse=True)
+        card = {
             'slug': slug,
             'name': e.get('name', slug),
             'category': e.get('category', 'tracked'),
@@ -88,7 +110,7 @@ def build_battlecard_payload(workspace: Path) -> dict:
             'oneLiner': bc.get('oneLiner', ''),
             'sourceCount': len(e.get('sources', [])),
             'eventCount': len(entity_events),
-            'latestEvent': entity_events[-1]['summary'] if entity_events else 'No verified changes yet',
+            'latestEvent': entity_events[0]['summary'] if entity_events else 'No verified changes yet',
             'pricingSummary': bc.get('pricingSummary') or profile.get('pricingSummary', '—'),
             'latestVersion': bc.get('latestVersion') or profile.get('latestVersion', '—'),
             'hiringSignal': bc.get('hiringSignal') or profile.get('hiringSignal', '—'),
@@ -99,12 +121,15 @@ def build_battlecard_payload(workspace: Path) -> dict:
             'strengths': bc.get('strengths', []),
             'gaps': bc.get('gaps', []),
             'evidenceUrls': bc.get('evidenceUrls', []),
-        })
+        }
+        if _has_populated_battlecard(card, bc):
+            populated_count += 1
+        cards.append(card)
     return {
         'generatedAt': utc_now(),
         'summary': {
             'entityCount': len(cards),
-            'battlecardCount': sum(1 for c in cards if c['pricingSummary'] != '—' or c['strengths']),
+            'battlecardCount': populated_count,
         },
         'cards': cards,
     }
@@ -132,18 +157,19 @@ def project_board(workspace: Path, board_name: str, board_dir: Path, *, overwrit
 
 def main() -> int:
     parser = argparse.ArgumentParser(description='Project market-intel data to shadcn/ui boards.')
-    parser.add_argument('workspace', help='Path to market-intel workspace')
+    parser.add_argument('data_dir', metavar='<data-dir>', help='Path to market-intel <data-dir>')
     parser.add_argument('--board', choices=BOARDS, default=None)
-    parser.add_argument('--board-dir', default=None, help='Target board directory (for Space board projection)')
-    parser.add_argument('--all', action='store_true', help='Project all bundled boards under <workspace>/boards/')
+    parser.add_argument('--board-dir', default=None, help='Target Space board directory (e.g. <space-work-root>/boards/<board-id>)')
+    parser.add_argument('--all', action='store_true', help='Project all bundled boards into --board-dir parent or <data-dir>/boards/')
     parser.add_argument('--overwrite-templates', action='store_true')
     args = parser.parse_args()
 
-    ws = Path(args.workspace).expanduser().resolve()
+    ws = Path(args.data_dir).expanduser().resolve()
     outputs = []
     if args.all:
+        base = Path(args.board_dir).expanduser().resolve() if args.board_dir else (ws / 'boards')
         for b in BOARDS:
-            outputs.append(str(project_board(ws, b, ws / 'boards' / b, overwrite_templates=args.overwrite_templates)))
+            outputs.append(str(project_board(ws, b, base / b, overwrite_templates=args.overwrite_templates)))
     elif args.board:
         target = Path(args.board_dir) if args.board_dir else (ws / 'boards' / args.board)
         outputs.append(str(project_board(ws, args.board, target, overwrite_templates=args.overwrite_templates)))

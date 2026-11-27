@@ -166,9 +166,17 @@ class ObjectiveGuardsTest(unittest.TestCase):
             ws.mkdir()
             now_iso = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
-            # Record 1st action -> ok
-            r1 = run_script(ENG_PY, 'record-action', str(ws), '--platform', 'wechat-official', '--account-id', 'wx1', '--target-id', 'c1', '--action-type', 'reply', '--executed-at', now_iso)
+            # Record 1st action -> ok (and aligns with workspace-schema.md: summary + error keys present)
+            r1 = run_script(ENG_PY, 'record-action', str(ws), '--platform', 'wechat-official', '--account-id', 'wx1', '--target-id', 'c1', '--action-type', 'reply', '--summary', 'Sent reply', '--executed-at', now_iso)
             self.assertEqual(r1.returncode, 0, r1.stdout)
+            rec1 = json.loads(r1.stdout)['recorded']
+            self.assertEqual(rec1['summary'], 'Sent reply')
+            self.assertIsNone(rec1['error'])
+
+            # Error record on a separate account captures --error cleanly alongside summary
+            r_err = run_script(ENG_PY, 'record-action', str(ws), '--platform', 'wechat-official', '--account-id', 'wx-err', '--target-id', 'c-err', '--action-type', 'reply', '--result', 'error', '--error', 'HTTP 429', '--executed-at', now_iso)
+            self.assertEqual(r_err.returncode, 0, r_err.stdout)
+            self.assertEqual(json.loads(r_err.stdout)['recorded']['error'], 'HTTP 429')
 
             # Duplicate same (platform, accountId, targetId, actionType) -> blocked (exit 1)
             r_dup = run_script(ENG_PY, 'record-action', str(ws), '--platform', 'wechat-official', '--account-id', 'wx1', '--target-id', 'c1', '--action-type', 'reply', '--executed-at', now_iso)

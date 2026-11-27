@@ -41,7 +41,7 @@
 
   <script id="board-initial-data" type="application/json">{"generatedAt":"","summary":{"clusterCount":0,"spikeCount":0,"linkedTickets":0},"issues":[]}</script>
   <script type="module">
-    import { createBoardBridge } from './assets/board-sdk-bridge.js';
+    import { createBoardBridge, parseBooleanParam } from './assets/board-sdk-bridge.js';
 
     const state = { data: null, spikesOnly: false, focused: '' };
     const spikeChk = document.getElementById('spikes-only');
@@ -83,8 +83,8 @@
             <span class="ui-muted ui-num">${esc(i.uniqueCustomers ?? 0)} unique customers · 7d: ${esc(i.recent7dCount)} · prior 7d: ${esc(i.prior7dCount)}</span>
           </div>
           <ul class="ui-muted" style="margin:6px 0 0;padding-left:18px">${cites}</ul>
-          <div class="ui-actions" data-shot-hide>
-            <button class="ui-btn ui-btn-xs ui-btn-ghost" data-requires-sdk data-rc="${esc(i.rootCauseId)}">Escalate to Engineering</button>
+          <div class="ui-actions" data-shot-hide data-mark-ignore>
+            <button class="ui-btn ui-btn-xs ui-btn-ghost" data-requires-sdk data-mark-ignore data-rc="${esc(i.rootCauseId)}">Draft Engineering Escalation</button>
           </div>
         </article>`;
       }).join('');
@@ -100,15 +100,24 @@
       commands: {
         filterSpikes: {
           describe: 'Toggle spiking root causes only',
-          params: { spikesOnly: 'boolean' },
-          run: ({ spikesOnly }) => { state.spikesOnly = Boolean(spikesOnly); spikeChk.checked = state.spikesOnly; render(); return { spikesOnly: state.spikesOnly }; },
+          params: { spikesOnly: 'Boolean string: "true" or "false".' },
+          run: ({ spikesOnly }) => {
+            const parsed = parseBooleanParam(spikesOnly, 'spikesOnly');
+            state.spikesOnly = parsed;
+            spikeChk.checked = parsed;
+            render();
+            return { spikesOnly: state.spikesOnly };
+          },
         },
         focusIssue: {
           describe: 'Highlight a root-cause card by rootCauseId',
-          params: { rootCauseId: 'string' },
+          params: { rootCauseId: 'Exact rootCauseId from assets/data.json.' },
           run: ({ rootCauseId }) => {
-            if (typeof rootCauseId !== 'string' || !rootCauseId.trim()) throw new Error('rootCauseId required');
-            state.focused = rootCauseId.trim(); render();
+            if (typeof rootCauseId !== 'string' || !rootCauseId.trim()) {
+              throw new Error('rootCauseId is required');
+            }
+            state.focused = rootCauseId.trim();
+            render();
             document.querySelector(`[data-card="issue-${CSS.escape(state.focused)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return { focused: state.focused };
           },
@@ -116,7 +125,13 @@
         resetFilters: {
           describe: 'Reset root-cause filters',
           params: {},
-          run: () => { state.spikesOnly = false; state.focused = ''; spikeChk.checked = false; render(); return { reset: true }; },
+          run: () => {
+            state.spikesOnly = false;
+            state.focused = '';
+            spikeChk.checked = false;
+            render();
+            return { reset: true };
+          },
         },
       },
     });

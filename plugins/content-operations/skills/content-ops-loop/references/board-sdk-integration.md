@@ -6,7 +6,12 @@ All 5 prebuilt boards in `assets/boards/` are File-Backed Executable Documents (
 
 In Ducoro, keep canonical operational files in the chosen data directory (the human's existing folder, this Space's `files/`, or an optional cross-Space Local Folder), while each Board lives under its owning Space's `boards/<board-id>/`. Boards read their own `assets/data.json` projection rather than referencing arbitrary host paths directly.
 
-1. Create the board folder via the host CLI so `board.json` is initialized cleanly:
+1. Locate `<space-work-root>` and check existing Space boards first so you reuse existing boards instead of creating duplicates:
+   ```sh
+   ducoro-cli space info <space-id> --json
+   ducoro-cli board list --space <space-id> --json
+   ```
+   Create a new board folder via the host CLI only when missing so `board.json` is initialized cleanly:
    ```sh
    ducoro-cli board new --space <space-id> --title "<Board Title>" --json
    ```
@@ -15,10 +20,11 @@ In Ducoro, keep canonical operational files in the chosen data directory (the hu
    python3 scripts/build_boards.py <data-dir> --board <board-name> --board-dir <space-work-root>/boards/<board-id> --overwrite-templates
    ```
    (Subsequent data refreshes omit `--overwrite-templates` so only `assets/data.json` changes and live sessions apply updates in place via `ducoro.board.revalidate` without reloading.)
-3. Verify layout, fonts, and static capture via `ducoro-cli render` before sharing the board link:
+3. Verify layout, fonts, and static capture via `ducoro-cli render`, then resolve a shareable link via `ducoro-cli board link`:
    ```sh
    ducoro-cli render check --file <space-work-root>/boards/<board-id>/index.html --json
    ducoro-cli render shot --file <space-work-root>/boards/<board-id>/index.html --json
+   ducoro-cli board link --space <space-id> --board boards/<board-id> --json
    ```
    (Rendering via `--file` delivers standalone static HTML without `window.ducoro` or `<html data-ducoro-render="shot">`; external read-only share links and loopback preview `--url` renders receive `<html data-ducoro-render="shot">` to hide interactive chrome.)
 
@@ -32,6 +38,7 @@ All 5 boards share `runtime/board-ui.css` implementing the `shadcn/ui` semantic 
 ## Built-In SDK Contract (Implemented by `shared/board-sdk-bridge.js`)
 
 - **No manual SDK `<script>`**: host injects `window.ducoro`; missing SDK degrades silently to standalone mode with Composer buttons hidden.
+- **Host display sync (`onDisplayChange`)**: subscribes to `sdk.ui?.onDisplayChange` (and initial `sdk.ui?.display`) to sync `.dark`/`.light` on `<html>` and `document.documentElement.lang` with the host appearance and locale.
 - **Read-only & non-embedded guards**: write controls, `commands`, and `storage.set` stay disabled in `shot` mode, projection windows (`ducoro.ui.projection`), non-embedded tabs (`embedded === false`), or disconnected links.
 - **Addressable content**: stable `data-card`, `data-card-title`, `data-mark-item`, `data-mark-label` on all business items; `data-mark-ignore` on toolbars/filters; zero inline file editing.
 - **Safe Composer staging**: all collaboration buttons use `ducoro.composer.draft(...)` with dynamic Lead resolution from `ducoro.space.onCastChange`.
