@@ -14,7 +14,7 @@ Never emit hollow corporate boilerplate ("We apologize for the inconvenience and
 
 ## 2. Six-Element Engineering Escalation Package
 
-When handing a confirmed defect to an engineering Space via `ducoro-cli space send`, never forward raw vague complaints. Package six concrete elements:
+When handing a confirmed defect to an engineering Space via `ducoro-cli space mail send`, never forward raw vague complaints. Package six concrete elements:
 
 1. **Impact scope**: Priority, affected `uniqueCustomers` count, and whether revenue/onboarding is blocked.
 2. **Minimal reproduction steps**: Exact sequence, inputs, and expected vs actual behavior.

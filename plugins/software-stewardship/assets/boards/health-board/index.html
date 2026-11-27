@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Repository Health &amp; Supply Chain</title>
+  <link rel="stylesheet" href="./assets/board-ui.css" />
+</head>
+<body>
+  <main class="ui-shell" data-export-frame="main">
+    <header class="ui-header" data-mark-ignore>
+      <div>
+        <h1 id="board-title" class="ui-title">Repository Health &amp; Supply Chain</h1>
+        <p id="board-subtitle" class="ui-subtitle">Live OSV vulnerability checks, copyleft license alerts, 30-day churn hotspots, and revert trends.</p>
+      </div>
+      <div class="ui-toolbar">
+        <select id="sev-filter" class="ui-select" aria-label="Filter alert severity">
+          <option value="all">All alerts</option>
+          <option value="high">High (CVE / License)</option>
+          <option value="medium">Medium (Size / Shotgun signals)</option>
+        </select>
+        <button id="scan-btn" class="ui-btn ui-btn-primary" data-requires-sdk>Stage Health Sweep</button>
+      </div>
+    </header>
+
+    <div class="ui-alert" data-bridge-status hidden></div>
+
+    <section class="ui-kpi-grid" data-card="health-kpis" data-card-title="Health Summary">
+      <article class="ui-kpi" data-mark-item="kpi-vulns" data-mark-label="Live OSV vulnerabilities">
+        <span class="ui-kpi-label">Live CVEs</span>
+        <span id="kpi-vulns" class="ui-kpi-value">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-licenses" data-mark-label="Copyleft license alerts">
+        <span class="ui-kpi-label">License Alerts</span>
+        <span id="kpi-licenses" class="ui-kpi-value">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-hotspots" data-mark-label="30-day churn hotspots">
+        <span class="ui-kpi-label">Churn Hotspots</span>
+        <span id="kpi-hotspots" class="ui-kpi-value">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-revert" data-mark-label="30-day revert rate">
+        <span class="ui-kpi-label">30d Revert Rate</span>
+        <span id="kpi-revert" class="ui-kpi-value">0%</span>
+      </article>
+    </section>
+
+    <section class="ui-section" data-card="health-alerts" data-card-title="Supply-Chain &amp; Size Alerts">
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">Supply-Chain, License &amp; Structural Signals</h2>
+        <span id="osv-meta" class="ui-muted">OSV: not run</span>
+      </div>
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Severity</th>
+              <th>Target &amp; Detail</th>
+              <th data-shot-hide>Action</th>
+            </tr>
+          </thead>
+          <tbody id="alerts-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="ui-section" data-card="churn-hotspots" data-card-title="30-Day Churn Hotspots">
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">30-Day Churn Hotspots</h2>
+        <span id="updated-at" class="ui-muted">Not loaded</span>
+      </div>
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>File Path</th>
+              <th class="is-num">Touches (30d)</th>
+            </tr>
+          </thead>
+          <tbody id="hotspots-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script id="board-initial-data" type="application/json">{"generatedAt":"","repoName":"Repository","osvStatus":"not_run","pulseOutcome":"not_run","summary":{"dependencyCount":0,"vulnerabilityCount":0,"licenseAlertCount":0,"hotspotCount":0,"largeFileCount":0,"shotgunCommitCount":0,"extraWorktreeCount":0,"commitCount30d":0,"revertRatePct":0},"alerts":[],"hotspots":[],"history":[]}</script>
+  <script type="module">
+    import { createBoardBridge } from './assets/board-sdk-bridge.js';
+
+    const state = { data: null, severity: 'all', focused: '' };
+    const sevSel = document.getElementById('sev-filter');
+    const alertsBody = document.getElementById('alerts-body');
+    const hotspotsBody = document.getElementById('hotspots-body');
+
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function render() {
+      const d = state.data || { summary: {}, alerts: [], hotspots: [] };
+      const s = d.summary || {};
+      document.getElementById('board-title').textContent = `${d.repoName || 'Repository'} — Health & Supply Chain`;
+      document.getElementById('board-subtitle').textContent = `${s.dependencyCount ?? 0} pinned deps · Pulse ${d.pulseOutcome || 'not_run'} · Extra worktrees ${s.extraWorktreeCount ?? 0}`;
+      document.getElementById('osv-meta').textContent = `OSV status: ${d.osvStatus || 'not_run'}`;
+      document.getElementById('updated-at').textContent = d.generatedAt ? `Updated ${d.generatedAt}` : 'No snapshot yet';
+
+      const vEl = document.getElementById('kpi-vulns');
+      vEl.textContent = s.vulnerabilityCount ?? 0;
+      vEl.dataset.tone = (s.vulnerabilityCount ?? 0) > 0 ? 'destructive' : '';
+      const lEl = document.getElementById('kpi-licenses');
+      lEl.textContent = s.licenseAlertCount ?? 0;
+      lEl.dataset.tone = (s.licenseAlertCount ?? 0) > 0 ? 'warning' : '';
+      document.getElementById('kpi-hotspots').textContent = s.hotspotCount ?? 0;
+      const rEl = document.getElementById('kpi-revert');
+      rEl.textContent = `${s.revertRatePct ?? 0}%`;
+      rEl.dataset.tone = (s.revertRatePct ?? 0) >= 5 ? 'warning' : '';
+
+      const filtered = (d.alerts || []).filter((a) => state.severity === 'all' || a.severity === state.severity);
+      if (!filtered.length) {
+        alertsBody.innerHTML = '<tr><td colspan="4"><div class="ui-empty-inline">No supply-chain, license, or structural signals match this filter.</div></td></tr>';
+      } else {
+        alertsBody.innerHTML = filtered.map((a) => {
+          const badge = a.severity === 'high' ? 'ui-badge-destructive' : 'ui-badge-warning';
+          const focused = state.focused === a.id ? ' focused' : '';
+          const link = a.url ? ` · <a href="${esc(a.url)}" target="_blank" rel="noopener">Advisory</a>` : '';
+          return `<tr class="${focused}" data-card="alert-${esc(a.id)}" data-card-title="${esc(a.target)}" data-mark-item="alert-${esc(a.id)}" data-mark-label="${esc(a.target)}">
+            <td><span class="ui-badge ui-badge-outline">${esc(a.category)}</span></td>
+            <td><span class="ui-badge ${badge}">${esc(a.severity)}</span></td>
+            <td>
+              <div class="ui-item-title">${esc(a.target)}${link}</div>
+              <div class="ui-muted">${esc(a.detail)}</div>
+            </td>
+            <td data-shot-hide><button class="ui-btn ui-btn-xs ui-btn-ghost" data-requires-sdk data-act="fix" data-id="${esc(a.id)}">Discuss</button></td>
+          </tr>`;
+        }).join('');
+      }
+
+      const hotspots = d.hotspots || [];
+      if (!hotspots.length) {
+        hotspotsBody.innerHTML = '<tr><td colspan="2"><div class="ui-empty-inline">No high-churn files detected in the last 30 days.</div></td></tr>';
+      } else {
+        hotspotsBody.innerHTML = hotspots.map((h) => `<tr data-card="hotspot-${esc(h.path)}" data-card-title="${esc(h.path)}" data-mark-item="hotspot-${esc(h.path)}" data-mark-label="${esc(h.path)}">
+          <td class="ui-mono">${esc(h.path)}</td>
+          <td class="is-num">${esc(h.touches)}</td>
+        </tr>`).join('');
+      }
+      bridge.updateWriteControls();
+    }
+
+    const bridge = createBoardBridge({
+      boardId: 'health-board',
+      defaultView: { severity: 'all' },
+      onData: (data) => { state.data = data; render(); },
+      onApplyView: (v) => { state.severity = v.severity || 'all'; sevSel.value = state.severity; render(); },
+      getView: () => ({ severity: state.severity }),
+      commands: {
+        filterSeverity: {
+          describe: 'Filter health alerts by severity (all|high|medium)',
+          params: { severity: 'string' },
+          run: ({ severity }) => {
+            if (!['all', 'high', 'medium'].includes(severity)) throw new Error('Invalid severity');
+            state.severity = severity;
+            sevSel.value = severity;
+            render();
+            return { severity };
+          },
+        },
+        focusAlert: {
+          describe: 'Highlight an alert row by id',
+          params: { id: 'string' },
+          run: ({ id }) => {
+            if (typeof id !== 'string' || !id.trim()) throw new Error('id is required');
+            state.focused = id.trim();
+            render();
+            document.querySelector(`[data-card="alert-${CSS.escape(state.focused)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return { focused: state.focused };
+          },
+        },
+        resetFilters: {
+          describe: 'Reset severity filter and focus',
+          params: {},
+          run: () => { state.severity = 'all'; state.focused = ''; sevSel.value = 'all'; render(); return { reset: true }; },
+        },
+      },
+    });
+
+    sevSel.addEventListener('change', () => { state.severity = sevSel.value; render(); bridge.persistView(); });
+    document.getElementById('scan-btn').addEventListener('click', (e) => {
+      bridge.stageDraft('Run supply_chain_check.py and repo_monitor.py on the repository, then refresh health-board.', e.currentTarget);
+    });
+    alertsBody.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-act="fix"]');
+      if (!btn) return;
+      const a = (state.data?.alerts || []).find((x) => x.id === btn.dataset.id);
+      if (a) bridge.stageDraft(`Investigate repository health alert "${a.target}" (${a.category}: ${a.detail}) and propose a concrete remediation plan.`, btn);
+    });
+
+    bridge.start();
+  </script>
+</body>
+</html>

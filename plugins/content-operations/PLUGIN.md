@@ -4,7 +4,7 @@ Multi-platform content operations across 14 social and editorial platforms—cov
 
 ## Activation & Boundaries
 
-Activate for researching, drafting, producing visuals/videos, scheduling, publishing, triaging comments, reviewing performance, or maintaining boards for social/editorial content operations. Stay inactive for software engineering, Git commits/PRs, competitor intelligence, customer support, financial bookkeeping, sales CRM, and recruiting.
+Activate for researching, drafting, producing visuals/videos, scheduling, publishing, triaging comments, reviewing performance, or maintaining boards for social and editorial content operations. Keep scope focused on content operations and always defer brand voice, target accounts, and editorial strategy to the Bot's profile, Memory, and human instructions.
 
 ## Operating Loop
 
@@ -14,7 +14,7 @@ Activate for researching, drafting, producing visuals/videos, scheduling, publis
    - **Schedule (auto-lands in Plan)**: `ducoro-cli task create --space <id> --at <iso>|--daily <HH:MM>|--cron "<expr>" --timezone <tz> --title "..." --instruction "..."`.
    - **Inbox sign-off**: pair `--human <id> --ask confirm --request-summary "..."` on `task create`.
    - **Parallel fan-out**: `ducoro-cli job dispatch --agent <id> --name "<name>" "<prompt>"` / `job start`.
-   - **Media, render, boards & relay**: `ducoro-cli render check|shot|pdf --file <path> --json`, `ducoro-cli media upload <path> --json`, `ducoro-cli board new --space <id> --title "..." --json`, and `ducoro-cli space send`.
+   - **Media, render, boards & relay**: `ducoro-cli render check|shot|pdf --file <path> --json`, `ducoro-cli media upload <path> --json`, `ducoro-cli board new --space <id> --title "..." --json`, and `ducoro-cli space mail send`.
 3. **Load only needed modules & enforce gates**: Defer voice and strategy to Bot profile, Memory, and `brand-profile.md`. Run `signal_gate.py`, `check_media_specs.py`, and `validate_workspace.py --verify-slot <slotId>` (Gate 2 `variantHash` lock) before publishing with live URL readback.
 
 ## Needs a Yes

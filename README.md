@@ -14,6 +14,7 @@ Each plugin packages a **Domain Role** (`PLUGIN.md`), progressively disclosed on
 | [Market Intel](plugins/market-intel) | Track competitor, company, and sector changes with objective snapshot diffs and grounded evidence gates | `PLUGIN.md` + Playbooks + Public Source Fetchers + Diff/Evidence Scripts + Boards |
 | [Customer Support Ops](plugins/customer-support-ops) | Triage tickets and reviews, enforce P0/SLA escalations, detect issue spikes, and lock outbound replies | `PLUGIN.md` + Playbooks + Channel Importers + Triage/Reply Guards + Boards |
 | [Business Finance Ops](plugins/business-finance-ops) | Reconcile real statements with exact Decimal math, ECB FX rates, anomaly detection, and runway boards | `PLUGIN.md` + Playbooks + Statement Parsers + Decimal Ledger/Audit Scripts + Boards |
+| [Software Stewardship](plugins/software-stewardship) | Keep a living codebase healthy with real Git audits, live OSV CVE/license checks, SHA approval locks, release protocols, and quiet boards | `PLUGIN.md` + Playbooks + Git/OSV/Gate/Pulse Scripts + Boards |
 
 ## Use this marketplace
 

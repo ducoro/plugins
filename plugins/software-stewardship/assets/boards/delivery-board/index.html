@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Delivery &amp; Gate Board</title>
+  <link rel="stylesheet" href="./assets/board-ui.css" />
+</head>
+<body>
+  <main class="ui-shell" data-export-frame="main">
+    <header class="ui-header" data-mark-ignore>
+      <div>
+        <h1 id="board-title" class="ui-title">Delivery &amp; Gate Board</h1>
+        <p id="board-subtitle" class="ui-subtitle">Real diff blast radius, objective gate checks, PR/CI status, and tamper-proof approval locks.</p>
+      </div>
+      <div class="ui-toolbar">
+        <select id="kind-filter" class="ui-select" aria-label="Filter item kind">
+          <option value="all">All items</option>
+          <option value="blocker">Gate blockers</option>
+          <option value="sensitive_path">Sensitive paths</option>
+          <option value="pull_request">Pull requests</option>
+          <option value="ci_run">CI runs</option>
+        </select>
+        <button id="audit-btn" class="ui-btn ui-btn-primary" data-requires-sdk>Stage Gate Check</button>
+      </div>
+    </header>
+
+    <div class="ui-alert" data-bridge-status hidden></div>
+
+    <section class="ui-kpi-grid" data-card="delivery-kpis" data-card-title="Delivery Summary">
+      <article class="ui-kpi" data-mark-item="kpi-changed" data-mark-label="Changed files and lines">
+        <span class="ui-kpi-label">Blast Radius</span>
+        <span id="kpi-changed" class="ui-kpi-value">0 files</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-blockers" data-mark-label="Objective gate blockers">
+        <span class="ui-kpi-label">Gate Blockers</span>
+        <span id="kpi-blockers" class="ui-kpi-value">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-ci" data-mark-label="Failing CI runs">
+        <span class="ui-kpi-label">Failing CI</span>
+        <span id="kpi-ci" class="ui-kpi-value">0</span>
+      </article>
+      <article class="ui-kpi" data-mark-item="kpi-evidence" data-mark-label="Passing command evidence">
+        <span class="ui-kpi-label">Passing Evidence</span>
+        <span id="kpi-evidence" class="ui-kpi-value">0</span>
+      </article>
+    </section>
+
+    <section class="ui-section" data-card="delivery-items" data-card-title="Active Risks, PRs &amp; CI">
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">Active Gate Items, Pull Requests &amp; CI</h2>
+        <span id="updated-at" class="ui-muted">Not loaded</span>
+      </div>
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>Kind</th>
+              <th>Status</th>
+              <th>Item &amp; Detail</th>
+              <th data-shot-hide>Action</th>
+            </tr>
+          </thead>
+          <tbody id="items-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="ui-section" data-card="approval-locks" data-card-title="SHA Approval Locks">
+      <div class="ui-section-head">
+        <h2 class="ui-section-title">Tamper-Proof Approval Locks</h2>
+        <span id="head-meta" class="ui-mono ui-muted">HEAD —</span>
+      </div>
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>Approved By</th>
+              <th>Pinned SHA / Diff Hash</th>
+              <th>Lock State</th>
+            </tr>
+          </thead>
+          <tbody id="approvals-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script id="board-initial-data" type="application/json">{"generatedAt":"","repoName":"Repository","branch":"—","headSha":"—","diffHash":"—","signalFlags":[],"summary":{"changedFiles":0,"changedLines":0,"netLines":0,"newFiles":0,"blockerCount":0,"failingCiCount":0,"openPrCount":0,"passingEvidenceCount":0,"independentReviewCount":0,"faultInjectionCount":0},"approvals":[],"evidence":[],"items":[]}</script>
+  <script type="module">
+    import { createBoardBridge } from './assets/board-sdk-bridge.js';
+
+    const state = { data: null, kind: 'all', focused: '' };
+    const kindSel = document.getElementById('kind-filter');
+    const itemsBody = document.getElementById('items-body');
+    const approvalsBody = document.getElementById('approvals-body');
+
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function render() {
+      const d = state.data || { summary: {}, approvals: [], items: [] };
+      const s = d.summary || {};
+      document.getElementById('board-title').textContent = `${d.repoName || 'Repository'} — Delivery & Gate`;
+      const sigText = (d.signalFlags || []).length ? `Signals ${(d.signalFlags || []).join(', ')}` : 'No audit signals';
+      document.getElementById('board-subtitle').textContent = `Branch ${d.branch || '—'} · ${sigText} · Net ${s.netLines ?? 0}L / ${s.newFiles ?? 0} new files · Reviews ${s.independentReviewCount ?? 0}`;
+      document.getElementById('head-meta').textContent = `HEAD ${d.headSha || '—'} · diff ${d.diffHash || '—'}`;
+      document.getElementById('updated-at').textContent = d.generatedAt ? `Updated ${d.generatedAt}` : 'No snapshot yet';
+
+      document.getElementById('kpi-changed').textContent = `${s.changedFiles ?? 0}f / ${s.changedLines ?? 0}L`;
+      const bEl = document.getElementById('kpi-blockers');
+      bEl.textContent = s.blockerCount ?? 0;
+      bEl.dataset.tone = (s.blockerCount ?? 0) > 0 ? 'destructive' : '';
+      const ciEl = document.getElementById('kpi-ci');
+      ciEl.textContent = s.failingCiCount ?? 0;
+      ciEl.dataset.tone = (s.failingCiCount ?? 0) > 0 ? 'destructive' : '';
+      document.getElementById('kpi-evidence').textContent = s.passingEvidenceCount ?? 0;
+
+      const filtered = (d.items || []).filter((item) => state.kind === 'all' || item.kind === state.kind);
+      if (!filtered.length) {
+        itemsBody.innerHTML = '<tr><td colspan="4"><div class="ui-empty-inline">No gate blockers, sensitive touches, or open remote items match this filter.</div></td></tr>';
+      } else {
+        itemsBody.innerHTML = filtered.map((it) => {
+          const badge = it.severity === 'high' ? 'ui-badge-destructive' : it.severity === 'medium' ? 'ui-badge-warning' : 'ui-badge-secondary';
+          const focused = state.focused === it.id ? ' focused' : '';
+          const link = it.url ? ` · <a href="${esc(it.url)}" target="_blank" rel="noopener">Open</a>` : '';
+          return `<tr class="${focused}" data-card="item-${esc(it.id)}" data-card-title="${esc(it.title)}" data-mark-item="item-${esc(it.id)}" data-mark-label="${esc(it.title)}">
+            <td><span class="ui-badge ui-badge-outline">${esc(it.kind)}</span></td>
+            <td><span class="ui-badge ${badge}">${esc(it.status)}</span></td>
+            <td>
+              <div class="ui-item-title">${esc(it.title)}${link}</div>
+              <div class="ui-muted ui-mono">${esc(it.detail)}</div>
+            </td>
+            <td data-shot-hide><button class="ui-btn ui-btn-xs ui-btn-ghost" data-requires-sdk data-act="inspect" data-id="${esc(it.id)}">Review</button></td>
+          </tr>`;
+        }).join('');
+      }
+
+      const approvals = d.approvals || [];
+      if (!approvals.length) {
+        approvalsBody.innerHTML = '<tr><td colspan="4"><div class="ui-empty-inline">No human merge/release approvals recorded yet.</div></td></tr>';
+      } else {
+        approvalsBody.innerHTML = approvals.map((ap) => {
+          const tone = ap.status === 'valid' ? 'ui-badge-secondary' : 'ui-badge-destructive';
+          const label = ap.status === 'valid' ? 'valid' : 'invalidated (changed)';
+          return `<tr data-card="approval-${esc(ap.action)}" data-card-title="Approval: ${esc(ap.action)}" data-mark-item="approval-${esc(ap.action)}" data-mark-label="${esc(ap.action)} approval">
+            <td><strong>${esc(ap.action)}</strong></td>
+            <td>${esc(ap.approvedBy)}</td>
+            <td class="ui-mono">${esc(ap.headSha)} / ${esc(ap.diffHash)}</td>
+            <td><span class="ui-badge ${tone}">${esc(label)}</span></td>
+          </tr>`;
+        }).join('');
+      }
+      bridge.updateWriteControls();
+    }
+
+    const bridge = createBoardBridge({
+      boardId: 'delivery-board',
+      defaultView: { kind: 'all' },
+      onData: (data) => { state.data = data; render(); },
+      onApplyView: (v) => { state.kind = v.kind || 'all'; kindSel.value = state.kind; render(); },
+      getView: () => ({ kind: state.kind }),
+      commands: {
+        filterKind: {
+          describe: 'Filter delivery items by kind (all|blocker|sensitive_path|pull_request|ci_run)',
+          params: { kind: 'string' },
+          run: ({ kind }) => {
+            if (!['all', 'blocker', 'sensitive_path', 'pull_request', 'ci_run'].includes(kind)) throw new Error('Invalid kind');
+            state.kind = kind;
+            kindSel.value = kind;
+            render();
+            return { kind };
+          },
+        },
+        focusItem: {
+          describe: 'Highlight a delivery item row by id',
+          params: { id: 'string' },
+          run: ({ id }) => {
+            if (typeof id !== 'string' || !id.trim()) throw new Error('id is required');
+            state.focused = id.trim();
+            render();
+            document.querySelector(`[data-card="item-${CSS.escape(state.focused)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return { focused: state.focused };
+          },
+        },
+        resetFilters: {
+          describe: 'Reset all filters and focus',
+          params: {},
+          run: () => { state.kind = 'all'; state.focused = ''; kindSel.value = 'all'; render(); return { reset: true }; },
+        },
+      },
+    });
+
+    kindSel.addEventListener('change', () => { state.kind = kindSel.value; render(); bridge.persistView(); });
+    document.getElementById('audit-btn').addEventListener('click', (e) => {
+      bridge.stageDraft('Run repo_audit.py and change_gate.py check-diff on the current repository, then refresh delivery-board.', e.currentTarget);
+    });
+    itemsBody.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-act="inspect"]');
+      if (!btn) return;
+      const it = (state.data?.items || []).find((x) => x.id === btn.dataset.id);
+      if (it) bridge.stageDraft(`Investigate delivery item "${it.title}" (${it.kind}: ${it.detail}) and verify the root cause.`, btn);
+    });
+
+    bridge.start();
+  </script>
+</body>
+</html>

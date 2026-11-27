@@ -4,7 +4,7 @@ Continuous customer support and product-feedback operations—ingesting real tic
 
 ## Activation & Boundaries
 
-Activate for triaging user feedback, tickets, app reviews, SLA monitoring, drafting guarded customer replies, or tracking recurring issue spikes. Stay inactive for content publishing (`content-operations`), competitor intelligence (`market-intel`), financial bookkeeping (`business-finance-ops`), sales CRM, and recruiting workflows.
+Activate for triaging user feedback, tickets, app reviews, SLA monitoring, drafting guarded customer replies, or tracking recurring issue spikes. Keep scope focused on customer support and product-feedback operations, escalating high-risk or irreversible cases to the human.
 
 ## Operating Loop
 
@@ -14,7 +14,7 @@ Activate for triaging user feedback, tickets, app reviews, SLA monitoring, draft
    - **Periodic triage sweeps (auto-lands in Plan)**: `ducoro-cli task create --space <id> --cron "0 */2 * * *" --timezone <IANA-tz> --title "Support Triage Sweep" --instruction "..."`.
    - **P0/security/refund/SLA escalation into Inbox**: pair `--human <human-id> --ask confirm --request-summary "..."` on `task create`.
    - **Parallel backlog triage**: `ducoro-cli job dispatch --agent <agent-id> --name "triage-<batch>" "<prompt>"`.
-   - **Live boards & cross-Space relay**: `ducoro-cli board new --space <id> --title "..." --json`, `ducoro-cli render check|shot --file <board>/index.html --json`, and `ducoro-cli space send` to hand off verified bugs to engineering or recurring pain points to content Spaces.
+   - **Live boards & cross-Space relay**: `ducoro-cli board new --space <id> --title "..." --json`, `ducoro-cli render check|shot --file <board>/index.html --json`, and `ducoro-cli space mail send` to hand off verified bugs to engineering or recurring pain points to content Spaces.
 3. **Ingest & enforce deterministic guards**: Prefer Connectors, then run `scripts/ingest_feedback.py` for GitHub Issues, `.eml`/`.mbox`, or CSV/JSONL exports (`playbooks/channels-and-ingestion.md`). Run `scripts/triage_gate.py` for risk/SLA/spike detection, enforce approval hash pinning and leak/idempotency checks via `scripts/reply_guard.py`, and refresh boards via `scripts/build_boards.py`.
 
 ## Needs a Yes

@@ -15,21 +15,22 @@ Follow every rule below when adding, editing, or removing a plugin.
 
 ## Design Principles
 
+- **Design an environment, not micro-management instructions**: Treat the Bot as a capable actor entering a structured environment—clear about **what tools, ground-truth sources, and facilities exist**, **what actions are available**, and **what soft boundaries or hard gates must not be crossed**, while leaving everything outside those constraints completely free. To test whether an outcome is genuinely true and self-consistent from every angle, orchestrate independent verification environments and orthogonal review dimensions rather than lecturing the model with step-by-step dogma.
 - **Domain role overlay, not flat skill dumps**: Each plugin contributes one coherent domain role (`PLUGIN.md`) mounted into `<you><domain_roles>` alongside the Bot's own `PROFILE.md`. A Bot's `PROFILE.md` and the human's live instructions always take precedence over every mounted plugin.
 - **Progressive tree disclosure**: Treat `PLUGIN.md` like a repository's root `README.md`—it holds the domain goal, activation boundaries, operating loop, approval gates, and **level-1 resource map** (at most **4,000 UTF-16 code units**). Deeper level-2/level-3 playbooks, platform guides, schemas, boards, and scripts are indexed by their parent documents and read on demand.
 - **Neutral domain & platform expert**: Every plugin is a neutral advisor oriented toward a domain, workflow, or official platform—not one user's personal persona or strategy. User-specific voice, taste, concrete targets, and business policies live in the mounted Bot's own `PROFILE.md`, private Skills (procedural memory), and Memory (episodic memory).
-- **Strict orthogonality across all plugins**: Every plugin in this marketplace must coexist peacefully when all plugins are mounted onto the same Bot simultaneously:
-  - Clear positive activation triggers and explicit negative boundaries (`## Activation & Boundaries`).
+- **Strict orthogonality evaluated at the marketplace level**: Orthogonality is judged from the catalog overview above individual plugins—each plugin stays self-contained and never needs to reference or list other plugins to prove how it differs from them:
+  - Clear positive activation triggers and self-contained scope/responsibility boundaries (`## Activation & Boundaries`), with **zero references to other plugin slugs** or lists of unrelated domains.
   - Zero persona/tone/global-reply overrides in `PLUGIN.md`.
   - Zero colliding MCP server slugs across different plugins.
-- **Text teaches domain specifics; code enforces objective invariants**: Keep prose focused on specialized domain knowledge and use deterministic scripts for repeatable production pipelines and objective hard checks—never turn subjective style preferences into hard blocking errors.
+- **Clear split between prose and deterministic code**: Prose carries **environment orientation & tool manuals** (for specialized or third-party CLIs/APIs the model does not inherently know), **environment orchestration** (independent verification and review setups), **soft constraints & judgment boundaries** that scripts cannot capture, and **specialized domain/platform facts**. Deterministic scripts handle repeatable production pipelines, objective physical/protocol hard gates, and factual symptom telemetry—never turning subjective style preferences or arbitrary line counts into hard blocking errors.
 
 ## `PLUGIN.md` Contract (Required 5-Section Skeleton)
 
 Every plugin root MUST contain a regular `PLUGIN.md` file in English, **without** YAML frontmatter (metadata lives solely in `plugin.json`), with trimmed UTF-16 length **≤ 4,000**, containing these five `##` sections in exact order:
 
 1. `## Domain` — What long-term domain outcome this role owns (2–3 sentences).
-2. `## Activation & Boundaries` — Explicit positive triggers AND explicit negative boundaries stating when to stay inactive so co-mounted plugins never collide.
+2. `## Activation & Boundaries` — Clear positive activation triggers and self-contained authority/scope boundaries for this role alone (do not name other plugins or enumerate unrelated domains; orthogonality is verified at the marketplace overview level).
 3. `## Operating Loop` — End-to-end durable loop, file-backed truth, and completion criteria (no bloated platform tables or script flags).
 4. `## Needs a Yes` — Domain-specific irreversible or external actions that require explicit human confirmation (always deferring to stricter rules in the Bot's own profile).
 5. `## Resources & Tools` — Level-1 directory map of on-demand files inside the plugin root (all referenced relative paths must exist) and when to use any bundled `.mcp.json` tools.

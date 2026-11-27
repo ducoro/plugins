@@ -54,11 +54,12 @@
    - Daily/weekly sweeps: `ducoro-cli task create --space <id> --daily 08:30 --timezone <IANA-tz> --title "Market Intel Sweep" --instruction "..."`
    - Parallel entity sweeps: `ducoro-cli job dispatch --agent <agent-id> --name "intel-<slug>" "..."`
    - Material shifts requiring human judgment (e.g., competitor price cut, major launch, SEC 8-K): route via `--human <human-id> --ask confirm --request-summary "..."` into Inbox.
-   - Cross-Space handoff: send grounded findings to a content or product Space via `ducoro-cli space send`.
+   - Cross-Space handoff: send grounded findings to a content or product Space via `ducoro-cli space mail send`.
 
 ## 4. Reporting Plugin or Source Breakage
 
 If a script crashes or an upstream public API schema changes (not local network outages), show the human a redacted report first and, once approved, submit via:
 ```sh
-ducoro-cli feedback send "[plugin:market-intel@1.1.1] [module:<module>] [location:<step>] <redacted details>"
+ducoro-cli feedback send "[plugin:market-intel@<version>] [module:<module>] [location:<step>] <redacted details>"
+# Read <version> from <plugin-root>/plugin.json
 ```

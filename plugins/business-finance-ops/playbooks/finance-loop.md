@@ -39,5 +39,6 @@ Outside Ducoro, fall back to `BUSINESS_FINANCE_OPS_ROOT`.
 - **No autonomous money movement**: Never initiate transfers, payments, refunds, or subscription cancellations without explicit human execution/approval.
 - Report script or parser format regressions (redacted, after human approval) via:
   ```sh
-  ducoro-cli feedback send "[plugin:business-finance-ops@1.1.1] [module:<module>] [location:<step>] <redacted details>"
+  ducoro-cli feedback send "[plugin:business-finance-ops@<version>] [module:<module>] [location:<step>] <redacted details>"
+  (read `<version>` from `<plugin-root>/plugin.json`)
   ```

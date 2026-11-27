@@ -167,6 +167,18 @@ class CatalogValidationTest(unittest.TestCase):
             validator.validate(self.root)
         plugin_md.write_text(original, encoding='utf-8')
 
+        # Cross-plugin sibling reference fails
+        plugin_md.write_text(original + '\nHand off code tasks to `software-stewardship`.\n', encoding='utf-8')
+        with self.assertRaises(ValueError):
+            validator.validate(self.root)
+        plugin_md.write_text(original, encoding='utf-8')
+
+        # Hardcoded plugin version in feedback tag fails (must use @<version> from plugin.json)
+        plugin_md.write_text(original + '\nRun `ducoro-cli feedback send "[plugin:market-intel@1.0.0] bug"`.\n', encoding='utf-8')
+        with self.assertRaises(ValueError):
+            validator.validate(self.root)
+        plugin_md.write_text(original, encoding='utf-8')
+
         # Missing README link fails
         readme = self.root / 'README.zh-CN.md'
         readme.write_text(readme.read_text().replace('(plugins/market-intel)', '(plugins/missing)'))

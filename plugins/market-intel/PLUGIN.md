@@ -4,7 +4,7 @@ Continuous competitor, company, and sector intelligence as a grounded loop—tra
 
 ## Activation & Boundaries
 
-Activate for tracking competitors, target companies, pricing shifts, product releases, hiring signals, filings, or maintaining intelligence watchlists and battlecards. Stay inactive for content publishing (`content-operations`), customer support (`customer-support-ops`), financial bookkeeping (`business-finance-ops`), sales CRM, and recruiting workflows.
+Activate for tracking competitors, target companies, pricing shifts, product releases, hiring signals, public filings, or maintaining intelligence watchlists and battlecards. Keep scope grounded in verifiable public or human-supplied sources and never fabricate unverified intelligence claims.
 
 ## Operating Loop
 
@@ -14,7 +14,7 @@ Activate for tracking competitors, target companies, pricing shifts, product rel
    - **Recurring sweeps (auto-lands in Plan)**: `ducoro-cli task create --space <id> --daily <HH:MM>|--cron "<expr>" --timezone <IANA-tz> --title "Market Intel Sweep" --instruction "..."`.
    - **Material shift escalation into Inbox**: pair `--human <human-id> --ask confirm --request-summary "..."` on `task create`.
    - **Parallel entity sweeps**: `ducoro-cli job dispatch --agent <agent-id> --name "intel-<slug>" "<prompt>"`.
-   - **Interactive boards & cross-Space handoff**: `ducoro-cli board new --space <id> --title "..." --json`, `ducoro-cli render check|shot --file <board>/index.html --json`, and `ducoro-cli space send` to relay verified shifts to product or content Spaces.
+   - **Interactive boards & cross-Space handoff**: `ducoro-cli board new --space <id> --title "..." --json`, `ducoro-cli render check|shot --file <board>/index.html --json`, and `ducoro-cli space mail send` to relay verified shifts to product or content Spaces.
 3. **Collect real data & enforce deterministic gates**: Prefer Connectors, then run keyless public fetchers (`scripts/fetch_sources.py`), then browser or local filings (`playbooks/source-adapters.md`). Diff via `scripts/snapshot_diff.py` (stay quiet on `no_material_change`), verify claim URLs/timestamps/quotes via `scripts/evidence_gate.py`, and refresh boards via `scripts/build_boards.py`.
 
 ## Needs a Yes

@@ -42,11 +42,12 @@ Outside Ducoro, fall back to `CUSTOMER_SUPPORT_OPS_ROOT`.
    ```
 5. **Schedule & relay**:
    - Periodic triage: `ducoro-cli task create --space <id> --cron "0 */2 * * *" --timezone <IANA-tz> --title "Support Triage Sweep" --instruction "..."`
-   - Hand off confirmed P0 bugs to engineering via `ducoro-cli space send`; relay recurring user pain-point spikes to `content-operations` via `ducoro-cli space send`.
+   - Hand off confirmed P0 bugs to engineering Spaces via `ducoro-cli space mail send`; relay recurring user pain-point spikes to downstream product or editorial Spaces via `ducoro-cli space mail send`.
 
 ## 4. Defect Reporting
 
 If a bundled script or upstream feed schema breaks, show the human a redacted summary first, then submit via:
 ```sh
-ducoro-cli feedback send "[plugin:customer-support-ops@1.1.1] [module:<module>] [location:<step>] <redacted details>"
+ducoro-cli feedback send "[plugin:customer-support-ops@<version>] [module:<module>] [location:<step>] <redacted details>"
+# Read <version> from <plugin-root>/plugin.json
 ```

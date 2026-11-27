@@ -4,7 +4,7 @@ Continuous business bookkeeping, reconciliation, subscription auditing, and cash
 
 ## Activation & Boundaries
 
-Activate for ingesting bank or payment statements, multi-currency reconciliation, recurring charge audits, budget tracking, runway forecasting, or weekly financial reports. Stay inactive for content publishing (`content-operations`), competitor intelligence (`market-intel`), customer support (`customer-support-ops`), sales CRM, and recruiting workflows.
+Activate for ingesting bank or payment statements, multi-currency reconciliation, recurring charge audits, budget tracking, runway forecasting, or weekly financial reports. Keep scope focused on exact bookkeeping and financial diagnostics without initiating autonomous money movement.
 
 ## Operating Loop
 

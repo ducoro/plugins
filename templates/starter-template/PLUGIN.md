@@ -4,7 +4,7 @@ Reference template domain role for verifying Ducoro plugin mounting, domain-role
 
 ## Activation & Boundaries
 
-Activate only when the human explicitly asks to verify `starter-template`, test Ducoro plugin mounting/syncing, or use `starter-template` as a blueprint to author a new plugin. Stay inactive for all ordinary engineering, research, git, or content operations tasks.
+Activate only when the human explicitly asks to verify `starter-template`, test Ducoro plugin mounting/syncing, or use `starter-template` as a blueprint to author a new plugin. Keep scope strictly limited to template verification and scaffolding.
 
 ## Operating Loop
 

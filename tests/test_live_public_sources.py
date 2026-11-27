@@ -172,6 +172,18 @@ class LivePublicSourcesSmokeTest(unittest.TestCase):
             self.assertIn('CNY', fx_res['rates'])
             self.assertIn('EUR', fx_res['rates'])
 
+            # 4. software-stewardship live keyless OSV.dev batch API check
+            ss_repo = tdir / 'ss-live-repo'
+            ss_repo.mkdir()
+            (ss_repo / 'requirements.txt').write_text('urllib3==1.25.8\n', encoding='utf-8')
+            ss_scripts = ROOT / 'plugins/software-stewardship/scripts'
+            osv_res = json.loads(subprocess.run(
+                [sys.executable, str(ss_scripts / 'supply_chain_check.py'), '--repo', str(ss_repo)],
+                capture_output=True, text=True, check=True, timeout=30,
+            ).stdout)
+            self.assertEqual(osv_res['osvStatus'], 'ok')
+            self.assertGreater(osv_res['vulnerabilityCount'], 0)
+
 
 if __name__ == '__main__':
     unittest.main()

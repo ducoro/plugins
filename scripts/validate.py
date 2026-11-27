@@ -24,16 +24,13 @@ FORBIDDEN_BUNDLE_ENTRIES = ['hooks', 'commands', 'agents', '.app.json', '.claude
 BARE_DUCORO_CLI = re.compile(
     r'(?<![A-Za-z0-9_.-])ducoro\s+(?:board|render|feedback|media|local-folder|reference-material|space|spaces|agent|agents|daemon|job|task|plan|inbox|plugin|skill|mcp|cli)\b|`ducoro`\s+CLI'
 )
+HARDCODED_PLUGIN_VERSION_TAG = re.compile(r'\[plugin:[a-z0-9-]+@\d+\.\d+\.\d+\]')
 DISALLOWED_PLUGIN_MD_OVERRIDES = (
     re.compile(r'\b(?:your persona is|your voice is|adopt a .+ tone)\b', re.I),
     re.compile(r'\b(?:always respond in|always reply in|always answer in)\b', re.I),
     re.compile(r'\b(?:override|ignore)\s+(?:the\s+)?(?:agent\s+)?profile\b', re.I),
     re.compile(r'\bignore\s+(?:all\s+)?other\s+plugins\b', re.I),
     re.compile(r'\balways\s+format\s+every\s+response\b', re.I),
-)
-NEGATIVE_BOUNDARY_RE = re.compile(
-    r'\b(?:stay inactive|do not activate|never activate|out of scope|do not handle|do not use (?:this|for)|inactive for|leave .+ to|not for)\b',
-    re.I,
 )
 H2_RE = re.compile(r'^##[ \t]+(.+?)[ \t]*$', re.M)
 BACKTICK_REL_PATH_RE = re.compile(
@@ -152,6 +149,26 @@ def validate_plugin_md_paths(bundle: Path, plugin_name: str, body: str):
                 f'{plugin_name}: PLUGIN.md referenced path "{cleaned}" does not exist')
 
 
+def validate_no_cross_plugin_references(bundle: Path, plugin_name: str, all_plugin_names: set[str], root: Path):
+    other_names = sorted(all_plugin_names - {plugin_name})
+    if not other_names:
+        return
+    pattern = re.compile(
+        r'(?<![a-z0-9-])(?:' + '|'.join(re.escape(other) for other in other_names) + r')(?![a-z0-9-])',
+        re.I,
+    )
+    for md_path in sorted(bundle.rglob('*.md')):
+        if not md_path.is_file():
+            continue
+        rel = md_path.relative_to(root).as_posix()
+        for lineno, line in enumerate(md_path.read_text(encoding='utf-8', errors='replace').splitlines(), start=1):
+            match = pattern.search(line)
+            if match:
+                raise ValueError(
+                    f'{rel}:{lineno}: plugin "{plugin_name}" must stay self-contained and must not reference sibling plugin "{match.group(0)}"'
+                )
+
+
 def validate_plugin_md(bundle: Path, plugin_name: str) -> tuple[int, dict]:
     md_path = bundle / 'PLUGIN.md'
     require(md_path.is_file() and not md_path.is_symlink(), f'{plugin_name}: PLUGIN.md is required')
@@ -168,10 +185,6 @@ def validate_plugin_md(bundle: Path, plugin_name: str) -> tuple[int, dict]:
         f'{plugin_name}: PLUGIN.md is {chars} UTF-16 code units, exceeding the {MAX_PLUGIN_MD_CHARS}-char budget',
     )
     sections = parse_plugin_md_sections(body, plugin_name)
-    require(
-        NEGATIVE_BOUNDARY_RE.search(sections['Activation & Boundaries']),
-        f'{plugin_name}: PLUGIN.md "## Activation & Boundaries" must explicitly state when to stay inactive / out of scope',
-    )
     for pattern in DISALLOWED_PLUGIN_MD_OVERRIDES:
         require(
             not pattern.search(body),
@@ -199,6 +212,12 @@ def validate_cli_references(bundle: Path, root: Path):
                 not BARE_DUCORO_CLI.search(line),
                 f'{rel}:{lineno}: use "ducoro-cli" instead of bare "ducoro" CLI invocation',
             )
+            if file_path.suffix.lower() == '.md':
+                match = HARDCODED_PLUGIN_VERSION_TAG.search(line)
+                if match:
+                    raise ValueError(
+                        f'{rel}:{lineno}: do not hardcode plugin version in feedback tag "{match.group(0)}"; use @<version> and read plugin.json'
+                    )
 
 
 def validate(root: Path):
@@ -264,6 +283,7 @@ def validate(root: Path):
             require(f'(plugins/{name})' in readme, f'{name}: missing README catalog link')
 
         validate_cli_references(bundle, root)
+        validate_no_cross_plugin_references(bundle, name, plugin_names, root)
 
     on_disk = {p.name for p in (root / 'plugins').iterdir() if p.is_dir()}
     require(on_disk == plugin_names, 'every plugin directory must be registered exactly once')
